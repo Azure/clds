@@ -32,6 +32,8 @@ include_directories(${UMOCK_C_INC_FOLDER})
 add_subdirectory(deps/azure-c-shared-utility)
 include_directories(${SHARED_UTIL_INC_FOLDER})
 
+set_platform_files(${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-shared-utility)
+
 set(run_e2e_tests ${original_run_e2e_tests})
 set(run_int_tests ${original_run_int_tests})
 set(run_unittests ${original_run_unittests})

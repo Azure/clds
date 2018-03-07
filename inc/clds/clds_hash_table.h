@@ -13,6 +13,7 @@ typedef struct CLDS_HASH_TABLE_TAG* CLDS_HASH_TABLE_HANDLE;
 
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);
+MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, void*, value);
 
 #ifdef __cplusplus
 }
