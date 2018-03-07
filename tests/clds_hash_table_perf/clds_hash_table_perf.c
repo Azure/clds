@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "clds/clds_hash_table.h"
 #include "azure_c_shared_utility/threadapi.h"
@@ -77,6 +78,23 @@ static int insert_thread(void* arg)
     return result;
 }
 
+static uint64_t test_compute_hash(void* key)
+{
+    // use murmur hash at some point, there is nothing better than that :-)
+    // for now simply do sum hash
+    const char* test_key = (const char*)key;
+    size_t key_length = strlen(test_key);
+    size_t i;
+    uint64_t hash = 0;
+
+    for (i = 0; i < key_length; i++)
+    {
+        hash += test_key[i];
+    }
+
+    return hash;
+}
+
 int clds_hash_table_perf_main(void)
 {
     CLDS_HASH_TABLE_HANDLE hash_table;
@@ -85,7 +103,7 @@ int clds_hash_table_perf_main(void)
     size_t i;
     size_t j;
 
-    hash_table = clds_hash_table_create();
+    hash_table = clds_hash_table_create(test_compute_hash);
     if (hash_table == NULL)
     {
         LogError("Error creating hash table");
