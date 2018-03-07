@@ -7,4 +7,5 @@ add_subdirectory(clds_hash_table_ut)
 
 #perf tests only running on Windows for now
 if(WIN32)
+	add_subdirectory(clds_hash_table_perf)
 endif()
