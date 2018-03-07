@@ -15,7 +15,7 @@ The goals are:
 `clds` uses `ctest` as a test runner.
 `clds` uses `umock-c` as mocking framework.
 
-`uAMQP` uses cmake for configuring build files.
+`clds` uses cmake for configuring build files.
 
 ## Setup
 
