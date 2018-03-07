@@ -5,7 +5,7 @@
 The goals are:
 
 - Performant lockless data structures
-- C99 compliant code
+- C11 compliant code.
 
 ## Dependencies
 

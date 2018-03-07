@@ -1,0 +1,11 @@
+*.suo
+*.user
+*.orig
+*.db
+*.opendb
+**/obj/*
+**/[Dd]ebug/*
+**/[Rr]elease/*
+**/[Cc]make/
+**/packages/*
+**/.vs/*
