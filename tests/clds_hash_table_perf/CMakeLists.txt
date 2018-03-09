@@ -9,7 +9,7 @@ set(clds_hash_table_perf_c_files
     clds_hash_table_perf.c
 )
 
-set(lock_free_tree_perf_rc_files
+set(clds_hash_table_perf_rc_files
     ${LOGGING_RC_FILE}
 )
 
