@@ -193,6 +193,31 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
     hazard_pointer = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, pointer_1);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hazard_pointers_destroy(clds_hazard_pointers);
+}
+
+TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_reclaims_the_memory)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    void* pointer_1 = (void*)0x4242;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(test_reclaim_func(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
 
     // act
     clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1);

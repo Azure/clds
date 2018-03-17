@@ -37,15 +37,25 @@ typedef struct CLDS_HAZARD_POINTERS_TAG
 
 CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(RECLAIM_FUNC reclaim_func)
 {
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = malloc(sizeof(CLDS_HAZARD_POINTERS));
-    if (clds_hazard_pointers == NULL)
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
+
+    if (reclaim_func == NULL)
     {
-        LogError("Cannot allocate memory for hazard pointers");
+        LogError("NULL reclaim_func");
+        clds_hazard_pointers = NULL;
     }
     else
     {
-        clds_hazard_pointers->reclaim = reclaim_func;
-        (void)InterlockedExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL);
+        clds_hazard_pointers = (CLDS_HAZARD_POINTERS_HANDLE)malloc(sizeof(CLDS_HAZARD_POINTERS));
+        if (clds_hazard_pointers == NULL)
+        {
+            LogError("Cannot allocate memory for hazard pointers");
+        }
+        else
+        {
+            clds_hazard_pointers->reclaim = reclaim_func;
+            (void)InterlockedExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL);
+        }
     }
 
     return clds_hazard_pointers;
@@ -90,6 +100,7 @@ CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZ
             clds_hazard_pointers_thread->next = current_threads_head;
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->pointers, NULL);
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->reclaim_list, NULL);
+            (void)InterlockedExchange(&clds_hazard_pointers_thread->active, 1);
             if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, clds_hazard_pointers_thread, current_threads_head) != current_threads_head)
             {
                 restart_needed = true;
@@ -273,6 +284,9 @@ void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
 
                 if (reclaim_node)
                 {
+                    // node is safe to be reclaimed
+                    clds_hazard_pointers->reclaim(current_reclaim_entry->node);
+
                     // now remove it from the reclaim list
                     if (prev_reclaim_entry == NULL)
                     {
@@ -285,8 +299,6 @@ void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
                         prev_reclaim_entry->next = current_reclaim_entry->next;
                     }
 
-                    // node is safe to be reclaimed
-                    clds_hazard_pointers->reclaim(current_reclaim_entry->node);
                     free(current_reclaim_entry);
                 }
                 else
