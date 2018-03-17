@@ -10,19 +10,20 @@
 #include "azure_c_shared_utility/tickcounter.h"
 #include "clds_singly_linked_list_perf.h"
 
-#define THREAD_COUNT 4
+#define THREAD_COUNT 8
 #define INSERT_COUNT 1000000
 
 typedef struct TEST_ITEM_TAG
 {
-    CLDS_SINGLY_LINKED_LIST_ITEM list_item;
     char key[20];
 } TEST_ITEM;
+
+DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(TEST_ITEM);
 
 typedef struct THREAD_DATA_TAG
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
-    TEST_ITEM* items[INSERT_COUNT];
+    CLDS_SINGLY_LINKED_LIST_ITEM* items[INSERT_COUNT];
     TICK_COUNTER_HANDLE tick_counter;
     tickcounter_ms_t runtime;
 } THREAD_DATA;
@@ -53,7 +54,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, &thread_data->items[i]->list_item) != 0)
+                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->items[i]) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -77,23 +78,6 @@ static int insert_thread(void* arg)
 
     ThreadAPI_Exit(result);
     return result;
-}
-
-static uint64_t test_compute_hash(void* key)
-{
-    // use murmur hash at some point, there is nothing better than that :-)
-    // for now simply do sum hash
-    const char* test_key = (const char*)key;
-    size_t key_length = strlen(test_key);
-    size_t i;
-    uint64_t hash = 0;
-
-    for (i = 0; i < key_length; i++)
-    {
-        hash += test_key[i];
-    }
-
-    return hash;
 }
 
 int clds_singly_linked_list_perf_main(void)
@@ -124,7 +108,7 @@ int clds_singly_linked_list_perf_main(void)
 
                 for (j = 0; j < INSERT_COUNT; j++)
                 {
-                    thread_data[i].items[j] = (TEST_ITEM*)malloc(sizeof(TEST_ITEM));
+                    thread_data[i].items[j] = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
                     if (thread_data[i].items == NULL)
                     {
                         LogError("Error allocating test item");
@@ -132,7 +116,8 @@ int clds_singly_linked_list_perf_main(void)
                     }
                     else
                     {
-                        (void)sprintf(thread_data[i].items[j]->key, "%zu_%zu", i, j);
+                        TEST_ITEM* test_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(TEST_ITEM, thread_data[i].items[j]);
+                        (void)sprintf(test_item->key, "%zu_%zu", i, j);
                     }
                 }
 

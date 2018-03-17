@@ -6,6 +6,7 @@
 #include "azure_c_shared_utility/xlogging.h"
 #include "clds/clds_singly_linked_list.h"
 #include "clds/clds_atomics.h"
+#include "clds/clds_hazard_pointers.h"
 
 /* this is a lock free singly linked list implementation */
 
@@ -24,6 +25,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(void)
     else
     {
         // all ok
+        (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL);
     }
 
     return clds_singly_linked_list;
@@ -83,4 +85,37 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     (void)item;
 
     return result;
+}
+
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, size_t item_offset, size_t record_offset)
+{
+    void* result = malloc(node_size);
+    if (result == NULL)
+    {
+        LogError("Failed allocating memory");
+    }
+    else
+    {
+        volatile CLDS_SINGLY_LINKED_LIST_ITEM* item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)((unsigned char*)result + item_offset);
+        item->record_offset = record_offset;
+        (void)InterlockedExchange(&item->ref_count, 1);
+        (void)InterlockedExchangePointer((volatile PVOID*)&item->next, NULL);
+    }
+
+    return result;
+}
+
+void clds_singly_linked_list_node_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    if (item == NULL)
+    {
+        LogError("NULL item_ptr");
+    }
+    else
+    {
+        if (InterlockedDecrement(&item->ref_count) == 0)
+        {
+            free((void*)item);
+        }
+    }
 }
