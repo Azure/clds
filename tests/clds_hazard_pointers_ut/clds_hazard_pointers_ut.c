@@ -195,7 +195,14 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     hazard_pointer = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, pointer_1);
 
     // act
-    clds_hazard_pointers_release(hazard_pointer);
+    if (clds_hazard_pointers_reclaim(hazard_pointer) != 0)
+    {
+
+    }
+    else
+    {
+
+    }
 
     // assert
     ASSERT_IS_NOT_NULL(hazard_pointer);
