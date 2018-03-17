@@ -80,6 +80,58 @@ static int insert_thread(void* arg)
     return result;
 }
 
+static int delete_thread(void* arg)
+{
+    size_t i;
+    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    int result;
+
+    TICK_COUNTER_HANDLE tick_counter = tickcounter_create();
+    if (tick_counter == NULL)
+    {
+        LogError("Cannot create tick counter");
+        result = __FAILURE__;
+    }
+    else
+    {
+        tickcounter_ms_t start_time;
+
+        if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
+        {
+            LogError("Cannot get start time");
+            result = __FAILURE__;
+        }
+        else
+        {
+            tickcounter_ms_t end_time;
+            for (i = 0; i < INSERT_COUNT; i++)
+            {
+                if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->items[i]) != 0)
+                {
+                    LogError("Error deleting");
+                    break;
+                }
+            }
+
+            if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
+            {
+                LogError("Cannot get end time");
+                result = __FAILURE__;
+            }
+            else
+            {
+                thread_data->runtime = end_time - start_time;
+                result = 0;
+            }
+        }
+
+        tickcounter_destroy(tick_counter);
+    }
+
+    ThreadAPI_Exit(result);
+    return result;
+}
+
 int clds_singly_linked_list_perf_main(void)
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
@@ -182,6 +234,53 @@ int clds_singly_linked_list_perf_main(void)
                             (size_t)runtime,
                             ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
                             ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
+
+                        // delete test
+
+                        for (i = 0; i < THREAD_COUNT; i++)
+                        {
+                            if (ThreadAPI_Create(&threads[i], delete_thread, &thread_data[i]) != THREADAPI_OK)
+                            {
+                                LogError("Error spawning test thread");
+                                break;
+                            }
+                        }
+
+                        if (i < THREAD_COUNT)
+                        {
+                            for (j = 0; j < i; j++)
+                            {
+                                int dont_care;
+                                (void)ThreadAPI_Join(threads[j], &dont_care);
+                            }
+                        }
+                        else
+                        {
+                            is_error = false;
+                            runtime = 0;
+
+                            for (i = 0; i < THREAD_COUNT; i++)
+                            {
+                                int thread_result;
+                                (void)ThreadAPI_Join(threads[i], &thread_result);
+                                if (thread_result != 0)
+                                {
+                                    is_error = true;
+                                }
+                                else
+                                {
+                                    runtime += thread_data[i].runtime;
+                                }
+                            }
+
+                            if (!is_error)
+                            {
+                                LogInfo("Insert test done in %zu ms, %02f deletes/s/thread, %02f deletes/s on all threads",
+                                    (size_t)runtime,
+                                    ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
+                                    ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
+                            }
+                        }
                     }
                 }
 
