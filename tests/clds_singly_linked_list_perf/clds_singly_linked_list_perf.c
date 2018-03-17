@@ -275,7 +275,7 @@ int clds_singly_linked_list_perf_main(void)
 
                             if (!is_error)
                             {
-                                LogInfo("Insert test done in %zu ms, %02f deletes/s/thread, %02f deletes/s on all threads",
+                                LogInfo("Delete test done in %zu ms, %02f deletes/s/thread, %02f deletes/s on all threads",
                                     (size_t)runtime,
                                     ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
                                     ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
