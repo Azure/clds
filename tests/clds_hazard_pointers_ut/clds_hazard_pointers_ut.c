@@ -195,17 +195,10 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     hazard_pointer = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, pointer_1);
 
     // act
-    if (clds_hazard_pointers_reclaim(hazard_pointer) != 0)
-    {
-
-    }
-    else
-    {
-
-    }
+    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1);
 
     // assert
-    ASSERT_IS_NOT_NULL(hazard_pointer);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
