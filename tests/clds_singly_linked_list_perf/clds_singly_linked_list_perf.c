@@ -10,8 +10,8 @@
 #include "azure_c_shared_utility/tickcounter.h"
 #include "clds_singly_linked_list_perf.h"
 
-#define THREAD_COUNT 8
-#define INSERT_COUNT 1000000
+#define THREAD_COUNT 1
+#define INSERT_COUNT 10000000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -214,6 +214,7 @@ int clds_singly_linked_list_perf_main(void)
                 else
                 {
                     // insert test
+                    LogInfo("Start insert test");
 
                     for (i = 0; i < THREAD_COUNT; i++)
                     {

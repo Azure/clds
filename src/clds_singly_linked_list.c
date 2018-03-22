@@ -58,24 +58,33 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     }
     else
     {
-        bool restart_needed;
-
-        do
+        CLDS_SINGLY_LINKED_LIST_ITEM* temporary_node = (CLDS_SINGLY_LINKED_LIST_ITEM*)malloc(sizeof(CLDS_SINGLY_LINKED_LIST_ITEM));
+        if (temporary_node == NULL)
         {
-            // get current head
-            item->next = (CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
+            LogError("Cannot allocate auxiliary node");
+            result = __FAILURE__;
+        }
+        else
+        {
+            bool restart_needed;
 
-            if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, item, (PVOID)item->next) != item->next)
+            do
             {
-                restart_needed = true;
-            }
-            else
-            {
-                restart_needed = false;
-            }
-        } while (restart_needed);
+                // get current head
+                item->next = (CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
 
-        result = 0;
+                if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, item, (PVOID)item->next) != item->next)
+                {
+                    restart_needed = true;
+                }
+                else
+                {
+                    restart_needed = false;
+                }
+            } while (restart_needed);
+
+            result = 0;
+        }
     }
 
     return result;
@@ -138,8 +147,44 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
                         {
                             if (current_item == item)
                             {
-                                // lock the previous link
-                                LogInfo("should delete here");
+                                // mark the node as deleted
+                                // get the next pointer as this is the only place where we keep information
+                                volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+
+                                // mark that the node is deleted
+                                if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
+                                {
+                                    // restart
+                                }
+                                else
+                                {
+                                    // the current node is marked for deletion, now try to delete it
+                                    // Z --> A ---> B ---> C
+
+                                    // Z --> A ---> B ---> C
+
+                                    // Z --> A ---> C
+
+                                    // Z --> B ---> C
+
+
+                                    // Z --> 
+
+                                    // We will try now to do A->next = B->next
+
+                                    // If in the meanwhile someone would be deleting node A they would have to first set the
+                                    // deleted flag on it, in which case we'd see the CAS fail
+
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                    {
+                                        // someone is deleting our left node, restart, but first unlock our own delete mark
+                                        (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                    }
+                                    else
+                                    {
+                                        // delete succesfull
+                                    }
+                                }
                             }
                             else
                             {
