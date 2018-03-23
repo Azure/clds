@@ -155,34 +155,55 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
                                 if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
                                 {
                                     // restart
+                                    restart_needed = true;
+                                    break;
                                 }
                                 else
                                 {
-                                    // the current node is marked for deletion, now try to delete it
-                                    // Z --> A ---> B ---> C
-
-                                    // Z --> A ---> B ---> C
-
-                                    // Z --> A ---> C
-
-                                    // Z --> B ---> C
-
-
-                                    // Z --> 
-
-                                    // We will try now to do A->next = B->next
+                                    // the current node is marked for deletion, now try to change the previous link to the next value
 
                                     // If in the meanwhile someone would be deleting node A they would have to first set the
                                     // deleted flag on it, in which case we'd see the CAS fail
 
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                    if (previous_item == NULL)
                                     {
-                                        // someone is deleting our left node, restart, but first unlock our own delete mark
-                                        (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                        // we are removing the head
+                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                        {
+                                            // head changed, restart
+                                            (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                            restart_needed = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            // delete succesfull
+                                            clds_hazard_pointers_release(current_item_hp);
+                                            restart_needed = false;
+                                            break;
+                                        }
                                     }
                                     else
                                     {
-                                        // delete succesfull
+                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                        {
+                                            // someone is deleting our left node, restart, but first unlock our own delete mark
+                                            (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                            restart_needed = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            // delete succesfull, no-one deleted the left node in the meanwhile
+                                            if (previous_hp != NULL)
+                                            {
+                                                clds_hazard_pointers_release(previous_hp);
+                                            }
+
+                                            clds_hazard_pointers_release(current_item_hp);
+                                            restart_needed = false;
+                                            break;
+                                        }
                                     }
                                 }
                             }

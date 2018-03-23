@@ -10,8 +10,8 @@
 #include "azure_c_shared_utility/tickcounter.h"
 #include "clds_singly_linked_list_perf.h"
 
-#define THREAD_COUNT 1
-#define INSERT_COUNT 10000000
+#define THREAD_COUNT 4
+#define INSERT_COUNT 100
 
 typedef struct TEST_ITEM_TAG
 {

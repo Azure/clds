@@ -144,7 +144,7 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
         CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
         while (hazard_ptr != NULL)
         {
-            if (InterlockedCompareExchangePointer(hazard_ptr->node, node, NULL) != NULL)
+            if (InterlockedCompareExchangePointer(&hazard_ptr->node, node, NULL) != NULL)
             {
                 // occupied ...
                 hazard_ptr = InterlockedCompareExchangePointer(&hazard_ptr->next, NULL, NULL);
