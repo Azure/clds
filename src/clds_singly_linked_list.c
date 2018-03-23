@@ -221,6 +221,15 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     return result;
 }
 
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
+{
+    (void)clds_singly_linked_list;
+    (void)clds_hazard_pointers_thread;
+    (void)item_compare_callback;
+    (void)item_compare_callback_context;
+    return NULL;
+}
+
 CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, size_t item_offset, size_t record_offset)
 {
     void* result = malloc(node_size);
