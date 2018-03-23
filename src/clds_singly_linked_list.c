@@ -33,7 +33,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
     return clds_singly_linked_list;
 }
 
-void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list)
+void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     if (clds_singly_linked_list == NULL)
     {
@@ -41,6 +41,8 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     }
     else
     {
+        (void)item_cleanup_callback;
+        (void)item_cleanup_callback_context;
         free(clds_singly_linked_list);
     }
 }

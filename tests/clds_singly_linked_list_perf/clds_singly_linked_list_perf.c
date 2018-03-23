@@ -321,7 +321,7 @@ int clds_singly_linked_list_perf_main(void)
                 }
             }
 
-            clds_singly_linked_list_destroy(singly_linked_list);
+            clds_singly_linked_list_destroy(singly_linked_list, NULL, NULL);
         }
 
         clds_hazard_pointers_destroy(clds_hazard_pointers);
