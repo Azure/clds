@@ -74,6 +74,14 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
         while (clds_hazard_pointers_thread != NULL)
         {
             CLDS_HAZARD_POINTERS_THREAD_HANDLE next_clds_hazard_pointers_thread = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers_thread->next, NULL, NULL);
+            CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
+            while (hazard_ptr != NULL)
+            {
+                CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_ptr = InterlockedCompareExchangePointer((volatile PVOID*)&hazard_ptr->next, NULL, NULL);
+                free(hazard_ptr);
+                hazard_ptr = next_hazard_ptr;
+            }
+
             free(clds_hazard_pointers_thread);
             clds_hazard_pointers_thread = next_clds_hazard_pointers_thread;
         }

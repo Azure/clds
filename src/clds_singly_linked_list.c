@@ -58,33 +58,24 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     }
     else
     {
-        CLDS_SINGLY_LINKED_LIST_ITEM* temporary_node = (CLDS_SINGLY_LINKED_LIST_ITEM*)malloc(sizeof(CLDS_SINGLY_LINKED_LIST_ITEM));
-        if (temporary_node == NULL)
-        {
-            LogError("Cannot allocate auxiliary node");
-            result = __FAILURE__;
-        }
-        else
-        {
-            bool restart_needed;
+        bool restart_needed;
 
-            do
+        do
+        {
+            // get current head
+            item->next = (CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
+
+            if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, item, (PVOID)item->next) != item->next)
             {
-                // get current head
-                item->next = (CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
+                restart_needed = true;
+            }
+            else
+            {
+                restart_needed = false;
+            }
+        } while (restart_needed);
 
-                if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, item, (PVOID)item->next) != item->next)
-                {
-                    restart_needed = true;
-                }
-                else
-                {
-                    restart_needed = false;
-                }
-            } while (restart_needed);
-
-            result = 0;
-        }
+        result = 0;
     }
 
     return result;
