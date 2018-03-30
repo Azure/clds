@@ -63,3 +63,15 @@ target_link_libraries(clds aziotsharedutil)
 if (${run_unittests})
     add_subdirectory(tests)
 endif()
+
+#smhasher generates some warnings with /W3 (default)
+if(WIN32)
+    add_definitions(/W2)
+endif(WIN32)
+
+add_subdirectory(deps/SMHasher/src)
+include_directories(deps/SMHasher/src)
+
+if(WIN32)
+    remove_definitions(/W2)
+endif(WIN32)
