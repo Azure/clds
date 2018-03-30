@@ -8,6 +8,18 @@ include(deps/azure-c-shared-utility/configs/azure_iot_build_rules.cmake)
 option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)" OFF)
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
 
+#smhasher generates some warnings with /W3 (default)
+if(WIN32)
+    add_definitions(/W2)
+endif(WIN32)
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
+
+if(WIN32)
+    remove_definitions(/W2)
+endif(WIN32)
+
 #do not add or build any tests of the dependencies
 set(original_run_e2e_tests ${run_e2e_tests})
 set(original_run_int_tests ${run_int_tests})
@@ -63,15 +75,3 @@ target_link_libraries(clds aziotsharedutil)
 if (${run_unittests})
     add_subdirectory(tests)
 endif()
-
-#smhasher generates some warnings with /W3 (default)
-if(WIN32)
-    add_definitions(/W2)
-endif(WIN32)
-
-add_subdirectory(deps/SMHasher/src)
-include_directories(deps/SMHasher/src)
-
-if(WIN32)
-    remove_definitions(/W2)
-endif(WIN32)

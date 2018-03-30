@@ -9,9 +9,10 @@
 #include "azure_c_shared_utility/xlogging.h"
 #include "azure_c_shared_utility/tickcounter.h"
 #include "clds_hash_table_perf.h"
+#include "MurmurHash2.h"
 
 #define THREAD_COUNT 4
-#define INSERT_COUNT 10000
+#define INSERT_COUNT 100000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -133,19 +134,8 @@ static int delete_thread(void* arg)
 
 static uint64_t test_compute_hash(void* key)
 {
-    // use murmur hash at some point, there is nothing better than that :-)
-    // for now simply do sum hash
     const char* test_key = (const char*)key;
-    size_t key_length = strlen(test_key);
-    size_t i;
-    uint64_t hash = 0;
-
-    for (i = 0; i < key_length; i++)
-    {
-        hash += test_key[i];
-    }
-
-    return hash;
+    return (uint64_t)MurmurHash2(test_key, (int)strlen(test_key), 0);
 }
 
 static void reclaim_function(void* ptr)
@@ -169,7 +159,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, 1 << 20, clds_hazard_pointers);
+        hash_table = clds_hash_table_create(test_compute_hash, 1 << 24, clds_hazard_pointers);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");
