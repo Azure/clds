@@ -45,8 +45,8 @@ clds_singly_linked_list_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_ty
 #define CLDS_SINGLY_LINKED_LIST_GET_VALUE(record_type, ptr) \
 ((record_type*)((unsigned char*)ptr + offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))
 
-typedef bool SINGLY_LINKED_LIST_ITEM_COMPARE_CB(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
-typedef void SINGLY_LINKED_LIST_ITEM_CLEANUP_CB(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
+typedef bool (*SINGLY_LINKED_LIST_ITEM_COMPARE_CB)(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
+typedef void (*SINGLY_LINKED_LIST_ITEM_CLEANUP_CB)(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
 
 // singly linked list API
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);

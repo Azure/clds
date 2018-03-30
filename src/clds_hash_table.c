@@ -8,6 +8,8 @@
 #include "azure_c_shared_utility/xlogging.h"
 #include "clds/clds_hash_table.h"
 #include "clds/clds_atomics.h"
+#include "clds/clds_singly_linked_list.h"
+#include "clds/clds_hazard_pointers.h"
 
 /* this is a hash table implementation */
 
@@ -16,10 +18,19 @@ typedef struct CLDS_HASH_TABLE_TAG
     volatile LONG item_count_until_resize;
     volatile LONG bucket_count;
     COMPUTE_HASH_FUNC compute_hash;
-    void** hash_table;
+    CLDS_SINGLY_LINKED_LIST_HANDLE* hash_table;
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 } CLDS_HASH_TABLE;
 
-CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size)
+typedef struct HASH_TABLE_ITEM_TAG
+{
+    void* key;
+    void* value;
+} HASH_TABLE_ITEM;
+
+DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(HASH_TABLE_ITEM);
+
+CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
 
@@ -45,6 +56,7 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
             else
             {
                 // all OK
+                clds_hash_table->clds_hazard_pointers = clds_hazard_pointers;
                 clds_hash_table->compute_hash = compute_hash;
 
                 // set the initial bucket count
@@ -69,7 +81,7 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     }
 }
 
-int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, void* value)
+int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, void* value, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
 {
     int result;
 
@@ -82,36 +94,93 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
     else
     {
         (void)value;
+        (void)clds_hazard_pointers_thread;
 
         // check if we should resize first
         if (InterlockedDecrement(&clds_hash_table->item_count_until_resize) == 0)
         {
             // resize the table
-            LogInfo("Table rresize needed");
+            LogInfo("Table resize needed");
             result = __FAILURE__;
         }
         else
         {
+            bool restart_needed;
+            CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+
             // compute the hash
             uint64_t hash = clds_hash_table->compute_hash(key);
             
             // find the bucket
             uint64_t bucket_index = hash % clds_hash_table->bucket_count;
 
-            // check that we already have an item in the bucket
-            if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], value, NULL) != NULL)
+            do
             {
-                // collision
-                LogInfo("Collision");
+                // do we have a list here or do we create one?
+                bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list != NULL)
+                {
+                    restart_needed = false;
+                }
+                else
+                {
+                    // create a list
+                    bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
+                    if (bucket_list == NULL)
+                    {
+                        LogError("Cannot allocate list for hash table bucket");
+                        restart_needed = false;
+                    }
+                    else
+                    {
+                        // now put the list in the bucket
+                        if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                        {
+                            // oops, someone else inserted a new list, just bail on our list and restart
+                            clds_singly_linked_list_destroy(bucket_list, NULL, NULL);
+                            restart_needed = true;
+                        }
+                        else
+                        {
+                            // set new list
+                            restart_needed = false;
+                        }
+                    }
+                }
+            } while (restart_needed);
+
+            if (bucket_list == NULL)
+            {
+                LogError("Cannot acquire bucket list");
                 result = __FAILURE__;
             }
             else
             {
-                // value stored
-                result = 0;
+                CLDS_SINGLY_LINKED_LIST_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
+                if (hash_table_item == NULL)
+                {
+                    LogError("Cannot create hash table entry item");
+                    result = __FAILURE__;
+                }
+                else
+                {
+                    if (clds_singly_linked_list_insert(bucket_list, hash_table_item, clds_hazard_pointers_thread) != 0)
+                    {
+                        LogError("Cannot insert hash table item into list");
+                        result = __FAILURE__;
+                    }
+                    else
+                    {
+                        result = 0;
+                        goto all_ok;
+                    }
+
+                    free(hash_table_item);
+                }
             }
         }
     }
 
+all_ok:
     return result;
 }

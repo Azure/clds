@@ -24,6 +24,7 @@ typedef struct THREAD_DATA_TAG
     TEST_ITEM* items[INSERT_COUNT];
     TICK_COUNTER_HANDLE tick_counter;
     tickcounter_ms_t runtime;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
 } THREAD_DATA;
 
 static int insert_thread(void* arg)
@@ -52,7 +53,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_insert(thread_data->hash_table, thread_data->items[i]->key, thread_data->items[i]) != 0)
+                if (clds_hash_table_insert(thread_data->hash_table, thread_data->items[i]->key, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -95,123 +96,140 @@ static uint64_t test_compute_hash(void* key)
     return hash;
 }
 
+static void reclaim_function(void* ptr)
+{
+    free(ptr);
+}
+
 int clds_hash_table_perf_main(void)
 {
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
     CLDS_HASH_TABLE_HANDLE hash_table;
     THREAD_HANDLE threads[THREAD_COUNT];
     THREAD_DATA* thread_data;
     size_t i;
     size_t j;
 
-    hash_table = clds_hash_table_create(test_compute_hash, 256);
-    if (hash_table == NULL)
+    clds_hazard_pointers = clds_hazard_pointers_create(reclaim_function);
+    if (clds_hazard_pointers == NULL)
     {
-        LogError("Error creating hash table");
+        LogError("Error creating hazard pointers");
     }
     else
     {
-        thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
-        if (thread_data == NULL)
+        hash_table = clds_hash_table_create(test_compute_hash, 256, clds_hazard_pointers);
+        if (hash_table == NULL)
         {
-            LogError("Error allocating thread data array");
+            LogError("Error creating hash table");
         }
         else
         {
-            for (i = 0; i < THREAD_COUNT; i++)
+            thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
+            if (thread_data == NULL)
             {
-                thread_data[i].hash_table = hash_table;
-
-                for (j = 0; j < INSERT_COUNT; j++)
-                {
-                    thread_data[i].items[j] = (TEST_ITEM*)malloc(sizeof(TEST_ITEM));
-                    if (thread_data[i].items == NULL)
-                    {
-                        LogError("Error allocating test item");
-                        break;
-                    }
-                    else
-                    {
-                        (void)sprintf(thread_data[i].items[j]->key, "%zu_%zu", i, j);
-                    }
-                }
-
-                if (j < INSERT_COUNT)
-                {
-                    size_t k;
-
-                    for (k = 0; k < j; k++)
-                    {
-                        free(thread_data[i].items[k]);
-                    }
-                }
-            }
-
-            if (i < THREAD_COUNT)
-            {
-                LogError("Error creating test thread data");
+                LogError("Error allocating thread data array");
             }
             else
             {
-                // insert test
-
                 for (i = 0; i < THREAD_COUNT; i++)
                 {
-                    if (ThreadAPI_Create(&threads[i], insert_thread, &thread_data[i]) != THREADAPI_OK)
+                    thread_data[i].hash_table = hash_table;
+
+                    for (j = 0; j < INSERT_COUNT; j++)
                     {
-                        LogError("Error spawning test thread");
-                        break;
+                        thread_data[i].clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+                        thread_data[i].items[j] = (TEST_ITEM*)malloc(sizeof(TEST_ITEM));
+                        if (thread_data[i].items == NULL)
+                        {
+                            LogError("Error allocating test item");
+                            break;
+                        }
+                        else
+                        {
+                            (void)sprintf(thread_data[i].items[j]->key, "%zu_%zu", i, j);
+                        }
+                    }
+
+                    if (j < INSERT_COUNT)
+                    {
+                        size_t k;
+
+                        for (k = 0; k < j; k++)
+                        {
+                            free(thread_data[i].items[k]);
+                        }
                     }
                 }
 
                 if (i < THREAD_COUNT)
                 {
-                    for (j = 0; j < i; j++)
-                    {
-                        int dont_care;
-                        (void)ThreadAPI_Join(threads[j], &dont_care);
-                    }
+                    LogError("Error creating test thread data");
                 }
                 else
                 {
-                    bool is_error = false;
-                    tickcounter_ms_t runtime = 0;
+                    // insert test
 
                     for (i = 0; i < THREAD_COUNT; i++)
                     {
-                        int thread_result;
-                        (void)ThreadAPI_Join(threads[i], &thread_result);
-                        if (thread_result != 0)
+                        if (ThreadAPI_Create(&threads[i], insert_thread, &thread_data[i]) != THREADAPI_OK)
                         {
-                            is_error = true;
-                        }
-                        else
-                        {
-                            runtime += thread_data[i].runtime;
+                            LogError("Error spawning test thread");
+                            break;
                         }
                     }
 
-                    if (!is_error)
+                    if (i < THREAD_COUNT)
                     {
-                        LogInfo("Insert test done in %zu ms, %02f inserts/s/thread, %02f inserts/s on all threads",
-                            (size_t)runtime,
-                            ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
-                            ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
+                        for (j = 0; j < i; j++)
+                        {
+                            int dont_care;
+                            (void)ThreadAPI_Join(threads[j], &dont_care);
+                        }
                     }
-                }
-
-                for (i = 0; i < THREAD_COUNT; i++)
-                {
-                    for (j = 0; j < INSERT_COUNT; j++)
+                    else
                     {
-                        free(thread_data[i].items[j]);
-                    }
-                }
+                        bool is_error = false;
+                        tickcounter_ms_t runtime = 0;
 
-                free(thread_data);
+                        for (i = 0; i < THREAD_COUNT; i++)
+                        {
+                            int thread_result;
+                            (void)ThreadAPI_Join(threads[i], &thread_result);
+                            if (thread_result != 0)
+                            {
+                                is_error = true;
+                            }
+                            else
+                            {
+                                runtime += thread_data[i].runtime;
+                            }
+                        }
+
+                        if (!is_error)
+                        {
+                            LogInfo("Insert test done in %zu ms, %02f inserts/s/thread, %02f inserts/s on all threads",
+                                (size_t)runtime,
+                                ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
+                                ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
+                        }
+                    }
+
+                    for (i = 0; i < THREAD_COUNT; i++)
+                    {
+                        for (j = 0; j < INSERT_COUNT; j++)
+                        {
+                            free(thread_data[i].items[j]);
+                        }
+                    }
+
+                    free(thread_data);
+                }
             }
+
+            clds_hash_table_destroy(hash_table);
         }
 
-        clds_hash_table_destroy(hash_table);
+        clds_hazard_pointers_destroy(clds_hazard_pointers);
     }
 
     return 0;

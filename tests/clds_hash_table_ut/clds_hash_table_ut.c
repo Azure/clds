@@ -23,6 +23,7 @@ void real_free(void* ptr)
 #define ENABLE_MOCKS
 
 #include "azure_c_shared_utility/gballoc.h"
+#include "clds/clds_singly_linked_list.h"
 
 #undef ENABLE_MOCKS
 
