@@ -118,7 +118,7 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
                 else
                 {
                     // acquire hazard pointer
-                    CLDS_HAZARD_POINTER_RECORD_HANDLE current_item_hp = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, (void*)current_item);
+                    CLDS_HAZARD_POINTER_RECORD_HANDLE current_item_hp = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1));
                     if (current_item_hp == NULL)
                     {
                         LogError("Cannot acquire hazard pointer");
@@ -129,7 +129,7 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
                     else
                     {
                         // now make sure the item has not changed
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)current_item)
+                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
                         {
                             // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
                             clds_hazard_pointers_release(current_item_hp);
