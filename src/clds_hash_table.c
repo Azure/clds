@@ -102,7 +102,6 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
     else
     {
         (void)value;
-        (void)clds_hazard_pointers_thread;
 
         // check if we should resize first
         if (InterlockedDecrement(&clds_hash_table->item_count_until_resize) == 0)
@@ -120,7 +119,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
             uint64_t hash = clds_hash_table->compute_hash(key);
             
             // find the bucket
-            uint64_t bucket_index = hash % clds_hash_table->bucket_count;
+            uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
 
             do
             {
@@ -190,5 +189,66 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
     }
 
 all_ok:
+    return result;
+}
+
+bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    (void)item_compare_context;
+    (void)item;
+
+    return true;
+}
+
+int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
+{
+    int result;
+
+    if ((clds_hash_table == NULL) ||
+        (key == NULL))
+    {
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        result = __FAILURE__;
+    }
+    else
+    {
+        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+
+        // compute the hash
+        uint64_t hash = clds_hash_table->compute_hash(key);
+
+        // find the bucket
+        uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
+
+        bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
+        if (bucket_list == NULL)
+        {
+            // not found
+            result = __FAILURE__;
+        }
+        else
+        {
+            // now put the list in the bucket
+            CLDS_SINGLY_LINKED_LIST_ITEM* list_item = clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
+            if (list_item == NULL)
+            {
+                // not found
+                result = __FAILURE__;
+            }
+            else
+            {
+                if (clds_singly_linked_list_delete(bucket_list, list_item, clds_hazard_pointers_thread) != 0)
+                {
+                    LogError("Error deleting item");
+                    result = __FAILURE__;
+                }
+                else
+                {
+                    result = 0;
+                }
+            }
+        }
+    }
+
     return result;
 }

@@ -20,6 +20,7 @@ typedef uint64_t (*COMPUTE_HASH_FUNC)(void* key);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);
 MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, void*, value, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
 
 #ifdef __cplusplus
 }
