@@ -194,10 +194,19 @@ all_ok:
 
 bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
-    (void)item_compare_context;
-    (void)item;
+    bool result;
+    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
 
-    return true;
+    if (strcmp(hash_table_item->key, item_compare_context) != 0)
+    {
+        result = false;
+    }
+    else
+    {
+        result = true;
+    }
+
+    return result;
 }
 
 int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
