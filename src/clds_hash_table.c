@@ -163,15 +163,19 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
             }
             else
             {
-                CLDS_SINGLY_LINKED_LIST_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
-                if (hash_table_item == NULL)
+                CLDS_SINGLY_LINKED_LIST_ITEM* list_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
+                if (list_item == NULL)
                 {
                     LogError("Cannot create hash table entry item");
                     result = __FAILURE__;
                 }
                 else
                 {
-                    if (clds_singly_linked_list_insert(bucket_list, hash_table_item, clds_hazard_pointers_thread) != 0)
+                    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, list_item);
+                    hash_table_item->key = key;
+                    hash_table_item->value = value;
+
+                    if (clds_singly_linked_list_insert(bucket_list, list_item, clds_hazard_pointers_thread) != 0)
                     {
                         LogError("Cannot insert hash table item into list");
                         result = __FAILURE__;

@@ -87,7 +87,8 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
 {
     int result = 0;
 
-    if (clds_singly_linked_list == NULL)
+    if ((clds_singly_linked_list == NULL) ||
+        (item == NULL))
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, item = %p",
             clds_singly_linked_list, item);
@@ -225,11 +226,90 @@ int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
 
 CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
 {
-    (void)clds_singly_linked_list;
-    (void)clds_hazard_pointers_thread;
-    (void)item_compare_callback;
-    (void)item_compare_callback_context;
-    return NULL;
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+
+    if ((clds_singly_linked_list == NULL) ||
+        (item_compare_callback == NULL))
+    {
+        LogError("Invalid arguments: clds_singly_linked_list = %p, item_compare_callback = %p",
+            clds_singly_linked_list, item_compare_callback);
+        result = NULL;
+    }
+    else
+    {
+        // check that the node is really in the list and obtain
+        bool restart_needed;
+        result = NULL;
+
+        do
+        {
+            CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
+            volatile CLDS_SINGLY_LINKED_LIST_ITEM* previous_item = NULL;
+            volatile CLDS_SINGLY_LINKED_LIST_ITEM** current_item_address = &clds_singly_linked_list->head;
+
+            do
+            {
+                // get the current_item value
+                volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+                if (current_item == NULL)
+                {
+                    LogError("Not found");
+                    restart_needed = false;
+                    result = NULL;
+                    break;
+                }
+                else
+                {
+                    // acquire hazard pointer
+                    CLDS_HAZARD_POINTER_RECORD_HANDLE current_item_hp = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1));
+                    if (current_item_hp == NULL)
+                    {
+                        LogError("Cannot acquire hazard pointer");
+                        restart_needed = false;
+                        result = NULL;
+                        break;
+                    }
+                    else
+                    {
+                        // now make sure the item has not changed
+                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
+                        {
+                            // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
+                            clds_hazard_pointers_release(current_item_hp);
+                            restart_needed = true;
+                            break;
+                        }
+                        else
+                        {
+                            if (item_compare_callback(item_compare_callback_context, (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item))
+                            {
+                                // found it
+                                current_item->ref_count++;
+                                result = (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item;
+                                restart_needed = false;
+                                break;
+                            }
+                            else
+                            {
+                                // we have a stable pointer to the current item, now simply set the previous to be this
+                                if (previous_hp != NULL)
+                                {
+                                    // let go of previous hazard pointer
+                                    clds_hazard_pointers_release(previous_hp);
+                                }
+
+                                previous_hp = current_item_hp;
+                                previous_item = current_item;
+                                current_item_address = (volatile CLDS_SINGLY_LINKED_LIST_ITEM**)&current_item->next;
+                            }
+                        }
+                    }
+                }
+            } while (1);
+        } while (restart_needed);
+    }
+
+    return result;
 }
 
 CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, size_t item_offset, size_t record_offset)
