@@ -11,7 +11,7 @@
 #include "clds_hash_table_perf.h"
 
 #define THREAD_COUNT 4
-#define INSERT_COUNT 1000000
+#define INSERT_COUNT 100000
 
 typedef struct TEST_ITEM_TAG
 {

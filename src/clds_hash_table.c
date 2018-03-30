@@ -55,12 +55,20 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
             }
             else
             {
+                size_t i;
+
                 // all OK
                 clds_hash_table->clds_hazard_pointers = clds_hazard_pointers;
                 clds_hash_table->compute_hash = compute_hash;
 
                 // set the initial bucket count
                 (void)InterlockedExchange(&clds_hash_table->item_count_until_resize, 1000000);
+                (void)InterlockedExchange(&clds_hash_table->bucket_count, initial_bucket_size);
+
+                for (i = 0; i < initial_bucket_size; i++)
+                {
+                    (void)InterlockedExchangePointer(&clds_hash_table->hash_table[i], NULL);
+                }
             }
         }
     }
@@ -106,7 +114,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
         else
         {
             bool restart_needed;
-            CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+            CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
 
             // compute the hash
             uint64_t hash = clds_hash_table->compute_hash(key);
