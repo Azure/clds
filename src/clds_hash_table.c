@@ -19,27 +19,37 @@ typedef struct CLDS_HASH_TABLE_TAG
     void** hash_table;
 } CLDS_HASH_TABLE;
 
-CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash)
+CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size)
 {
-    CLDS_HASH_TABLE_HANDLE clds_hash_table = (CLDS_HASH_TABLE_HANDLE)malloc(sizeof(CLDS_HASH_TABLE));
-    if (clds_hash_table == NULL)
+    CLDS_HASH_TABLE_HANDLE clds_hash_table;
+
+    if (initial_bucket_size == 0)
     {
-        LogError("Cannot allocate memory for hash table");
+        LogError("Zero initial bucket size");
+        clds_hash_table = NULL;
     }
     else
     {
-        clds_hash_table->hash_table = malloc(sizeof(void*) * 1000000);
-        if (clds_hash_table->hash_table == NULL)
+        clds_hash_table = (CLDS_HASH_TABLE_HANDLE)malloc(sizeof(CLDS_HASH_TABLE));
+        if (clds_hash_table == NULL)
         {
-            LogError("Cannot allocate memory for hash table array");
+            LogError("Cannot allocate memory for hash table");
         }
         else
         {
-            // all OK
-            clds_hash_table->compute_hash = compute_hash;
+            clds_hash_table->hash_table = malloc(sizeof(void*) * initial_bucket_size);
+            if (clds_hash_table->hash_table == NULL)
+            {
+                LogError("Cannot allocate memory for hash table array");
+            }
+            else
+            {
+                // all OK
+                clds_hash_table->compute_hash = compute_hash;
 
-            // set the initial bucket count
-            (void)InterlockedExchange(&clds_hash_table->item_count_until_resize, 1000000);
+                // set the initial bucket count
+                (void)InterlockedExchange(&clds_hash_table->item_count_until_resize, 1000000);
+            }
         }
     }
 
