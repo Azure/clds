@@ -94,10 +94,12 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
 {
     if (clds_hash_table == NULL)
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_01_007: [ If `clds_hash_table` is NULL, `clds_hash_table_destroy` shall return. ]*/
         LogError("NULL clds_hash_table");
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
         free(clds_hash_table->hash_table);
         free(clds_hash_table);
     }
