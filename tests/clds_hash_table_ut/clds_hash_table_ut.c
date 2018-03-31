@@ -71,6 +71,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
 
     REGISTER_UMOCK_ALIAS_TYPE(RECLAIM_FUNC, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_HANDLE, void*);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -118,6 +119,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
@@ -137,6 +139,9 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_fails_clds_hash_table_cr
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NULL(hash_table);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
@@ -158,6 +163,9 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_array_fails_clds_hash_ta
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NULL(hash_table);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_003: [ If `compute_hash` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
@@ -174,6 +182,9 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_compute_hash_function_fails)
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NULL(hash_table);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_004: [ If `initial_bucket_size` is 0, `clds_hash_table_create` shall fail and return NULL. ]*/
@@ -190,6 +201,9 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_bucket_size_zero_fails)
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NULL(hash_table);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_005: [ If `clds_hazard_pointers` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
@@ -233,6 +247,7 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_the_same_hazard_pointer_instan
     // cleanup
     clds_hash_table_destroy(hash_table_1);
     clds_hash_table_destroy(hash_table_2);
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
@@ -264,6 +279,31 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_different_hazard_pointer_insta
     // cleanup
     clds_hash_table_destroy(hash_table_1);
     clds_hash_table_destroy(hash_table_2);
+    clds_hazard_pointers_destroy(hazard_pointers_1);
+    clds_hazard_pointers_destroy(hazard_pointers_2);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create(test_reclaim_function);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(hash_table);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 END_TEST_SUITE(clds_hash_table_unittests)
