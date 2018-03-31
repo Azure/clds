@@ -24,6 +24,7 @@ typedef struct CLDS_HAZARD_POINTERS_THREAD_TAG
 {
     volatile struct CLDS_HAZARD_POINTERS_THREAD_TAG* next;
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
+    CLDS_HAZARD_POINTER_RECORD* free_pointers;
     CLDS_HAZARD_POINTER_RECORD* pointers;
     CLDS_RECLAIM_LIST_ENTRY* reclaim_list;
     volatile LONG active;
@@ -107,6 +108,7 @@ CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZ
             CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL, NULL);
             clds_hazard_pointers_thread->next = current_threads_head;
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->pointers, NULL);
+            (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->free_pointers, NULL);
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->reclaim_list, NULL);
             (void)InterlockedExchange(&clds_hazard_pointers_thread->active, 1);
             if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, clds_hazard_pointers_thread, current_threads_head) != current_threads_head)
@@ -148,21 +150,32 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
     }
     else
     {
-        // get a hazard pointer for the node from the list
-        CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
-        while (hazard_ptr != NULL)
+        bool restart_needed;
+        CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr;
+
+        // get a hazard pointer for the node from the free list
+        do
         {
-            if (InterlockedCompareExchangePointer(&hazard_ptr->node, node, NULL) != NULL)
+            hazard_ptr = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+            if (hazard_ptr != NULL)
             {
-                // occupied ...
-                hazard_ptr = InterlockedCompareExchangePointer(&hazard_ptr->next, NULL, NULL);
+                if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL) != hazard_ptr)
+                {
+                    restart_needed = true;
+                }
+                else
+                {
+                    // got it
+                    restart_needed = false;
+                }
             }
             else
             {
-                // done
-                break;
+                // no free one
+                restart_needed = false;
             }
         }
+        while (restart_needed);
 
         if (hazard_ptr == NULL)
         {
@@ -208,6 +221,8 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_
     else
     {
         (void)InterlockedExchangePointer(&clds_hazard_pointer_record->node, NULL);
+
+        // here we should remove the hazard pointer from the list
     }
 }
 
