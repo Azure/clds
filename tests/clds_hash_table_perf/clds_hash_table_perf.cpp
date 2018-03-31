@@ -12,7 +12,7 @@
 #include "MurmurHash2.h"
 
 #define THREAD_COUNT 4
-#define INSERT_COUNT 100000
+#define INSERT_COUNT 20000
 
 typedef struct TEST_ITEM_TAG
 {
