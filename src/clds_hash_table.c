@@ -34,16 +34,23 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
 
-    if (initial_bucket_size == 0)
+    /* Codes_SRS_CLDS_HASH_TABLE_01_003: [ If `compute_hash` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+    if ((compute_hash == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_004: [ If `initial_bucket_size` is 0, `clds_hash_table_create` shall fail and return NULL. ]*/
+        (initial_bucket_size == 0) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_005: [ If `clds_hazard_pointers` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+        (clds_hazard_pointers == NULL))
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
         LogError("Zero initial bucket size");
-        clds_hash_table = NULL;
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
         clds_hash_table = (CLDS_HASH_TABLE_HANDLE)malloc(sizeof(CLDS_HASH_TABLE));
         if (clds_hash_table == NULL)
         {
+            /* Codes_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
             LogError("Cannot allocate memory for hash table");
         }
         else
@@ -69,10 +76,17 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
                 {
                     (void)InterlockedExchangePointer(&clds_hash_table->hash_table[i], NULL);
                 }
+
+                goto all_ok;
             }
+
+            free(clds_hash_table);
         }
     }
 
+    clds_hash_table = NULL;
+
+all_ok:
     return clds_hash_table;
 }
 
