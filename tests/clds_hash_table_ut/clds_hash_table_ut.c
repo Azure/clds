@@ -24,6 +24,7 @@ void real_free(void* ptr)
 
 #include "azure_c_shared_utility/gballoc.h"
 #include "clds/clds_singly_linked_list.h"
+#include "clds/clds_hazard_pointers.h"
 
 #undef ENABLE_MOCKS
 
@@ -41,6 +42,17 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
     ASSERT_FAIL(temp_str);
 }
 
+static void test_reclaim_function(void* node)
+{
+    (void)node;
+}
+
+static uint64_t test_compute_hash(void* key)
+{
+    (void)key;
+    return 0;
+}
+
 BEGIN_TEST_SUITE(clds_hash_table_unittests)
 
 TEST_SUITE_INITIALIZE(suite_init)
@@ -54,6 +66,8 @@ TEST_SUITE_INITIALIZE(suite_init)
 
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, real_malloc);
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
+
+    REGISTER_UMOCK_ALIAS_TYPE(RECLAIM_FUNC, void*);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -81,15 +95,24 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* clds_hash_table_create */
 
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create(test_reclaim_function);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
 
     // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
+    clds_hash_table_destroy(hash_table);
 }
 
 END_TEST_SUITE(clds_hash_table_unittests)
