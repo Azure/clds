@@ -342,4 +342,28 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
+/* clds_hash_table_insert */
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
+TEST_FUNCTION(clds_hash_table_destroy_frees_the_hash_table_resources)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create(test_reclaim_function);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+
+    // act
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 END_TEST_SUITE(clds_hash_table_unittests)

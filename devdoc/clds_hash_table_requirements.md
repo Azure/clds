@@ -9,6 +9,10 @@ The module provides the following functionality:
 
 All operations can be concurrent with other operations of the same or different kind.
 
+No uniqueness in enforced yet on the hash table.
+That means that multiple keys could be inserted succesfully.
+When deleting a key, the first found key would be deleted.
+
 ## Exposed API
 
 ```c
@@ -63,13 +67,23 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_012: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
 
+**SRS_CLDS_HASH_TABLE_01_018: [** `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. **]**
+
+**SRS_CLDS_HASH_TABLE_01_019: [** If no singly linked list exists at the determined bucket index then a new list shall be created. **]**
+
+**SRS_CLDS_HASH_TABLE_01_020: [** A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_021: [** The new singly linke dlist node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_022: [** If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
+
 ### clds_hash_table_delete
 
 ```c
 MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
 ```
 
-**SRS_CLDS_HASH_TABLE_01_013: [** `clds_hash_table_insert` shall delete a key from the hash table. **]**
+**SRS_CLDS_HASH_TABLE_01_013: [** `clds_hash_table_delete` shall delete a key from the hash table. **]**
 
 **SRS_CLDS_HASH_TABLE_01_014: [** On success `clds_hash_table_delete` shall return 0. **]**
 
