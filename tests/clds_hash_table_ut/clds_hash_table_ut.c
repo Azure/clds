@@ -30,6 +30,7 @@ void real_free(void* ptr)
 
 #include "clds/clds_hash_table.h"
 #include "../reals/real_clds_hazard_pointers.h"
+#include "../reals/real_clds_singly_linked_list.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
 static TEST_MUTEX_HANDLE g_dllByDll;
@@ -66,12 +67,15 @@ TEST_SUITE_INITIALIZE(suite_init)
     umock_c_init(on_umock_c_error);
 
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
+    REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS();
 
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, real_malloc);
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
 
     REGISTER_UMOCK_ALIAS_TYPE(RECLAIM_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_HANDLE, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_SINGLY_LINKED_LIST_HANDLE, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_THREAD_HANDLE, void*);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -345,21 +349,32 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 /* clds_hash_table_insert */
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-TEST_FUNCTION(clds_hash_table_destroy_frees_the_hash_table_resources)
+TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create(test_reclaim_function);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
+    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
+    CLDS_SINGLY_LINKED_LIST_ITEM* linked_list_item;
+    int result;
     hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+        .CaptureReturn(&linked_list);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
+        .CaptureReturn(&linked_list_item);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
+        .ValidateArgumentValue_clds_singly_linked_list(&linked_list)
+        .ValidateArgumentValue_item(&linked_list_item);
 
     // act
+    result = clds_hash_table_insert(hash_table, (void*)0x1, (void*)0x4242, hazard_pointers_thread);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result);
 
     // cleanup
     clds_hash_table_destroy(hash_table);

@@ -10,10 +10,12 @@ ${theseTestsName}.c
 set(${theseTestsName}_c_files
 ../../src/clds_hash_table.c
 ../reals/real_clds_hazard_pointers.c
+../reals/real_clds_singly_linked_list.c
 )
 
 set(${theseTestsName}_h_files
 ../reals/real_clds_hazard_pointers.h
+../reals/real_clds_singly_linked_list.h
 )
 
 build_c_test_artifacts(${theseTestsName} ON "tests/clds_tests")
