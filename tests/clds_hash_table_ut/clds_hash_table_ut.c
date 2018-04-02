@@ -19,6 +19,7 @@ void real_free(void* ptr)
 }
 
 #include "umock_c.h"
+#include "umocktypes_stdint.h"
 
 #define ENABLE_MOCKS
 
@@ -57,12 +58,18 @@ BEGIN_TEST_SUITE(clds_hash_table_unittests)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
+    int result;
+
     TEST_INITIALIZE_MEMORY_DEBUG(g_dllByDll);
 
     test_serialize_mutex = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 
-    umock_c_init(on_umock_c_error);
+    result = umock_c_init(on_umock_c_error);
+    ASSERT_ARE_EQUAL(int, 0, result, "umock_c_init failed");
+
+    result = umocktypes_stdint_register_types();
+    ASSERT_ARE_EQUAL(int, 0, result, "umocktypes_stdint_register_types failed");
 
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS();
@@ -557,6 +564,46 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
         .CaptureReturn(&linked_list_item);
     STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
+        .ValidateArgumentValue_item(&linked_list_item);
+
+    // act
+    result = clds_hash_table_insert(hash_table, (void*)0x2, (void*)0x4242, hazard_pointers_thread);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
+TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_another_list)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create(test_reclaim_function);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
+    CLDS_SINGLY_LINKED_LIST_ITEM* linked_list_item;
+    int result;
+    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    (void)clds_hash_table_insert(hash_table, (void*)0x1, (void*)0x4242, hazard_pointers_thread);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
+        .SetReturn(1);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+        .CaptureReturn(&linked_list);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
+        .CaptureReturn(&linked_list_item);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
+        .ValidateArgumentValue_clds_singly_linked_list(&linked_list)
         .ValidateArgumentValue_item(&linked_list_item);
 
     // act
