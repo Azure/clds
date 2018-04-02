@@ -73,7 +73,7 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_020: [** A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_021: [** The new singly linke dlist node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. **]**
+**SRS_CLDS_HASH_TABLE_01_021: [** The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_022: [** If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
 
