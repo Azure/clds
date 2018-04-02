@@ -203,7 +203,7 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
     return result;
 }
 
-void clds_hazard_pointers_release(CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer_record)
+void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer_record)
 {
     if (clds_hazard_pointer_record == NULL)
     {
@@ -211,6 +211,7 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_
     }
     else
     {
+        (void)clds_hazard_pointers_thread;
         (void)InterlockedExchangePointer(&clds_hazard_pointer_record->node, NULL);
 
         // here we should remove the hazard pointer from the list

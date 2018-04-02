@@ -176,7 +176,7 @@ TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer)
     hazard_pointer = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, pointer_1);
 
     // act
-    clds_hazard_pointers_release(hazard_pointer);
+    clds_hazard_pointers_release(clds_hazard_pointers_thread, hazard_pointer);
 
     // assert
     ASSERT_IS_NOT_NULL(hazard_pointer);

@@ -86,7 +86,7 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                     if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
                     {
                         // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
-                        clds_hazard_pointers_release(current_item_hp);
+                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                         restart_needed = true;
                         break;
                     }
@@ -125,7 +125,7 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                     else
                                     {
                                         // delete succesfull
-                                        clds_hazard_pointers_release(current_item_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                         // reclaim the memory
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
@@ -147,10 +147,10 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                         // delete succesfull, no-one deleted the left node in the meanwhile
                                         if (previous_hp != NULL)
                                         {
-                                            clds_hazard_pointers_release(previous_hp);
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                                         }
 
-                                        clds_hazard_pointers_release(current_item_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                                         restart_needed = false;
                                         break;
                                     }
@@ -163,7 +163,7 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                             if (previous_hp != NULL)
                             {
                                 // let go of previous hazard pointer
-                                clds_hazard_pointers_release(previous_hp);
+                                clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                             }
 
                             previous_hp = current_item_hp;
@@ -344,7 +344,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                         if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
                         {
                             // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
-                            clds_hazard_pointers_release(current_item_hp);
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                             restart_needed = true;
                             break;
                         }
@@ -364,7 +364,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                                 if (previous_hp != NULL)
                                 {
                                     // let go of previous hazard pointer
-                                    clds_hazard_pointers_release(previous_hp);
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                                 }
 
                                 previous_hp = current_item_hp;
