@@ -41,19 +41,15 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     }
     else
     {
-        CLDS_SINGLY_LINKED_LIST_ITEM* current_item;
+        CLDS_SINGLY_LINKED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
 
         // go through all the items and free them
-        do
+        while (current_item != NULL)
         {
-            current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
-            if (current_item != NULL)
-            {
-                CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
-                item_cleanup_callback(item_cleanup_callback_context, current_item);
-                current_item = next_item;
-            }
-        } while (current_item != NULL);
+            CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+            item_cleanup_callback(item_cleanup_callback_context, current_item);
+            current_item = next_item;
+        } 
 
         free(clds_singly_linked_list);
     }
