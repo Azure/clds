@@ -133,11 +133,6 @@ static int delete_thread(void* arg)
     return result;
 }
 
-static void reclaim_function(void* ptr)
-{
-    free(ptr);
-}
-
 int clds_singly_linked_list_perf_main(void)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
@@ -147,7 +142,7 @@ int clds_singly_linked_list_perf_main(void)
     size_t i;
     size_t j;
 
-    clds_hazard_pointers = clds_hazard_pointers_create(reclaim_function);
+    clds_hazard_pointers = clds_hazard_pointers_create();
     if (clds_hazard_pointers == NULL)
     {
         LogError("Error creating hazard pointers");

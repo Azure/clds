@@ -27,13 +27,13 @@ extern "C"
 #include <stddef.h>
 #endif
 
-CLDS_HAZARD_POINTERS_HANDLE real_clds_hazard_pointers_create(RECLAIM_FUNC reclaim_func);
+CLDS_HAZARD_POINTERS_HANDLE real_clds_hazard_pointers_create(void);
 void real_clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers);
 CLDS_HAZARD_POINTERS_THREAD_HANDLE real_clds_hazard_pointers_register_thread(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers);
 void real_clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread);
 CLDS_HAZARD_POINTER_RECORD_HANDLE real_clds_hazard_pointers_acquire(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node);
 void real_clds_hazard_pointers_release(CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer_record);
-void real_clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node);
+void real_clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node, RECLAIM_FUNC reclaim_func);
 
 #ifdef __cplusplus
 }

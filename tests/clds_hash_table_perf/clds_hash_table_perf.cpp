@@ -138,11 +138,6 @@ static uint64_t test_compute_hash(void* key)
     return (uint64_t)MurmurHash2(test_key, (int)strlen(test_key), 0);
 }
 
-static void reclaim_function(void* ptr)
-{
-    free(ptr);
-}
-
 int clds_hash_table_perf_main(void)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
@@ -152,7 +147,7 @@ int clds_hash_table_perf_main(void)
     size_t i;
     size_t j;
 
-    clds_hazard_pointers = clds_hazard_pointers_create(reclaim_function);
+    clds_hazard_pointers = clds_hazard_pointers_create();
     if (clds_hazard_pointers == NULL)
     {
         LogError("Error creating hazard pointers");

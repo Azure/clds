@@ -88,7 +88,7 @@ TEST_FUNCTION(clds_hazard_pointers_create_succeeds)
     // arrange
 
     // act
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
 
     // assert
     ASSERT_IS_NOT_NULL(clds_hazard_pointers);
@@ -102,7 +102,7 @@ TEST_FUNCTION(clds_hazard_pointers_create_succeeds)
 TEST_FUNCTION(clds_hazard_pointers_destroy_frees_the_resources)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
 
     // act
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -115,7 +115,7 @@ TEST_FUNCTION(clds_hazard_pointers_destroy_frees_the_resources)
 TEST_FUNCTION(clds_hazard_pointers_register_thread_succeeds)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
 
     // act
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
@@ -132,7 +132,7 @@ TEST_FUNCTION(clds_hazard_pointers_register_thread_succeeds)
 TEST_FUNCTION(clds_hazard_pointers_unregister_thread_frees_the_thread_specific_data)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
 
     // act
@@ -149,7 +149,7 @@ TEST_FUNCTION(clds_hazard_pointers_unregister_thread_frees_the_thread_specific_d
 TEST_FUNCTION(clds_hazard_pointer_acquire_succeeds)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
@@ -169,7 +169,7 @@ TEST_FUNCTION(clds_hazard_pointer_acquire_succeeds)
 TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
@@ -188,7 +188,7 @@ TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer)
 TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_reclaim_the_pointer)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
@@ -198,7 +198,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1);
+    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1, test_reclaim_func);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -210,7 +210,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
 TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_reclaims_the_memory)
 {
     // arrange
-    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create(test_reclaim_func);
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     void* pointer_1 = (void*)0x4242;
     umock_c_reset_all_calls();
@@ -220,7 +220,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_r
     STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
 
     // act
-    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1);
+    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1, test_reclaim_func);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());

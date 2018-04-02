@@ -32,6 +32,19 @@ static bool compare_item_by_ptr(void* item_compare_context, CLDS_SINGLY_LINKED_L
     return result;
 }
 
+static void internal_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    if (InterlockedDecrement(&item->ref_count) == 0)
+    {
+        free((void*)item);
+    }
+}
+
+static void reclaim_list_node(void* node)
+{
+    internal_destroy((CLDS_SINGLY_LINKED_LIST_ITEM*)node);
+}
+
 static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
 {
     int result = 0;
@@ -113,6 +126,9 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                     {
                                         // delete succesfull
                                         clds_hazard_pointers_release(current_item_hp);
+
+                                        // reclaim the memory
+                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
                                         restart_needed = false;
                                         break;
                                     }
@@ -391,9 +407,6 @@ void clds_singly_linked_list_node_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
     }
     else
     {
-        if (InterlockedDecrement(&item->ref_count) == 0)
-        {
-            free((void*)item);
-        }
+        internal_destroy(item);
     }
 }
