@@ -40,7 +40,7 @@ typedef struct C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
 clds_singly_linked_list_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_type)), offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), item), offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record));
 
 #define CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(record_type, ptr) \
-(record_type*)clds_singly_linked_list_node_destroy(ptr, offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record));
+clds_singly_linked_list_node_destroy(ptr);
 
 #define CLDS_SINGLY_LINKED_LIST_GET_VALUE(record_type, ptr) \
 ((record_type*)((unsigned char*)ptr + offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))

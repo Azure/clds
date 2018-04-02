@@ -90,6 +90,12 @@ all_ok:
     return clds_hash_table;
 }
 
+static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    (void)context;
+    CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, item);
+}
+
 void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
 {
     if (clds_hash_table == NULL)
@@ -99,7 +105,21 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     }
     else
     {
+        LONG i;
+
         /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
+        for (i = 0; i < clds_hash_table->bucket_count; i++)
+        {
+            if (clds_hash_table->hash_table[i] != NULL)
+            {
+                CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[i], NULL, NULL);
+                if (linked_list != NULL)
+                {
+                    clds_singly_linked_list_destroy(linked_list, singly_linked_list_item_cleanup, NULL);
+                }
+            }
+        }
+
         free(clds_hash_table->hash_table);
         free(clds_hash_table);
     }
