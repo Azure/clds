@@ -245,7 +245,7 @@ bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
     bool result;
     HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
 
-    if (strcmp(hash_table_item->key, item_compare_context) != 0)
+    if (hash_table_item->key != item_compare_context)
     {
         result = false;
     }
@@ -285,24 +285,14 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CL
         }
         else
         {
-            // now put the list in the bucket
-            CLDS_SINGLY_LINKED_LIST_ITEM* list_item = clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
-            if (list_item == NULL)
+            if (clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, key) != 0)
             {
-                // not found
+                LogError("Error deleting item");
                 result = __FAILURE__;
             }
             else
             {
-                if (clds_singly_linked_list_delete(bucket_list, list_item, clds_hazard_pointers_thread) != 0)
-                {
-                    LogError("Error deleting item");
-                    result = __FAILURE__;
-                }
-                else
-                {
-                    result = 0;
-                }
+                result = 0;
             }
         }
     }
