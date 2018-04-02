@@ -261,8 +261,12 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CL
 {
     int result;
 
+    /* Codes_SRS_CLDS_HASH_TABLE_01_015: [ If `clds_hash_table` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
     if ((clds_hash_table == NULL) ||
-        (key == NULL))
+        /* Codes_SRS_CLDS_HASH_TABLE_01_016: [ If `key` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
+        (key == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_017: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
+        (clds_hazard_pointers_thread == NULL))
     {
         LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
         result = __FAILURE__;
@@ -292,6 +296,7 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CL
             }
             else
             {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_014: [ On success `clds_hash_table_delete` shall return 0. ]*/
                 result = 0;
             }
         }
