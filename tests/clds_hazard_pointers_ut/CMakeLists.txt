@@ -8,7 +8,7 @@ ${theseTestsName}.c
 )
 
 set(${theseTestsName}_c_files
-../../src/clds_hazard_pointers.cpp
+../../src/clds_hazard_pointers.c
 )
 
 set(${theseTestsName}_h_files

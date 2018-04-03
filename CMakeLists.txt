@@ -63,7 +63,7 @@ set(clds_h_files
 set(clds_c_files
     ./src/clds_hash_table.c
     ./src/clds_st_hash_set.c
-    ./src/clds_hazard_pointers.cpp
+    ./src/clds_hazard_pointers.c
     ./src/clds_singly_linked_list.c
 )
 

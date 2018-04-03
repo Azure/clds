@@ -8,6 +8,7 @@
 #include "azure_c_shared_utility/threadapi.h"
 #include "azure_c_shared_utility/xlogging.h"
 #include "azure_c_shared_utility/tickcounter.h"
+#include "azure_c_shared_utility/uuid.h"
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
 
@@ -16,7 +17,7 @@
 
 typedef struct TEST_ITEM_TAG
 {
-    char key[20];
+    char key[64];
 } TEST_ITEM;
 
 typedef struct THREAD_DATA_TAG
@@ -161,6 +162,8 @@ int clds_hash_table_perf_main(void)
         }
         else
         {
+            LogInfo("Generating data");
+
             thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
             if (thread_data == NULL)
             {
@@ -176,14 +179,32 @@ int clds_hash_table_perf_main(void)
                     for (j = 0; j < INSERT_COUNT; j++)
                     {
                         thread_data[i].items[j] = (TEST_ITEM*)malloc(sizeof(TEST_ITEM));
-                        if (thread_data[i].items == NULL)
+                        if (thread_data[i].items[j] == NULL)
                         {
                             LogError("Error allocating test item");
                             break;
                         }
                         else
                         {
-                            (void)sprintf(thread_data[i].items[j]->key, "%zu_%zu", i, j);
+                            UUID uuid;
+                            if (UUID_generate(&uuid) != 0)
+                            {
+                                LogError("Cannot get uuid");
+                                break;
+                            }
+                            else
+                            {
+                                char* uuid_string = UUID_to_string(&uuid);
+                                if (uuid_string == NULL)
+                                {
+                                    LogError("Cannot get uuid string");
+                                }
+                                else
+                                {
+                                    (void)sprintf(thread_data[i].items[j]->key, "%zu_%s", i, UUID_to_string(&uuid));
+                                    free(uuid_string);
+                                }
+                            }
                         }
                     }
 
@@ -205,6 +226,8 @@ int clds_hash_table_perf_main(void)
                 else
                 {
                     // insert test
+
+                    LogInfo("Starting test");
 
                     for (i = 0; i < THREAD_COUNT; i++)
                     {
