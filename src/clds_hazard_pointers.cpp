@@ -131,6 +131,7 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                         {
                             prev_reclaim_entry->next = current_reclaim_entry->next;
                             free(current_reclaim_entry);
+                            current_reclaim_entry = prev_reclaim_entry->next;
                         }
 
                         clds_hazard_pointers_thread->reclaim_list_entry_count--;
