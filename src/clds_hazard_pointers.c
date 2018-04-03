@@ -8,6 +8,8 @@
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_atomics.h"
 
+#define MAX_PENDING_RECLAIM_NODES 128
+
 typedef struct CLDS_HAZARD_POINTER_RECORD_TAG
 {
     void* node;
@@ -29,6 +31,7 @@ typedef struct CLDS_HAZARD_POINTERS_THREAD_TAG
     CLDS_HAZARD_POINTER_RECORD* pointers;
     CLDS_RECLAIM_LIST_ENTRY* reclaim_list;
     volatile LONG active;
+    size_t reclaim_list_entry_count;
 } CLDS_HAZARD_POINTERS_THREAD;
 
 typedef struct CLDS_HAZARD_POINTERS_TAG
@@ -98,6 +101,7 @@ CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZ
         {
             CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL, NULL);
             clds_hazard_pointers_thread->next = current_threads_head;
+            clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->pointers, NULL);
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->free_pointers, NULL);
             (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->reclaim_list, NULL);
@@ -211,10 +215,38 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
     }
     else
     {
-        (void)clds_hazard_pointers_thread;
+        // remove it from the hazard pointers list for this thread, this thread is the only one removing
+        // so no contention on the list
+        CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hazard_pointer = NULL;
+        CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = InterlockedCompareExchangePointer(&clds_hazard_pointers_thread->pointers, NULL, NULL);
+
         (void)InterlockedExchangePointer(&clds_hazard_pointer_record->node, NULL);
 
-        // here we should remove the hazard pointer from the list
+        while (clds_hazard_pointer != NULL)
+        {
+            if (clds_hazard_pointer == clds_hazard_pointer_record)
+            {
+                if (previous_hazard_pointer != NULL)
+                {
+                    (void)InterlockedExchangePointer(&previous_hazard_pointer->next, clds_hazard_pointer->next);
+                }
+                else
+                {
+                    (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->pointers, clds_hazard_pointer->next);
+                }
+
+                break;
+            }
+            else
+            {
+                previous_hazard_pointer = clds_hazard_pointer;
+                clds_hazard_pointer = clds_hazard_pointer->next;
+            }
+        }
+
+        // insert it in the free list
+        clds_hazard_pointer_record->next = InterlockedCompareExchangePointer(&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+        (void)InterlockedExchangePointer(&clds_hazard_pointers_thread->free_pointers, clds_hazard_pointer_record);
     }
 }
 
@@ -243,85 +275,88 @@ void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
 
             // add the pointer to the reclaim list, no other thread has access to this list, so no Interlocked needed
             clds_hazard_pointers_thread->reclaim_list = reclaim_list_entry;
-
-            // go through all pointers in the reclaim list
-            CLDS_RECLAIM_LIST_ENTRY* current_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
-            CLDS_RECLAIM_LIST_ENTRY* prev_reclaim_entry = NULL;
-            while (current_reclaim_entry != NULL)
+            clds_hazard_pointers_thread->reclaim_list_entry_count++;
+            if (clds_hazard_pointers_thread->reclaim_list_entry_count > MAX_PENDING_RECLAIM_NODES)
             {
-                // this is the scan for the pointers
-                bool reclaim_node = true;
-
-                // go through all hazard pointers of all threads, no thread should be able to get a hazard pointer after this point
-                CLDS_HAZARD_POINTERS_THREAD_HANDLE current_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL, NULL);
-                while (current_thread != NULL)
+                // go through all pointers in the reclaim list
+                CLDS_RECLAIM_LIST_ENTRY* current_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
+                CLDS_RECLAIM_LIST_ENTRY* prev_reclaim_entry = NULL;
+                while (current_reclaim_entry != NULL)
                 {
-                    CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointer((volatile PVOID*)&current_thread->next, NULL, NULL);
-                    if (InterlockedAdd(&current_thread->active, 0) == 1)
+                    // this is the scan for the pointers
+                    bool reclaim_node = true;
+
+                    // go through all hazard pointers of all threads, no thread should be able to get a hazard pointer after this point
+                    CLDS_HAZARD_POINTERS_THREAD_HANDLE current_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL, NULL);
+                    while (current_thread != NULL)
                     {
-                        // look at the pointers of this thread, if it gets unregistered in the meanwhile we won't care
-                        // if it gets registered again we also don't care as for sure it does not have our hazard pointer anymore
-
-                        CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = InterlockedCompareExchangePointer(&current_thread->pointers, NULL, NULL);
-                        while (clds_hazard_pointer != NULL)
+                        CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointer((volatile PVOID*)&current_thread->next, NULL, NULL);
+                        if (InterlockedAdd(&current_thread->active, 0) == 1)
                         {
-                            CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_pointer = InterlockedCompareExchangePointer(&clds_hazard_pointer->next, NULL, NULL);
+                            // look at the pointers of this thread, if it gets unregistered in the meanwhile we won't care
+                            // if it gets registered again we also don't care as for sure it does not have our hazard pointer anymore
 
-                            if (InterlockedCompareExchangePointer(&clds_hazard_pointer->node, NULL, NULL) == current_reclaim_entry->node)
+                            CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = InterlockedCompareExchangePointer(&current_thread->pointers, NULL, NULL);
+                            while (clds_hazard_pointer != NULL)
                             {
-                                // leave it in the reclaim list
+                                if (InterlockedCompareExchangePointer(&clds_hazard_pointer->node, NULL, NULL) == current_reclaim_entry->node)
+                                {
+                                    // leave it in the reclaim list
+                                    break;
+                                }
+                                else
+                                {
+                                    // go on ...
+                                    clds_hazard_pointer = InterlockedCompareExchangePointer(&clds_hazard_pointer->next, NULL, NULL);
+                                }
+                            }
+
+                            if (clds_hazard_pointer != NULL)
+                            {
+                                // found, oops, we should not reclaim this one, leave it in the reclaim list
+                                reclaim_node = false;
                                 break;
                             }
                             else
                             {
-                                // go on ...
-                                clds_hazard_pointer = next_hazard_pointer;
+                                // not found, go to the next thread
                             }
-                        }
-
-                        if (clds_hazard_pointer != NULL)
-                        {
-                            // found, oops, we should not reclaim this one, leave it in the reclaim list
-                            reclaim_node = false;
-                            break;
                         }
                         else
                         {
-                            // not found, go to the next thread
+                            // not active, skip to the next thread
                         }
+
+                        current_thread = next_thread;
+                    }
+
+                    if (reclaim_node)
+                    {
+                        // node is safe to be reclaimed
+                        current_reclaim_entry->reclaim(current_reclaim_entry->node);
+
+                        // now remove it from the reclaim list
+                        if (prev_reclaim_entry == NULL)
+                        {
+                            // this is the head of the reclaim list
+                            clds_hazard_pointers_thread->reclaim_list = current_reclaim_entry->next;
+                            free(current_reclaim_entry);
+                            current_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
+                        }
+                        else
+                        {
+                            prev_reclaim_entry->next = current_reclaim_entry->next;
+                            free(current_reclaim_entry);
+                        }
+
+                        clds_hazard_pointers_thread->reclaim_list_entry_count--;
                     }
                     else
                     {
-                        // not active, skip to the next thread
+                        // not safe, sorry, shall still have it around, move to next reclaim entry
+                        prev_reclaim_entry = current_reclaim_entry;
+                        current_reclaim_entry = current_reclaim_entry->next;
                     }
-
-                    current_thread = next_thread;
-                }
-
-                if (reclaim_node)
-                {
-                    // node is safe to be reclaimed
-                    current_reclaim_entry->reclaim(current_reclaim_entry->node);
-
-                    // now remove it from the reclaim list
-                    if (prev_reclaim_entry == NULL)
-                    {
-                        // this is the head of the reclaim list
-                        clds_hazard_pointers_thread->reclaim_list = current_reclaim_entry->next;
-                        free(current_reclaim_entry);
-                        current_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
-                    }
-                    else
-                    {
-                        free(current_reclaim_entry);
-                        prev_reclaim_entry->next = current_reclaim_entry->next;
-                    }
-                }
-                else
-                {
-                    // not safe, sorry, shall still have it around, move to next node
-                    prev_reclaim_entry = current_reclaim_entry;
-                    current_reclaim_entry = current_reclaim_entry->next;
                 }
             }
         }
