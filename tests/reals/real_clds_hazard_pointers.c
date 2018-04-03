@@ -10,4 +10,4 @@
 #define clds_hazard_pointers_release real_clds_hazard_pointers_release
 #define clds_hazard_pointers_reclaim real_clds_hazard_pointers_reclaim
 
-#include "../src/clds_hazard_pointers.c"
+#include "../src/clds_hazard_pointers.cpp"

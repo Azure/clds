@@ -11,8 +11,8 @@
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
 
-#define THREAD_COUNT 4
-#define INSERT_COUNT 20000
+#define THREAD_COUNT 8
+#define INSERT_COUNT 100000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -170,11 +170,11 @@ int clds_hash_table_perf_main(void)
             {
                 for (i = 0; i < THREAD_COUNT; i++)
                 {
+                    thread_data[i].clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
                     thread_data[i].hash_table = hash_table;
 
                     for (j = 0; j < INSERT_COUNT; j++)
                     {
-                        thread_data[i].clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
                         thread_data[i].items[j] = (TEST_ITEM*)malloc(sizeof(TEST_ITEM));
                         if (thread_data[i].items == NULL)
                         {

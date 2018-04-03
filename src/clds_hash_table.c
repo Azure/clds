@@ -15,7 +15,6 @@
 
 typedef struct CLDS_HASH_TABLE_TAG
 {
-    volatile LONG item_count_until_resize;
     volatile LONG bucket_count;
     COMPUTE_HASH_FUNC compute_hash;
     CLDS_SINGLY_LINKED_LIST_HANDLE* hash_table;
@@ -69,7 +68,6 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
                 clds_hash_table->compute_hash = compute_hash;
 
                 // set the initial bucket count
-                (void)InterlockedExchange(&clds_hash_table->item_count_until_resize, 1000000);
                 (void)InterlockedExchange(&clds_hash_table->bucket_count, initial_bucket_size);
 
                 for (i = 0; i < initial_bucket_size; i++)
@@ -141,97 +139,85 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
     }
     else
     {
-        (void)value;
+        bool restart_needed;
+        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
 
-        // check if we should resize first
-        if (InterlockedDecrement(&clds_hash_table->item_count_until_resize) == 0)
-        {
-            // resize the table
-            LogInfo("Table resize needed");
-            result = __FAILURE__;
-        }
-        else
-        {
-            bool restart_needed;
-            CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
-
-            // compute the hash
-            uint64_t hash = clds_hash_table->compute_hash(key);
+        // compute the hash
+        uint64_t hash = clds_hash_table->compute_hash(key);
             
-            // find the bucket
-            uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
+        // find the bucket
+        uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
 
-            do
+        do
+        {
+            // do we have a list here or do we create one?
+            bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
+            if (bucket_list != NULL)
             {
-                // do we have a list here or do we create one?
-                bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
-                if (bucket_list != NULL)
+                restart_needed = false;
+            }
+            else
+            {
+                // create a list
+                /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
+                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
+                if (bucket_list == NULL)
                 {
+                    LogError("Cannot allocate list for hash table bucket");
                     restart_needed = false;
                 }
                 else
                 {
-                    // create a list
-                    /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-                    bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
-                    if (bucket_list == NULL)
+                    // now put the list in the bucket
+                    if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], bucket_list, NULL) != NULL)
                     {
-                        LogError("Cannot allocate list for hash table bucket");
-                        restart_needed = false;
+                        // oops, someone else inserted a new list, just bail on our list and restart
+                        clds_singly_linked_list_destroy(bucket_list, NULL, NULL);
+                        restart_needed = true;
                     }
                     else
                     {
-                        // now put the list in the bucket
-                        if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], bucket_list, NULL) != NULL)
-                        {
-                            // oops, someone else inserted a new list, just bail on our list and restart
-                            clds_singly_linked_list_destroy(bucket_list, NULL, NULL);
-                            restart_needed = true;
-                        }
-                        else
-                        {
-                            // set new list
-                            restart_needed = false;
-                        }
+                        // set new list
+                        restart_needed = false;
                     }
                 }
-            } while (restart_needed);
+            }
+        } while (restart_needed);
 
-            if (bucket_list == NULL)
+        if (bucket_list == NULL)
+        {
+            LogError("Cannot acquire bucket list");
+            result = __FAILURE__;
+        }
+        else
+        {
+            /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
+            CLDS_SINGLY_LINKED_LIST_ITEM* list_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
+            if (list_item == NULL)
             {
-                LogError("Cannot acquire bucket list");
+                LogError("Cannot create hash table entry item");
                 result = __FAILURE__;
             }
             else
             {
-                /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
-                CLDS_SINGLY_LINKED_LIST_ITEM* list_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
-                if (list_item == NULL)
+                HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, list_item);
+                hash_table_item->key = key;
+                hash_table_item->value = value;
+
+                /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
+                if (clds_singly_linked_list_insert(bucket_list, list_item, clds_hazard_pointers_thread) != 0)
                 {
-                    LogError("Cannot create hash table entry item");
+                    LogError("Cannot insert hash table item into list");
                     result = __FAILURE__;
                 }
                 else
                 {
-                    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, list_item);
-                    hash_table_item->key = key;
-                    hash_table_item->value = value;
-
-                    /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-                    if (clds_singly_linked_list_insert(bucket_list, list_item, clds_hazard_pointers_thread) != 0)
-                    {
-                        LogError("Cannot insert hash table item into list");
-                        result = __FAILURE__;
-                    }
-                    else
-                    {
-                        /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
-                        result = 0;
-                        goto all_ok;
-                    }
-
-                    CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, list_item);
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
+                    result = 0;
+                    goto all_ok;
                 }
+
+                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, list_item);
             }
         }
     }
