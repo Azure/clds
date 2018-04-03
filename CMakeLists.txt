@@ -55,12 +55,14 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/inc)
 set(clds_h_files
     ./inc/clds/clds_atomics.h
     ./inc/clds/clds_hash_table.h
+    ./inc/clds/clds_st_hash_set.h
     ./inc/clds/clds_hazard_pointers.h
     ./inc/clds/clds_singly_linked_list.h
 )
 
 set(clds_c_files
     ./src/clds_hash_table.c
+    ./src/clds_st_hash_set.c
     ./src/clds_hazard_pointers.c
     ./src/clds_singly_linked_list.c
 )
