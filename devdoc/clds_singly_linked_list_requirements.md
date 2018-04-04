@@ -47,8 +47,8 @@ typedef bool (*SINGLY_LINKED_LIST_ITEM_COMPARE_CB)(void* item_compare_context, C
 typedef void (*SINGLY_LINKED_LIST_ITEM_CLEANUP_CB)(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
 
 // singly linked list API
-MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
-MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
+MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
+MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list);
 
 MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
 MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
@@ -63,7 +63,7 @@ MOCKABLE_FUNCTION(, void, clds_singly_linked_list_node_destroy, CLDS_SINGLY_LINK
 ### clds_singly_linked_list_create
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
+MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 ```
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_001: [** `clds_singly_linked_list_create` shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. **]**
@@ -71,6 +71,14 @@ MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_crea
 **SRS_CLDS_SINGLY_LINKED_LIST_01_002: [** If any error happens, `clds_singly_linked_list_create` shall fail and return NULL. **]**
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_003: [** If `clds_hazard_pointers` is NULL, `clds_singly_linked_list_create` shall fail and return NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_036: [** `item_cleanup_callback` shall be allowed to be NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_037: [** `item_cleanup_callback_context` shall be allowed to be NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_035: [** `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_038: [** If `item_cleanup_callback` is NULL, no cleanup callbacks shall be triggered for any reclaimed items. **]**
 
 ### clds_singly_linked_list_destroy
 
@@ -82,11 +90,11 @@ MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LI
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_005: [** If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_destroy` shall return. **]**
 
-**SRS_CLDS_SINGLY_LINKED_LIST_01_006: [** If `item_cleanup_callback` is NULL, no cleanup callbacks shall be triggered for the items that are in the list when `clds_singly_linked_list_destroy` is called. **]**
+**SRS_CLDS_SINGLY_LINKED_LIST_01_039: [** Any items still present in the list shall be freed. **]**
 
-**SRS_CLDS_SINGLY_LINKED_LIST_01_007: [** If `item_cleanup_callback` is not NULL, for each item in the list, `item_cleanup_callback` shall be called in order to allow cleaning up resources by the caller. **]**
+**SRS_CLDS_SINGLY_LINKED_LIST_01_040: [** For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. **]**
 
-**SRS_CLDS_SINGLY_LINKED_LIST_01_008: [** `item_cleanup_callback_context` shall be allowed to be NULL regardless of `item_cleanup_callback` being NULL or not. **]**
+**SRS_CLDS_SINGLY_LINKED_LIST_01_041: [** If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. **]**
 
 ### clds_singly_linked_list_insert
 
@@ -121,6 +129,12 @@ MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST
 **SRS_CLDS_SINGLY_LINKED_LIST_01_017: [** If `item` is NULL, `clds_singly_linked_list_delete` shall fail and return a non-zero value. **]**
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_018: [** If the item does not exist in the list, `clds_singly_linked_list_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_042: [** When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_043: [** The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_044: [** If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. **]**
 
 ### clds_singly_linked_list_delete_if
 

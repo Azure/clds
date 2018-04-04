@@ -13,6 +13,8 @@
 typedef struct CLDS_SINGLY_LINKED_LIST_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
+    SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
+    void* item_cleanup_callback_context;
     volatile CLDS_SINGLY_LINKED_LIST_ITEM* head;
 } CLDS_SINGLY_LINKED_LIST;
 
@@ -183,7 +185,7 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
     return result;
 }
 
-CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
+CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list;
 
@@ -205,6 +207,8 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
         {
             // all ok
             clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
+            clds_singly_linked_list->item_cleanup_callback = item_cleanup_callback;
+            clds_singly_linked_list->item_cleanup_callback_context = item_cleanup_callback_context;
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL);
         }
     }
@@ -212,7 +216,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
     return clds_singly_linked_list;
 }
 
-void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
+void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list)
 {
     if (clds_singly_linked_list == NULL)
     {
@@ -226,7 +230,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
         while (current_item != NULL)
         {
             CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
-            item_cleanup_callback(item_cleanup_callback_context, current_item);
+            clds_singly_linked_list->item_cleanup_callback(clds_singly_linked_list->item_cleanup_callback_context, current_item);
             current_item = next_item;
         } 
 

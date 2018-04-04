@@ -91,7 +91,7 @@ all_ok:
 static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     (void)context;
-    CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, item);
+    (void)item;
 }
 
 void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
@@ -113,7 +113,7 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
                 CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[i], NULL, NULL);
                 if (linked_list != NULL)
                 {
-                    clds_singly_linked_list_destroy(linked_list, singly_linked_list_item_cleanup, NULL);
+                    clds_singly_linked_list_destroy(linked_list);
                 }
             }
         }
@@ -160,7 +160,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
             {
                 // create a list
                 /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
+                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers, singly_linked_list_item_cleanup, NULL);
                 if (bucket_list == NULL)
                 {
                     LogError("Cannot allocate list for hash table bucket");
@@ -172,7 +172,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
                     if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], bucket_list, NULL) != NULL)
                     {
                         // oops, someone else inserted a new list, just bail on our list and restart
-                        clds_singly_linked_list_destroy(bucket_list, NULL, NULL);
+                        clds_singly_linked_list_destroy(bucket_list);
                         restart_needed = true;
                     }
                     else

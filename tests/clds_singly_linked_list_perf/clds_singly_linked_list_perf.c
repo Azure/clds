@@ -149,7 +149,7 @@ int clds_singly_linked_list_perf_main(void)
     }
     else
     {
-        singly_linked_list = clds_singly_linked_list_create(clds_hazard_pointers);
+        singly_linked_list = clds_singly_linked_list_create(clds_hazard_pointers, NULL, NULL);
         if (singly_linked_list == NULL)
         {
             LogError("Error creating singly linked list");
@@ -317,7 +317,7 @@ int clds_singly_linked_list_perf_main(void)
                 }
             }
 
-            clds_singly_linked_list_destroy(singly_linked_list, NULL, NULL);
+            clds_singly_linked_list_destroy(singly_linked_list);
         }
 
         clds_hazard_pointers_destroy(clds_hazard_pointers);

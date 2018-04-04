@@ -43,9 +43,10 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
     ASSERT_FAIL(temp_str);
 }
 
-static void test_reclaim_function(void* node)
+static void test_item_cleanup_func(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
-    (void)node;
+    (void)context;
+    (void)item;
 }
 
 MOCK_FUNCTION_WITH_CODE(, uint64_t, test_compute_hash, void*, key)
@@ -116,14 +117,14 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    list = clds_singly_linked_list_create(hazard_pointers);
+    list = clds_singly_linked_list_create(hazard_pointers, test_item_cleanup_func, (void*)0x4242);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NOT_NULL(list);
 
     // cleanup
-    clds_singly_linked_list_destroy(list, NULL, NULL);
+    clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -139,7 +140,7 @@ TEST_FUNCTION(when_allocating_memory_fails_clds_hash_table_create_fails)
         .SetReturn(NULL);
 
     // act
-    list = clds_singly_linked_list_create(hazard_pointers);
+    list = clds_singly_linked_list_create(hazard_pointers, test_item_cleanup_func, (void*)0x4242);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -156,7 +157,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
 
     // act
-    list = clds_singly_linked_list_create(NULL);
+    list = clds_singly_linked_list_create(NULL, test_item_cleanup_func, (void*)0x4242);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
