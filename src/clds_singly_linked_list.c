@@ -189,6 +189,10 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list;
 
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
+
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_singly_linked_list_create` shall fail and return NULL. ]*/
     if (clds_hazard_pointers == NULL)
     {
         LogError("NULL clds_hazard_pointers");
@@ -207,8 +211,11 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
         {
             // all ok
             clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
+
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_035: [ `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. ]*/
             clds_singly_linked_list->item_cleanup_callback = item_cleanup_callback;
             clds_singly_linked_list->item_cleanup_callback_context = item_cleanup_callback_context;
+
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL);
         }
     }
@@ -220,6 +227,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
 {
     if (clds_singly_linked_list == NULL)
     {
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_005: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_destroy` shall return. ]*/
         LogError("NULL clds_singly_linked_list");
     }
     else
@@ -231,9 +239,11 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
         {
             CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
             clds_singly_linked_list->item_cleanup_callback(clds_singly_linked_list->item_cleanup_callback_context, current_item);
+            internal_destroy(current_item);
             current_item = next_item;
         } 
 
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_004: [ `clds_singly_linked_list_destroy` shall free all resources associated with the hazard pointers instance. ]*/
         free(clds_singly_linked_list);
     }
 }
@@ -252,9 +262,6 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     else
     {
         bool restart_needed;
-
-        // increment the ref count since we will hold on to the item
-        (void)InterlockedIncrement(&item->ref_count);
 
         do
         {

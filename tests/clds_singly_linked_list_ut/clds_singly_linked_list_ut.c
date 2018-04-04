@@ -43,15 +43,19 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
     ASSERT_FAIL(temp_str);
 }
 
-static void test_item_cleanup_func(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
-{
-    (void)context;
-    (void)item;
-}
+MOCK_FUNCTION_WITH_CODE(, void, test_item_cleanup_func, void*, context, CLDS_SINGLY_LINKED_LIST_ITEM*, item)
+MOCK_FUNCTION_END()
 
 MOCK_FUNCTION_WITH_CODE(, uint64_t, test_compute_hash, void*, key)
     (void)key;
 MOCK_FUNCTION_END(0)
+
+typedef struct TEST_ITEM_TAG
+{
+    int dummy;
+} TEST_ITEM;
+
+DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(TEST_ITEM)
 
 BEGIN_TEST_SUITE(clds_singly_linked_list_unittests)
 
@@ -162,6 +166,111 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NULL(list);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_hash_table_create_with_NULL_item_cleanup_callback_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    list = clds_singly_linked_list_create(hazard_pointers, NULL, (void*)0x4242);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(list);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_hash_table_create_with_NULL_item_cleanup_callback_context_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    list = clds_singly_linked_list_create(hazard_pointers, test_item_cleanup_func, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(list);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_singly_linked_list_destroy */
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_004: [ `clds_singly_linked_list_destroy` shall free all resources associated with the hazard pointers instance. ]*/
+TEST_FUNCTION(clds_singly_linked_list_destroy_frees_the_allocated_list_resources)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    list = clds_singly_linked_list_create(hazard_pointers, test_item_cleanup_func, NULL);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+
+    // act
+    clds_singly_linked_list_destroy(list);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_005: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_destroy` shall return. ]*/
+TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_handle_returns)
+{
+    // arrange
+
+    // act
+    clds_singly_linked_list_destroy(NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
+TEST_FUNCTION(clds_singly_linked_list_destroy_with_1_item_in_the_list_frees_the_item_and_triggers_user_cleanup_callback)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    list = clds_singly_linked_list_create(hazard_pointers, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+
+    // act
+    clds_singly_linked_list_destroy(list);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 END_TEST_SUITE(clds_singly_linked_list_unittests)
