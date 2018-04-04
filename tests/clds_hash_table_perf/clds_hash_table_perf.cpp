@@ -54,7 +54,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_insert(thread_data->hash_table, thread_data->items[i]->key, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, thread_data->items[i]->key, thread_data->items[i]) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -106,7 +106,7 @@ static int delete_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_delete(thread_data->hash_table, thread_data->items[i]->key, thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, thread_data->items[i]->key) != 0)
                 {
                     LogError("Error deleting");
                     break;
