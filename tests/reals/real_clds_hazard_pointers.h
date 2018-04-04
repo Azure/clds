@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #ifndef REAL_CLDS_HAZARD_POINTERS_H
 #define REAL_CLDS_HAZARD_POINTERS_H
