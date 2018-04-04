@@ -277,6 +277,7 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CL
         {
             if (clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, key) != 0)
             {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
                 LogError("Error deleting item");
                 result = __FAILURE__;
             }
