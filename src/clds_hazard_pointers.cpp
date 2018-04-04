@@ -150,7 +150,6 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
     }
 }
 
-
 CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
@@ -256,6 +255,8 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
     }
     else
     {
+        internal_reclaim(clds_hazard_pointers_thread);
+
         // remove the thread from the thread list
         (void)InterlockedExchange(&clds_hazard_pointers_thread->active, 0);
     }

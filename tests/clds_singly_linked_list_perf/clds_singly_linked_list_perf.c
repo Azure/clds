@@ -11,7 +11,7 @@
 #include "clds_singly_linked_list_perf.h"
 
 #define THREAD_COUNT 10
-#define INSERT_COUNT 10000
+#define INSERT_COUNT 1000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -177,7 +177,7 @@ int clds_singly_linked_list_perf_main(void)
                         for (j = 0; j < INSERT_COUNT; j++)
                         {
                             thread_data[i].items[j] = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-                            if (thread_data[i].items == NULL)
+                            if (thread_data[i].items[j] == NULL)
                             {
                                 LogError("Error allocating test item");
                                 break;
@@ -195,7 +195,7 @@ int clds_singly_linked_list_perf_main(void)
 
                             for (k = 0; k < j; k++)
                             {
-                                free(thread_data[i].items[k]);
+                                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, thread_data[i].items[k]);
                             }
                             break;
                         }
@@ -307,11 +307,12 @@ int clds_singly_linked_list_perf_main(void)
                     {
                         for (j = 0; j < INSERT_COUNT; j++)
                         {
-                            free(thread_data[i].items[j]);
+                            CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, thread_data[i].items[j]);
                         }
+
+                        clds_hazard_pointers_unregister_thread(thread_data[i].clds_hazard_pointers_thread);
                     }
 
-                    clds_hazard_pointers_unregister_thread(thread_data->clds_hazard_pointers_thread);
                     free(thread_data);
                 }
             }

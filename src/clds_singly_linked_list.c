@@ -151,6 +151,10 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                         }
 
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                        // reclaim the memory
+                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
                                         restart_needed = false;
                                         break;
                                     }
@@ -232,6 +236,9 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     else
     {
         bool restart_needed;
+
+        // increment the ref count since we will hold on to the item
+        (void)InterlockedIncrement(&item->ref_count);
 
         do
         {
