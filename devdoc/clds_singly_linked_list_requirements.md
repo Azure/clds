@@ -2,10 +2,11 @@
 
 ## Overview
 
-`clds_singly_linked_list` is module that implements a singly linked list.
+`clds_singly_linked_list` is module that implements a lock free singly linked list.
 The module provides the following functionality:
 - Inserting items in the list
 - Delete an item from the list by its previously obtained pointer
+- Delete an item from the list by using a custom item compare function
 - Find an item in the list by using a custom item compare function
 
 All operations can be concurrent with other operations of the same or different kind.
@@ -37,26 +38,27 @@ typedef struct C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
 clds_singly_linked_list_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_type)), offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), item), offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record));
 
 #define CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(record_type, ptr) \
-(record_type*)clds_singly_linked_list_node_destroy(ptr, offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record));
+clds_singly_linked_list_node_destroy(ptr);
 
 #define CLDS_SINGLY_LINKED_LIST_GET_VALUE(record_type, ptr) \
 ((record_type*)((unsigned char*)ptr + offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))
 
-typedef bool SINGLY_LINKED_LIST_ITEM_COMPARE_CB(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
-typedef void SINGLY_LINKED_LIST_ITEM_CLEANUP_CB(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
+typedef bool (*SINGLY_LINKED_LIST_ITEM_COMPARE_CB)(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
+typedef void (*SINGLY_LINKED_LIST_ITEM_CLEANUP_CB)(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item);
 
 // singly linked list API
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
-MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_ITEM*, item, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void* item_cleanup_callback_context);
+MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 
 MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM*, item, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
 MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM*, item, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete_if, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_ITEM*, clds_singly_linked_list_find, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
 
 // helper APIs for creating/destroying a singly linked list node
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_ITEM*, clds_singly_linked_list_node_create, size_t, node_size, size_t, item_offset, size_t, record_offset);
 MOCKABLE_FUNCTION(, void, clds_singly_linked_list_node_destroy, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
-```
+
 
 ### clds_singly_linked_list_create
 

@@ -55,7 +55,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -107,7 +107,7 @@ static int delete_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
                 {
                     LogError("Error deleting");
                     break;

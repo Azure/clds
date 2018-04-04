@@ -218,7 +218,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     }
 }
 
-int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM* item, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
+int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     int result;
 
@@ -254,7 +254,7 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     return result;
 }
 
-int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM* item, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
+int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     int result;
 
