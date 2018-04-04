@@ -8,7 +8,6 @@
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_atomics.h"
 #include "clds/clds_st_hash_set.h"
-#include "MurmurHash2.h"
 
 #define MAX_PENDING_RECLAIM_NODES 16
 
