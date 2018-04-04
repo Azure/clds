@@ -185,16 +185,28 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
 
 CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
-    CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list = (CLDS_SINGLY_LINKED_LIST_HANDLE)malloc(sizeof(CLDS_SINGLY_LINKED_LIST));
-    if (clds_singly_linked_list == NULL)
+    CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list;
+
+    if (clds_hazard_pointers == NULL)
     {
-        LogError("Cannot allocate memory for the singly linked list");
+        LogError("NULL clds_hazard_pointers");
+        clds_singly_linked_list = NULL;
     }
     else
     {
-        // all ok
-        clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
-        (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL);
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_001: [ `clds_singly_linked_list_create` shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+        clds_singly_linked_list = (CLDS_SINGLY_LINKED_LIST_HANDLE)malloc(sizeof(CLDS_SINGLY_LINKED_LIST));
+        if (clds_singly_linked_list == NULL)
+        {
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_002: [ If any error happens, `clds_singly_linked_list_create` shall fail and return NULL. ]*/
+            LogError("Cannot allocate memory for the singly linked list");
+        }
+        else
+        {
+            // all ok
+            clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
+            (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL);
+        }
     }
 
     return clds_singly_linked_list;

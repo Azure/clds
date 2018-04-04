@@ -50,8 +50,8 @@ typedef void (*SINGLY_LINKED_LIST_ITEM_CLEANUP_CB)(void* context, CLDS_SINGLY_LI
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
 MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 
-MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM*, item, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
-MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM*, item, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
 MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete_if, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_ITEM*, clds_singly_linked_list_find, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
 
@@ -72,7 +72,7 @@ MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_crea
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_003: [** If `clds_hazard_pointers` is NULL, `clds_singly_linked_list_create` shall fail and return NULL. **]**
 
-### clds_hazard_pointers_destroy
+### clds_singly_linked_list_destroy
 
 ```c
 MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
@@ -91,7 +91,7 @@ MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LI
 ### clds_singly_linked_list_insert
 
 ```c
-MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM*, item, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
 ```
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_009: [** `clds_singly_linked_list_insert` inserts an item in the list. **]**
@@ -107,5 +107,59 @@ MOCKABLE_FUNCTION(, int, clds_singly_linked_list_insert, CLDS_SINGLY_LINKED_LIST
 ### clds_singly_linked_list_delete
 
 ```c
-MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_SINGLY_LINKED_LIST_ITEM*, item, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
 ```
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_014: [** `clds_singly_linked_list_delete` deletes an item from the list by its pointer. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_026: [** On success, `clds_singly_linked_list_delete` shall return 0. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_015: [** If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_016: [** If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_017: [** If `item` is NULL, `clds_singly_linked_list_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_018: [** If the item does not exist in the list, `clds_singly_linked_list_delete` shall fail and return a non-zero value. **]**
+
+### clds_singly_linked_list_delete_if
+
+```c
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_delete_if, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
+```
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_019: [** `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_025: [** On success, `clds_singly_linked_list_delete_if` shall return 0. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_020: [** If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_delete_if` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_021: [** If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_delete_if` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_022: [** If `item_compare_callback` is NULL, `clds_singly_linked_list_delete_if` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_023: [** `item_compare_callback_context` shall be allowed to be NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_024: [** If no item matches the criteria, `clds_singly_linked_list_delete_if` shall fail and return a non-zero value. **]**
+
+### clds_singly_linked_list_find
+
+```c
+MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_ITEM*, clds_singly_linked_list_find, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
+```
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_027: [** `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_029: [** On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_028: [** If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_030: [** If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_031: [** If `item_compare_callback` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_032: [** `item_compare_callback_context` shall be allowed to be NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_033: [** If no item satisdying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_SINGLY_LINKED_LIST_01_034: [** `clds_singly_linked_list_find` shall return a pointer to the item with the reference ount already incremented so that it can be safely used by the caller. **]**
