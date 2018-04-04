@@ -92,3 +92,5 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_ha
 **SRS_CLDS_HASH_TABLE_01_016: [** If `key` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
 
 **SRS_CLDS_HASH_TABLE_01_017: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_HASH_TABLE_01_023: [** If the desired key is not found in the hash table, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
