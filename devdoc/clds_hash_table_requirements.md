@@ -1,4 +1,4 @@
-# clds_hash_table requirements
+# `clds_hash_table` requirements
 
 ## Overview
 
