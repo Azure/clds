@@ -66,7 +66,12 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
             volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
             if (current_item == NULL)
             {
-                LogError("Not found");
+                if (previous_hp != NULL)
+                {
+                    // let go of previous hazard pointer
+                    clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                }
+
                 restart_needed = false;
                 result = __FAILURE__;
                 break;
@@ -77,6 +82,12 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                 CLDS_HAZARD_POINTER_RECORD_HANDLE current_item_hp = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1));
                 if (current_item_hp == NULL)
                 {
+                    if (previous_hp != NULL)
+                    {
+                        // let go of previous hazard pointer
+                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                    }
+
                     LogError("Cannot acquire hazard pointer");
                     restart_needed = false;
                     result = __FAILURE__;
@@ -87,6 +98,12 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                     // now make sure the item has not changed
                     if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
                     {
+                        if (previous_hp != NULL)
+                        {
+                            // let go of previous hazard pointer
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                        }
+
                         // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                         restart_needed = true;
@@ -103,6 +120,14 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                             // mark that the node is deleted
                             if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
                             {
+                                if (previous_hp != NULL)
+                                {
+                                    // let go of previous hazard pointer
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                }
+
+                                clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
                                 // restart
                                 restart_needed = true;
                                 break;
@@ -121,12 +146,14 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                     {
                                         // head changed, restart
                                         (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
                                         restart_needed = true;
                                         break;
                                     }
                                     else
                                     {
-                                        // delete succesfull
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                         // reclaim the memory
@@ -141,17 +168,17 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                     {
                                         // someone is deleting our left node, restart, but first unlock our own delete mark
                                         (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
                                         restart_needed = true;
                                         break;
                                     }
                                     else
                                     {
                                         // delete succesfull, no-one deleted the left node in the meanwhile
-                                        if (previous_hp != NULL)
-                                        {
-                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                        }
-
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                         // reclaim the memory
@@ -352,7 +379,12 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                 volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
                 if (current_item == NULL)
                 {
-                    LogError("Not found");
+                    if (previous_hp != NULL)
+                    {
+                        // let go of previous hazard pointer
+                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                    }
+
                     restart_needed = false;
                     result = NULL;
                     break;
@@ -363,6 +395,12 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                     CLDS_HAZARD_POINTER_RECORD_HANDLE current_item_hp = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1));
                     if (current_item_hp == NULL)
                     {
+                        if (previous_hp != NULL)
+                        {
+                            // let go of previous hazard pointer
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                        }
+
                         LogError("Cannot acquire hazard pointer");
                         restart_needed = false;
                         result = NULL;
@@ -373,6 +411,12 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                         // now make sure the item has not changed
                         if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
                         {
+                            if (previous_hp != NULL)
+                            {
+                                // let go of previous hazard pointer
+                                clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                            }
+
                             // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
                             clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                             restart_needed = true;
@@ -382,8 +426,16 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                         {
                             if (item_compare_callback(item_compare_callback_context, (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item))
                             {
+                                if (previous_hp != NULL)
+                                {
+                                    // let go of previous hazard pointer
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                }
+
                                 // found it
                                 current_item->ref_count++;
+                                clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
                                 result = (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item;
                                 restart_needed = false;
                                 break;

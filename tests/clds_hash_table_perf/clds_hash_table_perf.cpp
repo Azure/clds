@@ -12,7 +12,7 @@
 #include "MurmurHash2.h"
 
 #define THREAD_COUNT 8
-#define INSERT_COUNT 100000
+#define INSERT_COUNT 10000000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -154,7 +154,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, 1 << 24, clds_hazard_pointers);
+        hash_table = clds_hash_table_create(test_compute_hash, 1024 * 1024, clds_hazard_pointers);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");
