@@ -261,10 +261,13 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     {
         CLDS_SINGLY_LINKED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
 
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
         // go through all the items and free them
         while (current_item != NULL)
         {
             CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
             clds_singly_linked_list->item_cleanup_callback(clds_singly_linked_list->item_cleanup_callback_context, current_item);
             internal_destroy(current_item);
             current_item = next_item;
