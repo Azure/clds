@@ -308,4 +308,29 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_2_items_in_the_list_frees_the
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
+TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_item_cleanup_callback_does_not_trigger_any_callback_for_the_freed_items)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    list = clds_singly_linked_list_create(hazard_pointers, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+
+    // act
+    clds_singly_linked_list_destroy(list);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 END_TEST_SUITE(clds_singly_linked_list_unittests)
