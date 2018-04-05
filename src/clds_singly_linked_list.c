@@ -289,9 +289,15 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
 
     (void)clds_hazard_pointers_thread;
 
-    if (clds_singly_linked_list == NULL)
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+    if ((clds_singly_linked_list == NULL) ||
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_012: [ If `item` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+        (item == NULL) ||
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_013: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+        (clds_hazard_pointers_thread == NULL))
     {
-        LogError("NULL clds_singly_linked_list");
+        LogError("Invalid arguments: clds_singly_linked_list = %p, item = %p, clds_hazard_pointers_thread = %p",
+            clds_singly_linked_list, item, clds_hazard_pointers_thread);
         result = __FAILURE__;
     }
     else
@@ -301,6 +307,7 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
         do
         {
             // get current head
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ `clds_singly_linked_list_insert` inserts an item in the list. ]*/
             item->next = (CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
 
             if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, item, (PVOID)item->next) != item->next)
@@ -313,6 +320,7 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
             }
         } while (restart_needed);
 
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success `clds_singly_linked_list_insert` shall return 0. ]*/
         result = 0;
     }
 

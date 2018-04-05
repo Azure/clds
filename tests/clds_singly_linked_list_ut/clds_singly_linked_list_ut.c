@@ -333,4 +333,127 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_item_cleanup_callback_do
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* clds_singly_linked_list_insert */
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ `clds_singly_linked_list_insert` inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success `clds_singly_linked_list_insert` shall return 0. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    int result;
+    list = clds_singly_linked_list_create(hazard_pointers, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_singly_linked_list_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    int result;
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_insert(NULL, hazard_pointers_thread, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_NOT_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_012: [ If `item` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    int result;
+    list = clds_singly_linked_list_create(hazard_pointers, NULL, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_NOT_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_013: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_hazard_pointers_thread_handle_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    int result;
+    list = clds_singly_linked_list_create(hazard_pointers, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_insert(list, NULL, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_NOT_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ `clds_singly_linked_list_insert` inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success `clds_singly_linked_list_insert` shall return 0. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_2_items_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    int result_1;
+    int result_2;
+    list = clds_singly_linked_list_create(hazard_pointers, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    umock_c_reset_all_calls();
+
+    // act
+    result_1 = clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    result_2 = clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result_1);
+    ASSERT_ARE_EQUAL(int, 0, result_2);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 END_TEST_SUITE(clds_singly_linked_list_unittests)
