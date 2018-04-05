@@ -112,6 +112,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 /* clds_hash_table_create */
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_027: [ The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange

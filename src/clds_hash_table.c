@@ -1,5 +1,9 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4200)
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -13,11 +17,18 @@
 
 /* this is a hash table implementation */
 
+typedef struct BUCKET_ARRAY_TAG
+{
+    volatile struct BUCKET_ARRAY_TAG* next_bucket;
+    volatile LONG bucket_count;
+    volatile LONG item_count;
+    CLDS_SINGLY_LINKED_LIST_HANDLE hash_table[];
+} BUCKET_ARRAY;
+
 typedef struct CLDS_HASH_TABLE_TAG
 {
-    volatile LONG bucket_count;
     COMPUTE_HASH_FUNC compute_hash;
-    CLDS_SINGLY_LINKED_LIST_HANDLE* hash_table;
+    volatile BUCKET_ARRAY* first_hash_table;
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 } CLDS_HASH_TABLE;
 
@@ -54,8 +65,8 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
         }
         else
         {
-            clds_hash_table->hash_table = malloc(sizeof(void*) * initial_bucket_size);
-            if (clds_hash_table->hash_table == NULL)
+            clds_hash_table->first_hash_table = malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SINGLY_LINKED_LIST_HANDLE) * initial_bucket_size));
+            if (clds_hash_table->first_hash_table == NULL)
             {
                 LogError("Cannot allocate memory for hash table array");
             }
@@ -68,11 +79,12 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
                 clds_hash_table->compute_hash = compute_hash;
 
                 // set the initial bucket count
-                (void)InterlockedExchange(&clds_hash_table->bucket_count, initial_bucket_size);
+                (void)InterlockedExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table->next_bucket, NULL);
+                (void)InterlockedExchange(&clds_hash_table->first_hash_table->bucket_count, initial_bucket_size);
 
                 for (i = 0; i < initial_bucket_size; i++)
                 {
-                    (void)InterlockedExchangePointer(&clds_hash_table->hash_table[i], NULL);
+                    (void)InterlockedExchangePointer(&clds_hash_table->first_hash_table->hash_table[i], NULL);
                 }
 
                 goto all_ok;
@@ -105,20 +117,28 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     {
         LONG i;
 
-        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
-        for (i = 0; i < clds_hash_table->bucket_count; i++)
+        BUCKET_ARRAY* bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (bucket_array != NULL)
         {
-            if (clds_hash_table->hash_table[i] != NULL)
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&bucket_array->next_bucket, NULL, NULL);
+
+            /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
+            for (i = 0; i < bucket_array->bucket_count; i++)
             {
-                CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[i], NULL, NULL);
-                if (linked_list != NULL)
+                if (bucket_array->hash_table[i] != NULL)
                 {
-                    clds_singly_linked_list_destroy(linked_list);
+                    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&bucket_array->hash_table[i], NULL, NULL);
+                    if (linked_list != NULL)
+                    {
+                        clds_singly_linked_list_destroy(linked_list);
+                    }
                 }
             }
+
+            free(bucket_array);
+            bucket_array = next_bucket_array;
         }
 
-        free(clds_hash_table->hash_table);
         free(clds_hash_table);
     }
 }
@@ -142,16 +162,19 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         bool restart_needed;
         CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
 
+        // always insert in the first bucket array
+        BUCKET_ARRAY* current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
             
         // find the bucket
-        uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
+        uint64_t bucket_index = hash % InterlockedAdd(&current_bucket->bucket_count, 0);
 
         do
         {
             // do we have a list here or do we create one?
-            bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
+            bucket_list = InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], NULL, NULL);
             if (bucket_list != NULL)
             {
                 restart_needed = false;
@@ -169,7 +192,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
                 else
                 {
                     // now put the list in the bucket
-                    if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                    if (InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], bucket_list, NULL) != NULL)
                     {
                         // oops, someone else inserted a new list, just bail on our list and restart
                         clds_singly_linked_list_destroy(bucket_list);
@@ -261,13 +284,16 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
     {
         CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
 
+        // always insert in the first bucket array
+        BUCKET_ARRAY* current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
 
         // find the bucket
-        uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
+        uint64_t bucket_index = hash % InterlockedAdd(&current_bucket->bucket_count, 0);
 
-        bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
+        bucket_list = InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], NULL, NULL);
         if (bucket_list == NULL)
         {
             /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
