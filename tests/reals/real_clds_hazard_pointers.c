@@ -9,5 +9,6 @@
 #define clds_hazard_pointers_acquire real_clds_hazard_pointers_acquire
 #define clds_hazard_pointers_release real_clds_hazard_pointers_release
 #define clds_hazard_pointers_reclaim real_clds_hazard_pointers_reclaim
+#define clds_hazard_pointers_set_reclaim_threshold real_clds_hazard_pointers_set_reclaim_threshold
 
 #include "../src/clds_hazard_pointers.c"

@@ -9,7 +9,7 @@
 #include "clds/clds_atomics.h"
 #include "clds/clds_st_hash_set.h"
 
-#define MAX_PENDING_RECLAIM_NODES 16
+#define DEFAULT_RECLAIM_THRESHOLD 16
 
 typedef struct CLDS_HAZARD_POINTER_RECORD_TAG
 {
@@ -37,6 +37,7 @@ typedef struct CLDS_HAZARD_POINTERS_THREAD_TAG
 
 typedef struct CLDS_HAZARD_POINTERS_TAG
 {
+    size_t reclaim_threshold;
     volatile CLDS_HAZARD_POINTERS_THREAD* head;
 } CLDS_HAZARD_POINTERS;
 
@@ -48,7 +49,7 @@ static uint64_t test_compute_hash(void* key)
 static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
-    CLDS_ST_HASH_SET_HANDLE all_hps_set = clds_st_hash_set_create(test_compute_hash, MAX_PENDING_RECLAIM_NODES);
+    CLDS_ST_HASH_SET_HANDLE all_hps_set = clds_st_hash_set_create(test_compute_hash, clds_hazard_pointers_thread->clds_hazard_pointers->reclaim_threshold);
     if (all_hps_set == NULL)
     {
         // oops, panic now!
@@ -160,6 +161,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
     }
     else
     {
+        clds_hazard_pointers->reclaim_threshold = DEFAULT_RECLAIM_THRESHOLD;
         (void)InterlockedExchangePointer((volatile PVOID*)&clds_hazard_pointers->head, NULL);
     }
 
@@ -411,10 +413,29 @@ void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
             // add the pointer to the reclaim list, no other thread has access to this list, so no Interlocked needed
             clds_hazard_pointers_thread->reclaim_list = reclaim_list_entry;
             clds_hazard_pointers_thread->reclaim_list_entry_count++;
-            if (clds_hazard_pointers_thread->reclaim_list_entry_count > MAX_PENDING_RECLAIM_NODES)
+            if (clds_hazard_pointers_thread->reclaim_list_entry_count >= clds_hazard_pointers_thread->clds_hazard_pointers->reclaim_threshold)
             {
                 internal_reclaim(clds_hazard_pointers_thread);
             }
         }
     }
+}
+
+int clds_hazard_pointers_set_reclaim_threshold(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, size_t reclaim_threshold)
+{
+    int result;
+
+    if ((clds_hazard_pointers == NULL) ||
+        (reclaim_threshold == 0))
+    {
+        LogError("Invalid arguments: clds_hazard_pointers = %p, reclaim_threshold = %zu");
+        result = __FAILURE__;
+    }
+    else
+    {
+        clds_hazard_pointers->reclaim_threshold = reclaim_threshold;
+        result = 0;
+    }
+
+    return result;
 }

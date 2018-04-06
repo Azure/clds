@@ -25,11 +25,13 @@ void real_free(void* ptr)
 
 #include "azure_c_shared_utility/gballoc.h"
 #include "clds/clds_singly_linked_list.h"
+#include "clds/clds_st_hash_set.h"
 #include "clds/clds_hazard_pointers.h"
 
 #undef ENABLE_MOCKS
 
 #include "clds/clds_hash_table.h"
+#include "../reals/real_clds_st_hash_set.h"
 #include "../reals/real_clds_hazard_pointers.h"
 #include "../reals/real_clds_singly_linked_list.h"
 
@@ -74,6 +76,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     result = umocktypes_stdint_register_types();
     ASSERT_ARE_EQUAL(int, 0, result, "umocktypes_stdint_register_types failed");
 
+    REGISTER_CLDS_ST_HASH_SET_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS();
 
@@ -87,6 +90,8 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_THREAD_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, void*);
     REGISTER_UMOCK_ALIAS_TYPE(SINGLY_LINKED_LIST_ITEM_COMPARE_CB, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_HANDLE, void*);
 
     REGISTER_TYPE(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_RESULT);
 }
@@ -381,11 +386,11 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
         .CaptureReturn(&linked_list_item);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .ValidateArgumentValue_clds_singly_linked_list(&linked_list)
         .ValidateArgumentValue_item(&linked_list_item);
 
@@ -478,7 +483,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
         .SetReturn(NULL);
 
     // act
@@ -505,7 +510,7 @@ TEST_FUNCTION(when_allocating_the_singly_linked_list_item_fails_clds_hash_table_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers));
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
         .SetReturn(NULL);
 
@@ -533,9 +538,9 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers));
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .SetReturn(1);
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_destroy(IGNORED_PTR_ARG));
 
@@ -571,7 +576,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2));
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
         .CaptureReturn(&linked_list_item);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .ValidateArgumentValue_item(&linked_list_item);
 
     // act
@@ -606,11 +611,11 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
         .SetReturn(1);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
         .CaptureReturn(&linked_list_item);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .ValidateArgumentValue_clds_singly_linked_list(&linked_list)
         .ValidateArgumentValue_item(&linked_list_item);
 

@@ -55,7 +55,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
+                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], NULL, NULL) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -149,7 +149,7 @@ int clds_singly_linked_list_perf_main(void)
     }
     else
     {
-        singly_linked_list = clds_singly_linked_list_create(clds_hazard_pointers, NULL, NULL);
+        singly_linked_list = clds_singly_linked_list_create(clds_hazard_pointers);
         if (singly_linked_list == NULL)
         {
             LogError("Error creating singly linked list");

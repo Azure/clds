@@ -9,11 +9,12 @@ ${theseTestsName}.c
 
 set(${theseTestsName}_c_files
 ../../src/clds_singly_linked_list.c
-../../src/clds_st_hash_set.c
+../reals/real_clds_st_hash_set.c
 ../reals/real_clds_hazard_pointers.c
 )
 
 set(${theseTestsName}_h_files
+../reals/real_clds_st_hash_set.h
 ../reals/real_clds_hazard_pointers.h
 )
 

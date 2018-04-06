@@ -25,6 +25,7 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_unregister_thread, CLDS_HAZARD_PO
 MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTER_RECORD_HANDLE, clds_hazard_pointers_acquire, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, node);
 MOCKABLE_FUNCTION(, void, clds_hazard_pointers_release, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_HAZARD_POINTER_RECORD_HANDLE, clds_hazard_pointer_record);
 MOCKABLE_FUNCTION(, void, clds_hazard_pointers_reclaim, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, node, RECLAIM_FUNC, reclaim_func);
+MOCKABLE_FUNCTION(, int, clds_hazard_pointers_set_reclaim_threshold, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, size_t, reclaim_threshold);
 
 #ifdef __cplusplus
 }

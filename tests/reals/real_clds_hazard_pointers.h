@@ -16,7 +16,8 @@
         clds_hazard_pointers_unregister_thread, \
         clds_hazard_pointers_acquire, \
         clds_hazard_pointers_release, \
-        clds_hazard_pointers_reclaim \
+        clds_hazard_pointers_reclaim, \
+        clds_hazard_pointers_set_reclaim_threshold \
     )
 
 #ifdef __cplusplus
@@ -34,6 +35,7 @@ void real_clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HAN
 CLDS_HAZARD_POINTER_RECORD_HANDLE real_clds_hazard_pointers_acquire(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node);
 void real_clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer_record);
 void real_clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node, RECLAIM_FUNC reclaim_func);
+int real_clds_hazard_pointers_set_reclaim_threshold(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, size_t reclaim_threshold);
 
 #ifdef __cplusplus
 }

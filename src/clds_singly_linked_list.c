@@ -36,6 +36,11 @@ static void internal_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     if (InterlockedDecrement(&item->ref_count) == 0)
     {
+        if (item->item_cleanup_callback != NULL)
+        {
+            item->item_cleanup_callback(item->item_cleanup_callback_context, item);
+        }
+
         free((void*)item);
     }
 }
@@ -270,13 +275,8 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
         {
             CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
-            if (current_item->item_cleanup_callback != NULL)
-            {
-                /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
-                current_item->item_cleanup_callback(current_item->item_cleanup_callback_context, current_item);
-            }
-
             internal_destroy(current_item);
             current_item = next_item;
         } 
