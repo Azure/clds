@@ -13,8 +13,6 @@
 typedef struct CLDS_SINGLY_LINKED_LIST_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
-    SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
-    void* item_cleanup_callback_context;
     volatile CLDS_SINGLY_LINKED_LIST_ITEM* head;
 } CLDS_SINGLY_LINKED_LIST;
 
@@ -47,9 +45,9 @@ static void reclaim_list_node(void* node)
     internal_destroy((CLDS_SINGLY_LINKED_LIST_ITEM*)node);
 }
 
-static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
+static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
 {
-    int result = 0;
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
 
     // check that the node is really in the list and obtain
     bool restart_needed;
@@ -73,7 +71,9 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                 }
 
                 restart_needed = false;
-                result = __FAILURE__;
+
+                /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+                result = CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND;
                 break;
             }
             else
@@ -154,11 +154,17 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                     }
                                     else
                                     {
+                                        // delete succesfull
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                         // reclaim the memory
+                                        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
                                         restart_needed = false;
+
+                                        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+                                        result = CLDS_SINGLY_LINKED_LIST_DELETE_OK;
+
                                         break;
                                     }
                                 }
@@ -182,7 +188,11 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                         // reclaim the memory
+                                        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
+                                        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+                                        result = CLDS_SINGLY_LINKED_LIST_DELETE_OK;
 
                                         restart_needed = false;
                                         break;
@@ -212,12 +222,9 @@ static int internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_lis
     return result;
 }
 
-CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
+CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list;
-
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_singly_linked_list_create` shall fail and return NULL. ]*/
     if (clds_hazard_pointers == NULL)
@@ -238,10 +245,6 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
         {
             // all ok
             clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
-
-            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_035: [ `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. ]*/
-            clds_singly_linked_list->item_cleanup_callback = item_cleanup_callback;
-            clds_singly_linked_list->item_cleanup_callback_context = item_cleanup_callback_context;
 
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL);
         }
@@ -268,10 +271,10 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
             CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
-            if (clds_singly_linked_list->item_cleanup_callback != NULL)
+            if (current_item->item_cleanup_callback != NULL)
             {
                 /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
-                clds_singly_linked_list->item_cleanup_callback(clds_singly_linked_list->item_cleanup_callback_context, current_item);
+                current_item->item_cleanup_callback(current_item->item_cleanup_callback_context, current_item);
             }
 
             internal_destroy(current_item);
@@ -283,11 +286,14 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     }
 }
 
-int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     int result;
 
     (void)clds_hazard_pointers_thread;
+
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
     if ((clds_singly_linked_list == NULL) ||
@@ -303,6 +309,10 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     else
     {
         bool restart_needed;
+
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_035: [ `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. ]*/
+        item->item_cleanup_callback = item_cleanup_callback;
+        item->item_cleanup_callback_context = item_cleanup_callback_context;
 
         do
         {
@@ -327,19 +337,24 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     return result;
 }
 
-int clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
-    int result;
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
 
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_015: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
     if ((clds_singly_linked_list == NULL) ||
-        (clds_hazard_pointers_thread == NULL))
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_016: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_017: [ If `item` is NULL, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+        (item == NULL))
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item = %p",
             clds_singly_linked_list, clds_hazard_pointers_thread, item);
-        result = __FAILURE__;
+        result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
     }
     else
     {
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
         result = internal_delete(clds_singly_linked_list, clds_hazard_pointers_thread, compare_item_by_ptr, item);
     }
 

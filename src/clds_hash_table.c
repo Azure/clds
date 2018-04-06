@@ -224,7 +224,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
             {
                 // create a list
                 /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers, singly_linked_list_item_cleanup, NULL);
+                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
                 if (bucket_list == NULL)
                 {
                     LogError("Cannot allocate list for hash table bucket");
@@ -269,7 +269,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
                 hash_table_item->value = value;
 
                 /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-                if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, list_item) != 0)
+                if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, list_item, singly_linked_list_item_cleanup, NULL) != 0)
                 {
                     LogError("Cannot insert hash table item into list");
                     result = __FAILURE__;
