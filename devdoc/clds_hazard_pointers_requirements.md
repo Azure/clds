@@ -1,11 +1,11 @@
-# hazard_pointers requirements
+# `clds_hazard_pointers` requirements
 
 ## Overview
 
-`hazard_pointers` is module that implements hazard pointers that can be used for building lockless data structures.
+`clds_hazard_pointers` is module that implements hazard pointers that can be used for building lockless data structures.
 The module attempts to follow as much as possible the paper by Maged M. Michael (http://www.research.ibm.com/people/m/michael/ieeetpds-2004.pdf).
 
-##Exposed API
+## Exposed API
 
 ```c
 typedef struct CLDS_HAZARD_POINTERS_TAG* CLDS_HAZARD_POINTERS_HANDLE;
@@ -43,4 +43,3 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_destroy, CLDS_HAZARD_POINTERS_HAN
 **SRS_CLDS_HAZARD_POINTERS_01_004: [** `clds_hazard_pointers_destroy` shall free all resources associated with the hazard pointers instance. **]**
 
 **SRS_CLDS_HAZARD_POINTERS_01_005: [** If `clds_hazard_pointers` is NULL, `clds_hazard_pointers_destroy` shall return. **]**
-

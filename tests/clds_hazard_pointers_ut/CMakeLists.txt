@@ -9,6 +9,7 @@ ${theseTestsName}.c
 
 set(${theseTestsName}_c_files
 ../../src/clds_hazard_pointers.c
+../../src/clds_st_hash_set.c
 )
 
 set(${theseTestsName}_h_files

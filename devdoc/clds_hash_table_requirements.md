@@ -1,4 +1,4 @@
-# clds_hash_table requirements
+# `clds_hash_table` requirements
 
 ## Overview
 
@@ -21,8 +21,8 @@ typedef uint64_t (*COMPUTE_HASH_FUNC)(void* key);
 
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);
-MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, void*, value, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
-MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, void*, value);
+MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 ```
 
 ### clds_hash_table_create
@@ -54,7 +54,7 @@ MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_
 ### clds_hash_table_insert
 
 ```c
-MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, void*, value, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, void*, value);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_008: [** `clds_hash_table_insert` shall insert a key/value pair in the hash table. **]**
@@ -77,10 +77,16 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_022: [** If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
 
+If the number of items in the list reaches the number of buckets, the number of buckets shall be doubled.
+
+When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets.
+
+All new inserts shall be done to this new array of buckets.
+
 ### clds_hash_table_delete
 
 ```c
-MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, void*, key, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread);
+MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_013: [** `clds_hash_table_delete` shall delete a key from the hash table. **]**
@@ -92,3 +98,11 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_ha
 **SRS_CLDS_HASH_TABLE_01_016: [** If `key` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
 
 **SRS_CLDS_HASH_TABLE_01_017: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_HASH_TABLE_01_023: [** If the desired key is not found in the hash table, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_HASH_TABLE_01_024: [** If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_delete` shall fail and return a non-zero value. **]**
+
+**SRS_CLDS_HASH_TABLE_01_025: [** If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. **]**
+
+**SRS_CLDS_HASH_TABLE_01_026: [** If the array of buckets is found to be empty then it shall be freed and removed from the list of array of buckets. **]**

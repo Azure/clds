@@ -13,7 +13,7 @@
 #include "MurmurHash2.h"
 
 #define THREAD_COUNT 8
-#define INSERT_COUNT 100000
+#define INSERT_COUNT 1000000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -55,7 +55,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_insert(thread_data->hash_table, thread_data->items[i]->key, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, thread_data->items[i]->key, thread_data->items[i]) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -107,7 +107,7 @@ static int delete_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_delete(thread_data->hash_table, thread_data->items[i]->key, thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, thread_data->items[i]->key) != 0)
                 {
                     LogError("Error deleting");
                     break;
@@ -155,7 +155,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, 1 << 24, clds_hazard_pointers);
+        hash_table = clds_hash_table_create(test_compute_hash, 1024 * 1024, clds_hazard_pointers);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");

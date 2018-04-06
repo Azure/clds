@@ -1,5 +1,9 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4200)
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -13,11 +17,18 @@
 
 /* this is a hash table implementation */
 
+typedef struct BUCKET_ARRAY_TAG
+{
+    volatile struct BUCKET_ARRAY_TAG* next_bucket;
+    volatile LONG bucket_count;
+    volatile LONG item_count;
+    CLDS_SINGLY_LINKED_LIST_HANDLE hash_table[];
+} BUCKET_ARRAY;
+
 typedef struct CLDS_HASH_TABLE_TAG
 {
-    volatile LONG bucket_count;
     COMPUTE_HASH_FUNC compute_hash;
-    CLDS_SINGLY_LINKED_LIST_HANDLE* hash_table;
+    volatile BUCKET_ARRAY* first_hash_table;
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 } CLDS_HASH_TABLE;
 
@@ -54,8 +65,8 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
         }
         else
         {
-            clds_hash_table->hash_table = malloc(sizeof(void*) * initial_bucket_size);
-            if (clds_hash_table->hash_table == NULL)
+            clds_hash_table->first_hash_table = malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SINGLY_LINKED_LIST_HANDLE) * initial_bucket_size));
+            if (clds_hash_table->first_hash_table == NULL)
             {
                 LogError("Cannot allocate memory for hash table array");
             }
@@ -68,11 +79,13 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
                 clds_hash_table->compute_hash = compute_hash;
 
                 // set the initial bucket count
-                (void)InterlockedExchange(&clds_hash_table->bucket_count, initial_bucket_size);
+                (void)InterlockedExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table->next_bucket, NULL);
+                (void)InterlockedExchange(&clds_hash_table->first_hash_table->bucket_count, (LONG)initial_bucket_size);
+                (void)InterlockedExchange(&clds_hash_table->first_hash_table->item_count, 0);
 
                 for (i = 0; i < initial_bucket_size; i++)
                 {
-                    (void)InterlockedExchangePointer(&clds_hash_table->hash_table[i], NULL);
+                    (void)InterlockedExchangePointer(&clds_hash_table->first_hash_table->hash_table[i], NULL);
                 }
 
                 goto all_ok;
@@ -91,7 +104,7 @@ all_ok:
 static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     (void)context;
-    CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, item);
+    (void)item;
 }
 
 void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
@@ -105,25 +118,33 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     {
         LONG i;
 
-        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
-        for (i = 0; i < clds_hash_table->bucket_count; i++)
+        BUCKET_ARRAY* bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (bucket_array != NULL)
         {
-            if (clds_hash_table->hash_table[i] != NULL)
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&bucket_array->next_bucket, NULL, NULL);
+
+            /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
+            for (i = 0; i < bucket_array->bucket_count; i++)
             {
-                CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[i], NULL, NULL);
-                if (linked_list != NULL)
+                if (bucket_array->hash_table[i] != NULL)
                 {
-                    clds_singly_linked_list_destroy(linked_list, singly_linked_list_item_cleanup, NULL);
+                    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&bucket_array->hash_table[i], NULL, NULL);
+                    if (linked_list != NULL)
+                    {
+                        clds_singly_linked_list_destroy(linked_list);
+                    }
                 }
             }
+
+            free(bucket_array);
+            bucket_array = next_bucket_array;
         }
 
-        free(clds_hash_table->hash_table);
         free(clds_hash_table);
     }
 }
 
-int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, void* value, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
+int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, void* value)
 {
     int result;
 
@@ -142,16 +163,59 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
         bool restart_needed;
         CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
 
+        // always insert in the first bucket array
+        BUCKET_ARRAY* current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        volatile LONG bucket_count = InterlockedAdd(&current_bucket->bucket_count, 0);
+
+        if (InterlockedIncrement(&current_bucket->item_count) > bucket_count)
+        {
+            // allocate a new bucket array
+            BUCKET_ARRAY* new_bucket_array = (BUCKET_ARRAY*)malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SINGLY_LINKED_LIST_HANDLE) * bucket_count * 2));
+            if (new_bucket_array == NULL)
+            {
+                // cannot allocate new bucket, will stick to what we have
+            }
+            else
+            {
+                LONG i;
+                BUCKET_ARRAY* first_bucket_array = current_bucket;
+
+                // insert new bucket
+                (void)InterlockedExchange(&new_bucket_array->bucket_count, bucket_count * 2);
+                (void)InterlockedExchange(&new_bucket_array->item_count, 0);
+
+                for (i = 0; i < bucket_count * 2; i++)
+                {
+                    (void)InterlockedExchangePointer(&new_bucket_array->hash_table[i], NULL);
+                }
+
+                do
+                {
+                    (void)InterlockedExchangePointer((volatile PVOID*)&new_bucket_array->next_bucket, first_bucket_array);
+                    BUCKET_ARRAY* current_first_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, new_bucket_array, first_bucket_array);
+                    if (current_first_bucket_array == first_bucket_array)
+                    {
+                        restart_needed = false;
+                    }
+                    else
+                    {
+                        first_bucket_array = current_first_bucket_array;
+                        restart_needed = true;
+                    }
+                } while (restart_needed);
+            }
+        }
+
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
             
         // find the bucket
-        uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
+        uint64_t bucket_index = hash % bucket_count;
 
         do
         {
             // do we have a list here or do we create one?
-            bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
+            bucket_list = InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], NULL, NULL);
             if (bucket_list != NULL)
             {
                 restart_needed = false;
@@ -160,7 +224,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
             {
                 // create a list
                 /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
+                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers, singly_linked_list_item_cleanup, NULL);
                 if (bucket_list == NULL)
                 {
                     LogError("Cannot allocate list for hash table bucket");
@@ -169,10 +233,10 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
                 else
                 {
                     // now put the list in the bucket
-                    if (InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                    if (InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], bucket_list, NULL) != NULL)
                     {
                         // oops, someone else inserted a new list, just bail on our list and restart
-                        clds_singly_linked_list_destroy(bucket_list, NULL, NULL);
+                        clds_singly_linked_list_destroy(bucket_list);
                         restart_needed = true;
                     }
                     else
@@ -205,7 +269,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, vo
                 hash_table_item->value = value;
 
                 /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-                if (clds_singly_linked_list_insert(bucket_list, list_item, clds_hazard_pointers_thread) != 0)
+                if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, list_item) != 0)
                 {
                     LogError("Cannot insert hash table item into list");
                     result = __FAILURE__;
@@ -243,7 +307,7 @@ bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
     return result;
 }
 
-int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
+int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     int result;
 
@@ -264,27 +328,51 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key, CL
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
 
-        // find the bucket
-        uint64_t bucket_index = hash % InterlockedAdd(&clds_hash_table->bucket_count, 0);
-
-        bucket_list = InterlockedCompareExchangePointer(&clds_hash_table->hash_table[bucket_index], NULL, NULL);
-        if (bucket_list == NULL)
+        // always insert in the first bucket array
+        BUCKET_ARRAY* current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
         {
-            // not found
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                // find the bucket
+                uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list == NULL)
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
+                    result = __FAILURE__;
+                }
+                else
+                {
+                    if (clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, key) != CLDS_SINGLY_LINKED_LIST_DELETE_OK)
+                    {
+                        // not found
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_024: [ If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_delete` shall fail and return a non-zero value. ]*/
+                    }
+                    else
+                    {
+                        (void)InterlockedDecrement(&current_bucket_array->item_count);
+                        break;
+                    }
+                }
+            }
+
+            current_bucket_array = next_bucket_array;
+        }
+
+        if (current_bucket_array == NULL)
+        {
+            /* not found */
             result = __FAILURE__;
         }
         else
         {
-            if (clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, key) != 0)
-            {
-                LogError("Error deleting item");
-                result = __FAILURE__;
-            }
-            else
-            {
-                /* Codes_SRS_CLDS_HASH_TABLE_01_014: [ On success `clds_hash_table_delete` shall return 0. ]*/
-                result = 0;
-            }
+            /* Codes_SRS_CLDS_HASH_TABLE_01_014: [ On success `clds_hash_table_delete` shall return 0. ]*/
+            result = 0;
         }
     }
 

@@ -11,7 +11,7 @@
 #include "clds_singly_linked_list_perf.h"
 
 #define THREAD_COUNT 10
-#define INSERT_COUNT 10000
+#define INSERT_COUNT 1000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -55,7 +55,7 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -107,7 +107,7 @@ static int delete_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->items[i], thread_data->clds_hazard_pointers_thread) != 0)
+                if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
                 {
                     LogError("Error deleting");
                     break;
@@ -149,7 +149,7 @@ int clds_singly_linked_list_perf_main(void)
     }
     else
     {
-        singly_linked_list = clds_singly_linked_list_create(clds_hazard_pointers);
+        singly_linked_list = clds_singly_linked_list_create(clds_hazard_pointers, NULL, NULL);
         if (singly_linked_list == NULL)
         {
             LogError("Error creating singly linked list");
@@ -177,7 +177,7 @@ int clds_singly_linked_list_perf_main(void)
                         for (j = 0; j < INSERT_COUNT; j++)
                         {
                             thread_data[i].items[j] = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-                            if (thread_data[i].items == NULL)
+                            if (thread_data[i].items[j] == NULL)
                             {
                                 LogError("Error allocating test item");
                                 break;
@@ -195,7 +195,7 @@ int clds_singly_linked_list_perf_main(void)
 
                             for (k = 0; k < j; k++)
                             {
-                                free(thread_data[i].items[k]);
+                                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, thread_data[i].items[k]);
                             }
                             break;
                         }
@@ -307,16 +307,17 @@ int clds_singly_linked_list_perf_main(void)
                     {
                         for (j = 0; j < INSERT_COUNT; j++)
                         {
-                            free(thread_data[i].items[j]);
+                            CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, thread_data[i].items[j]);
                         }
+
+                        clds_hazard_pointers_unregister_thread(thread_data[i].clds_hazard_pointers_thread);
                     }
 
-                    clds_hazard_pointers_unregister_thread(thread_data->clds_hazard_pointers_thread);
                     free(thread_data);
                 }
             }
 
-            clds_singly_linked_list_destroy(singly_linked_list, NULL, NULL);
+            clds_singly_linked_list_destroy(singly_linked_list);
         }
 
         clds_hazard_pointers_destroy(clds_hazard_pointers);
