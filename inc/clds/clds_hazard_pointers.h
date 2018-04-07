@@ -3,14 +3,16 @@
 #ifndef CLDS_HAZARD_POINTERS_H
 #define CLDS_HAZARD_POINTERS_H
 
+#include "azure_c_shared_utility/umock_c_prod.h"
+
 #ifdef __cplusplus
 #include <cstdint>
+#include <cstddef>
 extern "C" {
 #else
 #include <stdint.h>
+#include <stddef.h>
 #endif
-
-#include "azure_c_shared_utility/umock_c_prod.h"
 
 typedef struct CLDS_HAZARD_POINTERS_TAG* CLDS_HAZARD_POINTERS_HANDLE;
 typedef struct CLDS_HAZARD_POINTERS_THREAD_TAG* CLDS_HAZARD_POINTERS_THREAD_HANDLE;

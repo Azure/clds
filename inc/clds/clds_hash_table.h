@@ -3,16 +3,15 @@
 #ifndef CLDS_HASH_TABLE_H
 #define CLDS_HASH_TABLE_H
 
+#include "azure_c_shared_utility/umock_c_prod.h"
+#include "clds_hazard_pointers.h"
+
 #ifdef __cplusplus
 #include <cstdint>
 extern "C" {
 #else
 #include <stdint.h>
 #endif
-
-#include "azure_c_shared_utility/umock_c_prod.h"
-
-#include "clds_hazard_pointers.h"
 
 typedef struct CLDS_HASH_TABLE_TAG* CLDS_HASH_TABLE_HANDLE;
 typedef uint64_t (*COMPUTE_HASH_FUNC)(void* key);
