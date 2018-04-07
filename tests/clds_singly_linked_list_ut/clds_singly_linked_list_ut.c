@@ -55,6 +55,25 @@ MOCK_FUNCTION_WITH_CODE(, uint64_t, test_compute_hash, void*, key)
     (void)key;
 MOCK_FUNCTION_END(0)
 
+static bool test_item_compare(void* item_compare_context, struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* item)
+{
+    return (item_compare_context == item) ? true : false;
+}
+
+static bool test_item_compare_delete_always(void* item_compare_context, struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* item)
+{
+    (void)item_compare_context;
+    (void)item;
+    return true;
+}
+
+static bool test_item_compare_find_always(void* item_compare_context, struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* item)
+{
+    (void)item_compare_context;
+    (void)item;
+    return true;
+}
+
 typedef struct TEST_ITEM_TAG
 {
     int dummy;
@@ -324,6 +343,54 @@ TEST_FUNCTION(clds_singly_linked_list_insert_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    int result;
+    list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, (void*)0x4242);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_context_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list;
+    int result;
+    list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, (void*)0x4242);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_singly_linked_list_fails)
 {
@@ -425,7 +492,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_2_items_succeeds)
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item)
 {
     // arrange
@@ -462,7 +529,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item)
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds)
 {
     // arrange
@@ -501,7 +568,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds)
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succeeds)
 {
     // arrange
@@ -540,7 +607,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succe
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds)
 {
     // arrange
@@ -873,6 +940,708 @@ TEST_FUNCTION(clds_singly_linked_list_delete_twice_on_the_same_item_returns_NOT_
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_singly_linked_list_delete_if */
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, item));
+    STRICT_EXPECTED_CALL(free(item));
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds_with_NULL_item_cleanup_callback)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(item));
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_020: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_clds_singly_linked_list_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_delete_if(NULL, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_ERROR, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_021: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_hazard_pointers_thread_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, NULL, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_ERROR, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_022: [ If `item_compare_callback` is NULL, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_item_compare_callback_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, NULL, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_ERROR, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_023: [ `item_compare_callback_context` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_context_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, item));
+    STRICT_EXPECTED_CALL(free(item));
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare_delete_always, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_second_item)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_2, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, item_2));
+    STRICT_EXPECTED_CALL(free(item_2));
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_oldest_out_of_2_items)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_1, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, item_1));
+    STRICT_EXPECTED_CALL(free(item_1));
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item_1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_2nd_out_of_3_items)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_2, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, item_2));
+    STRICT_EXPECTED_CALL(free(item_2));
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_on_an_empty_list_yields_NOT_FOUND)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+TEST_FUNCTION(clds_singly_linked_list_delete_if_after_the_item_was_deleted_yields_NOT_FOUND)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_delete(list, hazard_pointers_thread, item);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_delete_if(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_singly_linked_list_find */
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_succeeds_in_finding_an_item)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(void_ptr, item, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_finds_the_2nd_out_of_3_added_items)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(void_ptr, item_2, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_finds_the_last_added_item)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item_3);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(void_ptr, item_3, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_028: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_clds_singly_linked_list_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_find(NULL, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_030: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_hazard_pointers_thread_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_find(list, NULL, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_031: [ If `item_compare_callback` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, NULL, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_032: [ `item_compare_callback_context` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_context_succeeds_in_finding_an_item)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare_find_always, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(void_ptr, item, result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_on_an_empty_list_returns_NULL)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_after_the_item_was_deleted_returns_NULL)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_delete(list, hazard_pointers_thread, item);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_when_the_item_is_not_in_the_list_returns_NULL)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item_1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(result);
+
+    // cleanup
+    clds_singly_linked_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_034: [ `clds_singly_linked_list_find` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
+TEST_FUNCTION(clds_singly_linked_list_find_result_has_the_ref_count_incremented)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item, IGNORED_PTR_ARG));
+
+    // no item cleanup and free should happen here
+
+    // act
+    (void)clds_singly_linked_list_delete(list, hazard_pointers_thread, item);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_singly_linked_list_destroy(list);
