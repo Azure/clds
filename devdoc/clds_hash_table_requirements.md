@@ -16,13 +16,48 @@ When deleting a key, the first found key would be deleted.
 ## Exposed API
 
 ```c
+struct CLDS_HASH_TABLE_ITEM_TAG;
+
 typedef struct CLDS_HASH_TABLE_TAG* CLDS_HASH_TABLE_HANDLE;
 typedef uint64_t (*COMPUTE_HASH_FUNC)(void* key);
+typedef void(*HASH_TABLE_ITEM_CLEANUP_CB)(void* context, struct CLDS_HASH_TABLE_ITEM_TAG* item);
+
+// it contains information like ref count, next pointer, etc.
+typedef struct CLDS_HASH_TABLE_ITEM_TAG
+{
+    // these are internal variables used by the singly linked list
+    size_t record_offset;
+    volatile LONG ref_count;
+    HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback;
+    void* item_cleanup_callback_context;
+    volatile struct CLDS_HASH_TABLE_ITEM_TAG* next;
+} CLDS_HASH_TABLE_ITEM;
+
+// these are macros that help declaring a type that can be stored in the hash table
+#define DECLARE_HASH_TABLE_NODE_TYPE(record_type) \
+typedef struct C3(HASH_TABLE_NODE_,record_type,_TAG) \
+{ \
+    CLDS_HASH_TABLE_ITEM item; \
+    record_type record; \
+} C2(HASH_TABLE_NODE_,record_type); \
+
+#define CLDS_HASH_TABLE_NODE_CREATE(record_type) \
+clds_hash_table_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_type)), offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), item), offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record));
+
+#define CLDS_HASH_TABLE_NODE_DESTROY(record_type, ptr) \
+clds_hash_table_node_destroy(ptr);
+
+#define CLDS_HASH_TABLE_GET_VALUE(record_type, ptr) \
+((record_type*)((unsigned char*)ptr + offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))
 
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);
-MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, void*, value);
+MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, void*, value, HASH_TABLE_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
+
+// helper APIs for creating/destroying a hash table node
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_node_create, size_t, node_size, size_t, item_offset, size_t, record_offset);
+MOCKABLE_FUNCTION(, void, clds_hash_table_node_destroy, CLDS_HASH_TABLE_ITEM*, item);
 ```
 
 ### clds_hash_table_create
@@ -56,7 +91,7 @@ MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_
 ### clds_hash_table_insert
 
 ```c
-MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, void*, value);
+MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, void*, value, HASH_TABLE_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_008: [** `clds_hash_table_insert` shall insert a key/value pair in the hash table. **]**
@@ -69,6 +104,10 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_012: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
 
+**SRS_CLDS_HASH_TABLE_01_028: [** `item_cleanup_callback` shall be allowed to be NULL. **]**
+
+**SRS_CLDS_HASH_TABLE_01_029: [** `item_cleanup_callback_context` shall be allowed to be NULL. **]**
+
 **SRS_CLDS_HASH_TABLE_01_018: [** `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. **]**
 
 **SRS_CLDS_HASH_TABLE_01_019: [** If no singly linked list exists at the determined bucket index then a new list shall be created. **]**
@@ -79,11 +118,11 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_022: [** If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
 
-If the number of items in the list reaches the number of buckets, the number of buckets shall be doubled.
+**SRS_CLDS_HASH_TABLE_01_030: [** If the number of items in the list reaches the number of buckets, the number of buckets shall be doubled. **]**
 
-When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets.
+**SRS_CLDS_HASH_TABLE_01_031: [** When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets. **]**
 
-All new inserts shall be done to this new array of buckets.
+**SRS_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
 
 ### clds_hash_table_delete
 
