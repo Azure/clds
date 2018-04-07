@@ -34,8 +34,8 @@ typedef struct CLDS_HASH_TABLE_TAG
 
 typedef struct HASH_TABLE_ITEM_TAG
 {
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
     void* key;
-    void* value;
 } HASH_TABLE_ITEM;
 
 DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(HASH_TABLE_ITEM);
@@ -116,7 +116,8 @@ all_ok:
 
 static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
-    (void)context;
+    CLDS_HASH_TABLE_ITEM* hash_table_item = (CLDS_HASH_TABLE_ITEM*)context;
+    internal_node_destroy(hash_table_item);
     (void)item;
 }
 
@@ -274,20 +275,20 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         else
         {
             /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
-            CLDS_SINGLY_LINKED_LIST_ITEM* list_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
-            if (list_item == NULL)
+            value->list_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
+            if (value->list_item == NULL)
             {
                 LogError("Cannot create hash table entry item");
                 result = __FAILURE__;
             }
             else
             {
-                HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, list_item);
+                HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, value->list_item);
+                hash_table_item->hash_table_item = value;
                 hash_table_item->key = key;
-                hash_table_item->value = value;
 
                 /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-                if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, list_item, singly_linked_list_item_cleanup, NULL) != 0)
+                if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, value->list_item, singly_linked_list_item_cleanup, value) != 0)
                 {
                     LogError("Cannot insert hash table item into list");
                     result = __FAILURE__;
@@ -299,7 +300,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
                     goto all_ok;
                 }
 
-                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, list_item);
+                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, value->list_item);
             }
         }
     }

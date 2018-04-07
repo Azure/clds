@@ -20,6 +20,8 @@ typedef struct CLDS_HASH_TABLE_TAG* CLDS_HASH_TABLE_HANDLE;
 typedef uint64_t (*COMPUTE_HASH_FUNC)(void* key);
 typedef void(*HASH_TABLE_ITEM_CLEANUP_CB)(void* context, struct CLDS_HASH_TABLE_ITEM_TAG* item);
 
+struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG;
+
 // it contains information like ref count, next pointer, etc.
 typedef struct CLDS_HASH_TABLE_ITEM_TAG
 {
@@ -28,6 +30,7 @@ typedef struct CLDS_HASH_TABLE_ITEM_TAG
     volatile LONG ref_count;
     HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
+    struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* list_item;
 } CLDS_HASH_TABLE_ITEM;
 
 // these are macros that help declaring a type that can be stored in the hash table
