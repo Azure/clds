@@ -14,7 +14,7 @@
 #include "MurmurHash2.h"
 
 #define THREAD_COUNT 8
-#define INSERT_COUNT 1000
+#define INSERT_COUNT 1000000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -160,7 +160,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, 1024 * 1024, clds_hazard_pointers);
+        hash_table = clds_hash_table_create(test_compute_hash, 1 << 24, clds_hazard_pointers);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");
@@ -206,8 +206,8 @@ int clds_hash_table_perf_main(void)
                                 }
                                 else
                                 {
-                                    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-                                    (void)sprintf(test_item->key, "%zu_%s", i, uuid_string);
+                                    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[j]);
+                                    (void)sprintf(test_item->key, "%s", uuid_string);
                                     free(uuid_string);
                                 }
                             }
