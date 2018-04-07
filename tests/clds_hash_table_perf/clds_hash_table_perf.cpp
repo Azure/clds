@@ -207,7 +207,7 @@ int clds_hash_table_perf_main(void)
                                 else
                                 {
                                     TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-                                    (void)sprintf(test_item->key, "%zu_%s", i, UUID_to_string(&uuid));
+                                    (void)sprintf(test_item->key, "%zu_%s", i, uuid_string);
                                     free(uuid_string);
                                 }
                             }
