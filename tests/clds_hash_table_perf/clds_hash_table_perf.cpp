@@ -9,6 +9,7 @@
 #include "azure_c_shared_utility/xlogging.h"
 #include "azure_c_shared_utility/tickcounter.h"
 #include "azure_c_shared_utility/uuid.h"
+#include "windows.h"
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
 
@@ -186,7 +187,7 @@ int clds_hash_table_perf_main(void)
                         }
                         else
                         {
-                            UUID uuid;
+                            UUID_T uuid;
                             if (UUID_generate(&uuid) != 0)
                             {
                                 LogError("Cannot get uuid");

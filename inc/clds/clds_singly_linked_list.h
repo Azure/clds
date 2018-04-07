@@ -3,6 +3,11 @@
 #ifndef CLDS_SINGLY_LINKED_LIST_H
 #define CLDS_SINGLY_LINKED_LIST_H
 
+#include "windows.h"
+#include "azure_c_shared_utility/umock_c_prod.h"
+#include "macro_utils.h"
+#include "clds_hazard_pointers.h"
+
 #ifdef __cplusplus
 #include <cstdint>
 extern "C" {
@@ -10,11 +15,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #endif
-
-#include "windows.h"
-#include "azure_c_shared_utility/umock_c_prod.h"
-#include "macro_utils.h"
-#include "clds_hazard_pointers.h"
 
 // handle to the singly linked list
 typedef struct CLDS_SINGLY_LINKED_LIST_TAG* CLDS_SINGLY_LINKED_LIST_HANDLE;

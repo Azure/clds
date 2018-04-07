@@ -40,6 +40,19 @@ typedef struct HASH_TABLE_ITEM_TAG
 
 DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(HASH_TABLE_ITEM);
 
+static void internal_node_destroy(CLDS_HASH_TABLE_ITEM* item)
+{
+    if (InterlockedDecrement(&item->ref_count) == 0)
+    {
+        if (item->item_cleanup_callback != NULL)
+        {
+            item->item_cleanup_callback(item->item_cleanup_callback_context, item);
+        }
+
+        free((void*)item);
+    }
+}
+
 CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
@@ -377,4 +390,34 @@ int clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
     }
 
     return result;
+}
+
+CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, size_t item_offset, size_t record_offset)
+{
+    void* result = malloc(node_size);
+    if (result == NULL)
+    {
+        LogError("Failed allocating memory");
+    }
+    else
+    {
+        volatile CLDS_HASH_TABLE_ITEM* item = (volatile CLDS_HASH_TABLE_ITEM*)((unsigned char*)result + item_offset);
+        item->record_offset = record_offset;
+        (void)InterlockedExchange(&item->ref_count, 1);
+        (void)InterlockedExchangePointer((volatile PVOID*)&item->next, NULL);
+    }
+
+    return result;
+}
+
+void clds_hash_table_node_destroy(CLDS_HASH_TABLE_ITEM* item)
+{
+    if (item == NULL)
+    {
+        LogError("NULL item");
+    }
+    else
+    {
+        internal_node_destroy(item);
+    }
 }

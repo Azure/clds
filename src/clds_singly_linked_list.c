@@ -32,7 +32,7 @@ static bool compare_item_by_ptr(void* item_compare_context, CLDS_SINGLY_LINKED_L
     return result;
 }
 
-static void internal_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
+static void internal_node_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     if (InterlockedDecrement(&item->ref_count) == 0)
     {
@@ -49,7 +49,7 @@ static void internal_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 
 static void reclaim_list_node(void* node)
 {
-    internal_destroy((CLDS_SINGLY_LINKED_LIST_ITEM*)node);
+    internal_node_destroy((CLDS_SINGLY_LINKED_LIST_ITEM*)node);
 }
 
 static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
@@ -282,7 +282,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
 
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
-            internal_destroy(current_item);
+            internal_node_destroy(current_item);
             current_item = next_item;
         } 
 
@@ -533,10 +533,10 @@ void clds_singly_linked_list_node_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     if (item == NULL)
     {
-        LogError("NULL item_ptr");
+        LogError("NULL item");
     }
     else
     {
-        internal_destroy(item);
+        internal_node_destroy(item);
     }
 }
