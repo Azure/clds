@@ -409,7 +409,6 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, size_t item_
         volatile CLDS_HASH_TABLE_ITEM* item = (volatile CLDS_HASH_TABLE_ITEM*)((unsigned char*)result + item_offset);
         item->record_offset = record_offset;
         (void)InterlockedExchange(&item->ref_count, 1);
-        (void)InterlockedExchangePointer((volatile PVOID*)&item->next, NULL);
     }
 
     return result;

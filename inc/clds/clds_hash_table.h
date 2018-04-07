@@ -28,7 +28,6 @@ typedef struct CLDS_HASH_TABLE_ITEM_TAG
     volatile LONG ref_count;
     HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
-    volatile struct CLDS_HASH_TABLE_ITEM_TAG* next;
 } CLDS_HASH_TABLE_ITEM;
 
 // these are macros that help declaring a type that can be stored in the hash table
