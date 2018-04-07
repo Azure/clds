@@ -13,8 +13,8 @@
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
 
-#define THREAD_COUNT 2
-#define INSERT_COUNT 10000
+#define THREAD_COUNT 8
+#define INSERT_COUNT 1000000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -206,7 +206,7 @@ int clds_hash_table_perf_main(void)
                                 }
                                 else
                                 {
-                                    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[j]);
+                                    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data[i].items[j]);
                                     (void)sprintf(test_item->key, "%s", uuid_string);
                                     free(uuid_string);
                                 }
