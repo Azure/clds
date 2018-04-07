@@ -13,8 +13,8 @@
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
 
-#define THREAD_COUNT 8
-#define INSERT_COUNT 1000000
+#define THREAD_COUNT 2
+#define INSERT_COUNT 10000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -220,7 +220,7 @@ int clds_hash_table_perf_main(void)
 
                         for (k = 0; k < j; k++)
                         {
-                            free(thread_data[i].items[k]);
+                            CLDS_HASH_TABLE_NODE_DESTROY(TEST_ITEM, thread_data[i].items[k]);
                         }
                     }
                 }
