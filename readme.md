@@ -2,6 +2,11 @@
 
 `clds` is a general purpose C library implementing several lockless data structures.
 
+Implemented lockless data structures:
+
+- Singly linked list
+- Hash table
+
 *This library is work in progress*. The first release should happen once the first lockless structure is usable.
 
 The goals are:
