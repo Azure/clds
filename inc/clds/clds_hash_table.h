@@ -25,7 +25,7 @@ struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG;
 // it contains information like ref count, next pointer, etc.
 typedef struct CLDS_HASH_TABLE_ITEM_TAG
 {
-    // these are internal variables used by the singly linked list
+    // these are internal variables used by the hash table
     size_t record_offset;
     volatile LONG ref_count;
     HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback;
