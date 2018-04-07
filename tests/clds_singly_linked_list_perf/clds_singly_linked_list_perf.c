@@ -305,11 +305,6 @@ int clds_singly_linked_list_perf_main(void)
 
                     for (i = 0; i < THREAD_COUNT; i++)
                     {
-                        for (j = 0; j < INSERT_COUNT; j++)
-                        {
-                            CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, thread_data[i].items[j]);
-                        }
-
                         clds_hazard_pointers_unregister_thread(thread_data[i].clds_hazard_pointers_thread);
                     }
 
