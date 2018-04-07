@@ -511,7 +511,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
     return result;
 }
 
-CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, size_t item_offset, size_t record_offset)
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size)
 {
     void* result = malloc(node_size);
     if (result == NULL)
@@ -520,8 +520,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
     }
     else
     {
-        volatile CLDS_SINGLY_LINKED_LIST_ITEM* item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)((unsigned char*)result + item_offset);
-        item->record_offset = record_offset;
+        volatile CLDS_SINGLY_LINKED_LIST_ITEM* item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)((unsigned char*)result);
         (void)InterlockedExchange(&item->ref_count, 1);
         (void)InterlockedExchangePointer((volatile PVOID*)&item->next, NULL);
     }

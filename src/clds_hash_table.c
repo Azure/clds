@@ -32,27 +32,6 @@ typedef struct CLDS_HASH_TABLE_TAG
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 } CLDS_HASH_TABLE;
 
-typedef struct HASH_TABLE_ITEM_TAG
-{
-    CLDS_HASH_TABLE_ITEM* hash_table_item;
-    void* key;
-} HASH_TABLE_ITEM;
-
-DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(HASH_TABLE_ITEM);
-
-static void internal_node_destroy(CLDS_HASH_TABLE_ITEM* item)
-{
-    if (InterlockedDecrement(&item->ref_count) == 0)
-    {
-        if (item->item_cleanup_callback != NULL)
-        {
-            item->item_cleanup_callback(item->item_cleanup_callback_context, item);
-        }
-
-        free((void*)item);
-    }
-}
-
 CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
@@ -116,9 +95,13 @@ all_ok:
 
 static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
-    CLDS_HASH_TABLE_ITEM* hash_table_item = (CLDS_HASH_TABLE_ITEM*)context;
-    internal_node_destroy(hash_table_item);
-    (void)item;
+    HASH_TABLE_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+
+    (void)context;
+    if (hash_table_item->item_cleanup_callback != NULL)
+    {
+        hash_table_item->item_cleanup_callback(hash_table_item->item_cleanup_callback_context, (void*)hash_table_item);
+    }
 }
 
 void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
@@ -178,9 +161,10 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
     {
         bool restart_needed;
         CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
+        HASH_TABLE_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, value);
 
-        value->item_cleanup_callback = item_cleanup_callback;
-        value->item_cleanup_callback_context = item_cleanup_callback_context;
+        hash_table_item->item_cleanup_callback = item_cleanup_callback;
+        hash_table_item->item_cleanup_callback_context = item_cleanup_callback_context;
 
         // always insert in the first bucket array
         BUCKET_ARRAY* current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
@@ -275,32 +259,19 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         else
         {
             /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
-            value->list_item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(HASH_TABLE_ITEM);
-            if (value->list_item == NULL)
+            hash_table_item->key = key;
+
+            /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
+            if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, singly_linked_list_item_cleanup, NULL) != 0)
             {
-                LogError("Cannot create hash table entry item");
+                LogError("Cannot insert hash table item into list");
                 result = __FAILURE__;
             }
             else
             {
-                HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, value->list_item);
-                hash_table_item->hash_table_item = value;
-                hash_table_item->key = key;
-
-                /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-                if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, value->list_item, singly_linked_list_item_cleanup, value) != 0)
-                {
-                    LogError("Cannot insert hash table item into list");
-                    result = __FAILURE__;
-                }
-                else
-                {
-                    /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
-                    result = 0;
-                    goto all_ok;
-                }
-
-                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(HASH_TABLE_ITEM, value->list_item);
+                /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
+                result = 0;
+                goto all_ok;
             }
         }
     }
@@ -464,7 +435,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
     return result;
 }
 
-CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, size_t item_offset, size_t record_offset)
+CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size)
 {
     void* result = malloc(node_size);
     if (result == NULL)
@@ -473,9 +444,8 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, size_t item_
     }
     else
     {
-        volatile CLDS_HASH_TABLE_ITEM* item = (volatile CLDS_HASH_TABLE_ITEM*)((unsigned char*)result + item_offset);
-        item->record_offset = record_offset;
-        (void)InterlockedExchange(&item->ref_count, 1);
+        volatile CLDS_HASH_TABLE_ITEM* item = (volatile CLDS_HASH_TABLE_ITEM*)((unsigned char*)result);
+        (void)InterlockedExchange(&item->item.ref_count, 1);
     }
 
     return result;
@@ -489,6 +459,6 @@ void clds_hash_table_node_destroy(CLDS_HASH_TABLE_ITEM* item)
     }
     else
     {
-        internal_node_destroy(item);
+        clds_singly_linked_list_node_destroy((void*)item);
     }
 }
