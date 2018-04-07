@@ -634,6 +634,40 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_HASH_TABLE_01_028: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_hash_table_insert_with_item_cleanup_callback_NULL_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
+    CLDS_SINGLY_LINKED_LIST_ITEM* linked_list_item;
+    int result;
+    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+        .CaptureReturn(&linked_list);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_node_create(IGNORED_NUM_ARG, IGNORED_NUM_ARG, IGNORED_NUM_ARG))
+        .CaptureReturn(&linked_list_item);
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+        .ValidateArgumentValue_clds_singly_linked_list(&linked_list)
+        .ValidateArgumentValue_item(&linked_list_item);
+
+    // act
+    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, (void*)0x4242, NULL, (void*)0x4242);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 /* clds_hash_table_delete */
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_013: [ `clds_hash_table_delete` shall delete a key from the hash table. ]*/

@@ -14,17 +14,19 @@
 #include "MurmurHash2.h"
 
 #define THREAD_COUNT 8
-#define INSERT_COUNT 100000
+#define INSERT_COUNT 10000
 
 typedef struct TEST_ITEM_TAG
 {
     char key[64];
 } TEST_ITEM;
 
+DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
+
 typedef struct THREAD_DATA_TAG
 {
     CLDS_HASH_TABLE_HANDLE hash_table;
-    TEST_ITEM* items[INSERT_COUNT];
+    CLDS_HASH_TABLE_ITEM* items[INSERT_COUNT];
     TICK_COUNTER_HANDLE tick_counter;
     tickcounter_ms_t runtime;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
@@ -56,7 +58,8 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, thread_data->items[i]->key, thread_data->items[i], NULL, NULL) != 0)
+                TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
+                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i], NULL, NULL) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -108,7 +111,8 @@ static int delete_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, thread_data->items[i]->key) != 0)
+                TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
+                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key) != 0)
                 {
                     LogError("Error deleting");
                     break;
@@ -179,7 +183,7 @@ int clds_hash_table_perf_main(void)
 
                     for (j = 0; j < INSERT_COUNT; j++)
                     {
-                        thread_data[i].items[j] = (TEST_ITEM*)malloc(sizeof(TEST_ITEM));
+                        thread_data[i].items[j] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM);
                         if (thread_data[i].items[j] == NULL)
                         {
                             LogError("Error allocating test item");
@@ -202,7 +206,8 @@ int clds_hash_table_perf_main(void)
                                 }
                                 else
                                 {
-                                    (void)sprintf(thread_data[i].items[j]->key, "%zu_%s", i, UUID_to_string(&uuid));
+                                    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
+                                    (void)sprintf(test_item->key, "%zu_%s", i, UUID_to_string(&uuid));
                                     free(uuid_string);
                                 }
                             }

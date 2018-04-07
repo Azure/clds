@@ -157,9 +157,11 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     }
 }
 
-int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, void* value, HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
+int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     int result;
+
+    /* Codes_SRS_CLDS_HASH_TABLE_01_028: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If `clds_hash_table` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. ]*/
     if ((clds_hash_table == NULL) ||
@@ -176,8 +178,8 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         bool restart_needed;
         CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
 
-        (void)item_cleanup_callback;
-        (void)item_cleanup_callback_context;
+        value->item_cleanup_callback = item_cleanup_callback;
+        value->item_cleanup_callback_context = item_cleanup_callback_context;
 
         // always insert in the first bucket array
         BUCKET_ARRAY* current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
