@@ -39,7 +39,7 @@ static void internal_node_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
         if (item->item_cleanup_callback != NULL)
         {
-            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
             item->item_cleanup_callback(item->item_cleanup_callback_context, item);
         }
 
@@ -280,7 +280,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
         {
             CLDS_SINGLY_LINKED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
-            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+            /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_node_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
             internal_node_destroy(current_item);
             current_item = next_item;
@@ -296,9 +296,6 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     int result;
 
     (void)clds_hazard_pointers_thread;
-
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
     if ((clds_singly_linked_list == NULL) ||
@@ -511,6 +508,9 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
 
 CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
+
     void* result = malloc(node_size);
     if (result == NULL)
     {
