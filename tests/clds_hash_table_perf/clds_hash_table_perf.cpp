@@ -160,7 +160,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, 1 << 24, clds_hazard_pointers);
+        hash_table = clds_hash_table_create(test_compute_hash, 1024, clds_hazard_pointers);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");
