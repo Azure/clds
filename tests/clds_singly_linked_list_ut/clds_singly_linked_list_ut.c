@@ -239,8 +239,8 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_1_item_in_the_list_frees_the_
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, item));
@@ -266,10 +266,10 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_2_items_in_the_list_frees_the
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
@@ -299,8 +299,8 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_item_cleanup_callback_do
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
@@ -328,11 +328,11 @@ TEST_FUNCTION(clds_singly_linked_list_insert_succeeds)
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     int result;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -352,11 +352,11 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_suc
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     int result;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, (void*)0x4242);
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -376,11 +376,11 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_con
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     int result;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, (void*)0x4242);
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -398,11 +398,11 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_singly_linked_list_fails)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     int result;
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_singly_linked_list_insert(NULL, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    result = clds_singly_linked_list_insert(NULL, hazard_pointers_thread, item);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -424,7 +424,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, NULL, test_item_cleanup_func, (void*)0x4242);
+    result = clds_singly_linked_list_insert(list, hazard_pointers_thread, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -443,11 +443,11 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_hazard_pointers_thread_ha
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     int result;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_singly_linked_list_insert(list, NULL, item, test_item_cleanup_func, (void*)0x4242);
+    result = clds_singly_linked_list_insert(list, NULL, item);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -469,13 +469,13 @@ TEST_FUNCTION(clds_singly_linked_list_insert_2_items_succeeds)
     int result_1;
     int result_2;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
 
     // act
-    result_1 = clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    result_2 = clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    result_1 = clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    result_2 = clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -499,10 +499,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -536,12 +536,12 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -575,12 +575,12 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succe
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -614,14 +614,14 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -655,10 +655,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item_NULL_cleanup_callb
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, NULL);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -691,12 +691,12 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds_NULL_clea
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, NULL, NULL);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, NULL, NULL);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -729,12 +729,12 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succe
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, NULL, NULL);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, NULL, NULL);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -767,14 +767,14 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, NULL, NULL);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, NULL, NULL);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, NULL, NULL);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -804,9 +804,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_list_fails)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -828,9 +828,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_clds_hazard_pointers_thre
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, NULL);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -854,8 +854,8 @@ TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_item_fails)
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -877,7 +877,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_on_an_empty_lists_returns_NOT_FOUND
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     umock_c_reset_all_calls();
 
@@ -900,10 +900,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_when_the_item_is_not_in_the_list_re
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -928,9 +928,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_twice_on_the_same_item_returns_NOT_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     (void)clds_singly_linked_list_delete(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
@@ -957,10 +957,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -993,10 +993,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds_with_NULL_item_cleanup_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, NULL, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1026,10 +1026,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_clds_singly_linked_lis
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -1051,10 +1051,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_hazard_pointers_thread
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -1076,10 +1076,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_item_compare_callback_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -1101,10 +1101,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_context_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1137,12 +1137,12 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_second_item)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1175,12 +1175,12 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_oldest_out_of_2_item
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1213,14 +1213,14 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_2nd_out_of_3_items)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1251,7 +1251,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_on_an_empty_list_yields_NOT_FOUN
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     umock_c_reset_all_calls();
@@ -1281,10 +1281,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_after_the_item_was_deleted_yield
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     (void)clds_singly_linked_list_delete(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
@@ -1316,10 +1316,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_succeeds_in_finding_an_item)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1348,14 +1348,14 @@ TEST_FUNCTION(clds_singly_linked_list_find_finds_the_2nd_out_of_3_added_items)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1384,14 +1384,14 @@ TEST_FUNCTION(clds_singly_linked_list_find_finds_the_last_added_item)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_1);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1419,10 +1419,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_clds_singly_linked_list_fai
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -1444,10 +1444,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_hazard_pointers_thread_fail
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -1469,10 +1469,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_fails
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
@@ -1494,10 +1494,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_conte
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1525,7 +1525,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_on_an_empty_list_returns_NULL)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     umock_c_reset_all_calls();
@@ -1555,10 +1555,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_after_the_item_was_deleted_returns_NU
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     (void)clds_singly_linked_list_delete(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
@@ -1587,13 +1587,13 @@ TEST_FUNCTION(clds_singly_linked_list_find_when_the_item_is_not_in_the_list_retu
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_1 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_2 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item_3 = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_2);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item_3);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1621,10 +1621,10 @@ TEST_FUNCTION(clds_singly_linked_list_find_result_has_the_ref_count_incremented)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
-    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM);
+    CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
     result = clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item);
     umock_c_reset_all_calls();
 

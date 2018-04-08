@@ -271,7 +271,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
             hash_table_item->key = key;
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-            if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, singly_linked_list_item_cleanup, NULL) != 0)
+            if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value) != 0)
             {
                 LogError("Cannot insert hash table item into list");
                 result = __FAILURE__;

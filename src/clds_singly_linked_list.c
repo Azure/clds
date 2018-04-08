@@ -291,7 +291,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     }
 }
 
-int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
+int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     int result;
 
@@ -316,8 +316,6 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
         bool restart_needed;
 
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_035: [ `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. ]*/
-        item->item_cleanup_callback = item_cleanup_callback;
-        item->item_cleanup_callback_context = item_cleanup_callback_context;
 
         do
         {
@@ -511,7 +509,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
     return result;
 }
 
-CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size)
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     void* result = malloc(node_size);
     if (result == NULL)
@@ -521,6 +519,8 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
     else
     {
         volatile CLDS_SINGLY_LINKED_LIST_ITEM* item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)((unsigned char*)result);
+        item->item_cleanup_callback = item_cleanup_callback;
+        item->item_cleanup_callback_context = item_cleanup_callback_context;
         (void)InterlockedExchange(&item->ref_count, 1);
         (void)InterlockedExchangePointer((volatile PVOID*)&item->next, NULL);
     }
