@@ -899,6 +899,49 @@ TEST_FUNCTION(delete_looks_in_2_buckets)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_HASH_TABLE_01_025: [ If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. ]*/
+TEST_FUNCTION(delete_looks_in_3_buckets)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    CLDS_HASH_TABLE_DELETE_RESULT result;
+    // 1st bucket array has 1 bucket
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM);
+    // 2nd bucket array has 2 buckets
+    CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM);
+    CLDS_HASH_TABLE_ITEM* item_3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM);
+    // 3rd bucket array has 4 buckets
+    CLDS_HASH_TABLE_ITEM* item_4 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM);
+    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x4, item_4, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+
+    // act
+    result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 /* Tests_SRS_CLDS_HASH_TABLE_01_033: [ If the key is not found in any of the arrays of buckets, `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_RESULT_NOT_FOUND`. ]*/
 TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
 {
