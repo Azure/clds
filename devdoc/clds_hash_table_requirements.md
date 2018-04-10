@@ -113,6 +113,8 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_012: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. **]**
 
+**SRS_CLDS_HASH_TABLE_01_038: [** `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+
 **SRS_CLDS_HASH_TABLE_01_028: [** `item_cleanup_callback` shall be allowed to be NULL. **]**
 
 **SRS_CLDS_HASH_TABLE_01_029: [** `item_cleanup_callback_context` shall be allowed to be NULL. **]**
@@ -141,6 +143,8 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_013: [** `clds_hash_table_delete` shall delete a key from the hash table. **]**
 
+**SRS_CLDS_HASH_TABLE_01_039: [** `clds_hash_table_delete` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+
 **SRS_CLDS_HASH_TABLE_01_014: [** On success `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_RESULT_OK`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_015: [** If `clds_hash_table` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_RESULT_ERROR`. **]**
@@ -156,3 +160,27 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_ha
 **SRS_CLDS_HASH_TABLE_01_025: [** If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. **]**
 
 **SRS_CLDS_HASH_TABLE_01_033: [** If the key is not found in any of the arrays of buckets, `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_RESULT_NOT_FOUND`. **]**
+
+### clds_hash_table_find
+
+```c
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
+```
+
+**SRS_CLDS_HASH_TABLE_01_034: [** `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. **]**
+
+**SRS_CLDS_HASH_TABLE_01_035: [** If `clds_hash_table` is NULL, `clds_hash_table_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_HASH_TABLE_01_036: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_HASH_TABLE_01_037: [** If `key` is NULL, `clds_hash_table_find` shall fail and return NULL. **]**
+
+**SRS_CLDS_HASH_TABLE_01_040: [** `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_041: [** `clds_hash_table_find` shall look up the key in the biggest array of buckets. **]**
+
+**SRS_CLDS_HASH_TABLE_01_042: [** If the key is not found in the biggest array of buckets, the next bucket arrays shall be looked up. **]**
+
+**SRS_CLDS_HASH_TABLE_01_043: [** If the key is not found at all, `clds_hash_table_find` shall return NULL. **]**
+
+**SRS_CLDS_HASH_TABLE_01_044: [** Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_singly_linked_list_find`. **]**

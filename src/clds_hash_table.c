@@ -219,6 +219,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         (void)InterlockedIncrement(&current_bucket->item_count);
 
         // compute the hash
+        /* Codes_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
         hash = clds_hash_table->compute_hash(key);
             
         // find the bucket
@@ -326,6 +327,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
         BUCKET_ARRAY* current_bucket_array;
 
         // compute the hash
+        /* Codes_SRS_CLDS_HASH_TABLE_01_039: [ `clds_hash_table_delete` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
         uint64_t hash = clds_hash_table->compute_hash(key);
 
         result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
@@ -383,9 +385,12 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
 {
     CLDS_HASH_TABLE_ITEM* result;
 
+    /* Codes_SRS_CLDS_HASH_TABLE_01_035: [ If `clds_hash_table` is NULL, `clds_hash_table_find` shall fail and return NULL. ]*/
     if ((clds_hash_table == NULL) ||
-        (key == NULL) ||
-        (clds_hazard_pointers_thread == NULL))
+        /* Tests_SRS_CLDS_HASH_TABLE_01_036: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_find` shall fail and return NULL. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_037: [ If `key` is NULL, `clds_hash_table_find` shall fail and return NULL. ]*/
+        (key == NULL))
     {
         LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
         result = NULL;
@@ -397,9 +402,11 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         result = NULL;
 
         // compute the hash
+        /* Codes_SRS_CLDS_HASH_TABLE_01_040: [ `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
         uint64_t hash = clds_hash_table->compute_hash(key);
 
         // always insert in the first bucket array
+        /* Codes_SRS_CLDS_HASH_TABLE_01_041: [ `clds_hash_table_find` shall look up the key in the biggest array of buckets. ]*/
         BUCKET_ARRAY* current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
@@ -408,13 +415,19 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
             if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
             {
                 // find the bucket
+                /* Codes_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_singly_linked_list_find`. ]*/
                 uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
 
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
                     result = (void*)clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
-                    if (result != NULL)
+                    if (result == NULL)
+                    {
+                        // go to the next level of buckets
+                    }
+                    else
                     {
                         // found
                         break;
@@ -422,12 +435,14 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
                 }
             }
 
+            /* Codes_SRS_CLDS_HASH_TABLE_01_042: [ If the key is not found in the biggest array of buckets, the next bucket arrays shall be looked up. ]*/
             current_bucket_array = next_bucket_array;
         }
 
         if (current_bucket_array == NULL)
         {
             /* not found */
+            /* Codes_SRS_CLDS_HASH_TABLE_01_043: [ If the key is not found at all, `clds_hash_table_find` shall return NULL. ]*/
             result = NULL;
         }
         else
