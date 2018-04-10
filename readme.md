@@ -7,7 +7,7 @@ Implemented lockless data structures:
 - Singly linked list
 - Hash table
 
-*This library is work in progress*. The first release should happen once the first lockless structure is usable.
+*This library is work in progress*. The first release should happen once the first lockless structure is usable and working.
 
 The goals are:
 
