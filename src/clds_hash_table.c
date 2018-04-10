@@ -394,6 +394,8 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
     {
         CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
 
+        result = NULL;
+
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
 
@@ -409,18 +411,10 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
                 uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
 
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
-                if (bucket_list == NULL)
+                if (bucket_list != NULL)
                 {
-                    result = NULL;
-                }
-                else
-                {
-                    CLDS_SINGLY_LINKED_LIST_ITEM* list_item = clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
-                    if (list_item == NULL)
-                    {
-                        // not found
-                    }
-                    else
+                    result = (void*)clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
+                    if (result != NULL)
                     {
                         // found
                         break;
@@ -438,7 +432,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         }
         else
         {
-            result = NULL;
+            // all OK
         }
     }
 
