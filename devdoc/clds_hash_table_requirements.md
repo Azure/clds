@@ -156,5 +156,3 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_ha
 **SRS_CLDS_HASH_TABLE_01_025: [** If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. **]**
 
 **SRS_CLDS_HASH_TABLE_01_033: [** If the key is not found in any of the arrays of buckets, `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_RESULT_NOT_FOUND`. **]**
-
-**SRS_CLDS_HASH_TABLE_01_026: [** If the array of buckets is found to be empty then it shall be freed and removed from the list of array of buckets. **]**
