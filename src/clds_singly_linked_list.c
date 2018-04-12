@@ -475,7 +475,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                                 }
 
                                 // found it
-                                current_item->ref_count++;
+                                (void)InterlockedIncrement(&current_item->ref_count);
                                 clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                 /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/

@@ -256,9 +256,9 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
     }
     else
     {
-        internal_reclaim(clds_hazard_pointers_thread);
-
         // remove the thread from the thread list
+        clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
+        clds_hazard_pointers_thread->reclaim_list = NULL;
         (void)InterlockedExchange(&clds_hazard_pointers_thread->active, 0);
     }
 }
