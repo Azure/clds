@@ -585,6 +585,53 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
     return result;
 }
 
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
+{
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+
+    if ((clds_singly_linked_list == NULL) ||
+        (item_compare_callback == NULL))
+    {
+        LogError("Invalid arguments: clds_singly_linked_list = %p, item_compare_callback = %p",
+            clds_singly_linked_list, item_compare_callback);
+        result = NULL;
+    }
+    else
+    {
+        result = NULL;
+        volatile CLDS_SINGLY_LINKED_LIST_ITEM** current_item_address = &clds_singly_linked_list->head;
+
+        do
+        {
+            // get the current_item value
+            volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+            if (current_item == NULL)
+            {
+                result = NULL;
+                break;
+            }
+            else
+            {
+                if (item_compare_callback(item_compare_callback_context, (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item))
+                {
+                    // found it
+                    (void)InterlockedIncrement(&current_item->ref_count);
+
+                    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+                    result = (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item;
+                    break;
+                }
+                else
+                {
+                    current_item_address = (volatile CLDS_SINGLY_LINKED_LIST_ITEM**)&current_item->next;
+                }
+            }
+        } while (1);
+    }
+
+    return result;
+}
+
 CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
