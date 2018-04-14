@@ -381,6 +381,72 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
     return result;
 }
 
+CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_st(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
+{
+    CLDS_HASH_TABLE_DELETE_RESULT result;
+
+    if ((clds_hash_table == NULL) ||
+        (key == NULL) ||
+        (clds_hazard_pointers_thread == NULL))
+    {
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        result = __FAILURE__;
+    }
+    else
+    {
+        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+        BUCKET_ARRAY* current_bucket_array;
+
+        // compute the hash
+        uint64_t hash = clds_hash_table->compute_hash(key);
+
+        result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
+
+        // always insert in the first bucket array
+        current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
+        {
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                // find the bucket
+                uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list == NULL)
+                {
+                    result = __FAILURE__;
+                }
+                else
+                {
+                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result = clds_singly_linked_list_delete_if_st(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
+                    if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND)
+                    {
+                        // not found
+                    }
+                    else if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_OK)
+                    {
+                        (void)InterlockedDecrement(&current_bucket_array->item_count);
+
+                        result = CLDS_HASH_TABLE_DELETE_OK;
+                        break;
+                    }
+                    else
+                    {
+                        result = CLDS_HASH_TABLE_DELETE_ERROR;
+                        break;
+                    }
+                }
+            }
+
+            current_bucket_array = next_bucket_array;
+        }
+    }
+
+    return result;
+}
+
 CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     CLDS_HASH_TABLE_ITEM* result;
