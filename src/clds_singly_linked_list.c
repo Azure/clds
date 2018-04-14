@@ -232,6 +232,65 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
     return result;
 }
 
+static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
+{
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
+
+    // check that the node is really in the list and obtain
+    volatile CLDS_SINGLY_LINKED_LIST_ITEM* previous_item = NULL;
+    volatile CLDS_SINGLY_LINKED_LIST_ITEM** current_item_address = &clds_singly_linked_list->head;
+
+    do
+    {
+        // get the current_item value
+        volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+        if (current_item == NULL)
+        {
+            result = CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND;
+            break;
+        }
+        else
+        {
+            // acquire hazard pointer
+            if (item_compare_callback(item_compare_callback_context, (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item))
+            {
+                volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+
+                if (previous_item == NULL)
+                {
+                    // we are removing the head
+                    (void)InterlockedExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, (PVOID)current_next);
+
+                    // reclaim the memory
+                    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
+                    result = CLDS_SINGLY_LINKED_LIST_DELETE_OK;
+
+                    break;
+                }
+                else
+                {
+                    (void)InterlockedExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)current_next);
+
+                    // reclaim the memory
+                    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
+                    result = CLDS_SINGLY_LINKED_LIST_DELETE_OK;
+
+                    break;
+                }
+            }
+            else
+            {
+                previous_item = current_item;
+                current_item_address = (volatile CLDS_SINGLY_LINKED_LIST_ITEM**)&current_item->next;
+            }
+        }
+    } while (1);
+
+    return result;
+}
+
 CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list;
@@ -382,6 +441,26 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete_if(CLDS_SIN
     {
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
         result = internal_delete(clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback, item_compare_callback_context);
+    }
+
+    return result;
+}
+
+CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete_if_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
+{
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+
+    if ((clds_singly_linked_list == NULL) ||
+        (clds_hazard_pointers_thread == NULL) ||
+        (item_compare_callback == NULL))
+    {
+        LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item_compare_callback = %p",
+            clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback);
+        result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
+    }
+    else
+    {
+        result = internal_delete_st(clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback, item_compare_callback_context);
     }
 
     return result;
