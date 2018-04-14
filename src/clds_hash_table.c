@@ -520,6 +520,69 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
     return result;
 }
 
+CLDS_HASH_TABLE_ITEM* clds_hash_table_find_st(CLDS_HASH_TABLE_HANDLE clds_hash_table, void* key)
+{
+    CLDS_HASH_TABLE_ITEM* result;
+
+    if ((clds_hash_table == NULL) ||
+        (key == NULL))
+    {
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        result = NULL;
+    }
+    else
+    {
+        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+
+        result = NULL;
+
+        // compute the hash
+        uint64_t hash = clds_hash_table->compute_hash(key);
+
+        // always insert in the first bucket array
+        BUCKET_ARRAY* current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
+        {
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                // find the bucket
+                uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list != NULL)
+                {
+                    result = (void*)clds_singly_linked_list_find_st(bucket_list, find_by_key, key);
+                    if (result == NULL)
+                    {
+                        // go to the next level of buckets
+                    }
+                    else
+                    {
+                        // found
+                        break;
+                    }
+                }
+            }
+
+            current_bucket_array = next_bucket_array;
+        }
+
+        if (current_bucket_array == NULL)
+        {
+            /* not found */
+            result = NULL;
+        }
+        else
+        {
+            // all OK
+        }
+    }
+
+    return result;
+}
+
 CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size)
 {
     void* result = malloc(node_size);
