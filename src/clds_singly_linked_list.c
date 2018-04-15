@@ -632,6 +632,42 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find_st(CLDS_SINGLY_LINKED
     return result;
 }
 
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_get_first_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list)
+{
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+
+    if (clds_singly_linked_list == NULL)
+    {
+        LogError("Invalid arguments: clds_singly_linked_list = %p",
+            clds_singly_linked_list);
+        result = NULL;
+    }
+    else
+    {
+        result = InterlockedCompareExchangePointer((volatile PVOID*)&clds_singly_linked_list->head, NULL, NULL);
+    }
+
+    return result;
+}
+
+CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_get_next_st(CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    CLDS_SINGLY_LINKED_LIST_ITEM* result;
+
+    if (item == NULL)
+    {
+        LogError("Invalid arguments: item = %p",
+            item);
+        result = NULL;
+    }
+    else
+    {
+        result = InterlockedCompareExchangePointer((volatile PVOID*)&item->next, NULL, NULL);
+    }
+
+    return result;
+}
+
 CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_size, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
