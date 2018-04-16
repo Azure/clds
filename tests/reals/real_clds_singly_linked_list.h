@@ -19,6 +19,7 @@
         clds_singly_linked_list_find_st, \
         clds_singly_linked_list_node_create, \
         clds_singly_linked_list_node_destroy, \
+        clds_singly_linked_list_delete_st, \
         clds_singly_linked_list_delete_if_st \
     )
 
@@ -38,6 +39,7 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT real_clds_singly_linked_list_delete(CLDS_S
 CLDS_SINGLY_LINKED_LIST_DELETE_RESULT real_clds_singly_linked_list_delete_if(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context);
 CLDS_SINGLY_LINKED_LIST_ITEM* real_clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context);
 CLDS_SINGLY_LINKED_LIST_ITEM* real_clds_singly_linked_list_find_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context);
+CLDS_SINGLY_LINKED_LIST_DELETE_RESULT real_clds_singly_linked_list_delete_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item);
 CLDS_SINGLY_LINKED_LIST_DELETE_RESULT real_clds_singly_linked_list_delete_if_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context);
 
 CLDS_SINGLY_LINKED_LIST_ITEM* real_clds_singly_linked_list_node_create(size_t node_size, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context);
