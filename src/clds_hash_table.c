@@ -141,11 +141,9 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     }
 }
 
-int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
+int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value)
 {
     int result;
-
-    /* Codes_SRS_CLDS_HASH_TABLE_01_028: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If `clds_hash_table` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. ]*/
     if ((clds_hash_table == NULL) ||
@@ -166,9 +164,6 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         BUCKET_ARRAY* current_bucket;
         volatile LONG bucket_count;
         uint64_t bucket_index;
-
-        hash_table_item->item_cleanup_callback = item_cleanup_callback;
-        hash_table_item->item_cleanup_callback_context = item_cleanup_callback_context;
 
         // find or allocate a new bucket array
         // always insert in the first bucket array
@@ -583,7 +578,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find_st(CLDS_HASH_TABLE_HANDLE clds_hash_t
     return result;
 }
 
-CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size)
+CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     void* result = malloc(node_size);
     if (result == NULL)
@@ -594,10 +589,10 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size)
     {
         volatile CLDS_HASH_TABLE_ITEM* item = (volatile CLDS_HASH_TABLE_ITEM*)((unsigned char*)result);
         HASH_TABLE_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
-        hash_table_item->item_cleanup_callback = NULL;
-        hash_table_item->item_cleanup_callback_context = NULL;
-        item->item.item_cleanup_callback = NULL;
-        item->item.item_cleanup_callback_context = NULL;
+        hash_table_item->item_cleanup_callback = item_cleanup_callback;
+        hash_table_item->item_cleanup_callback_context = item_cleanup_callback_context;
+        item->item.item_cleanup_callback = singly_linked_list_item_cleanup;
+        item->item.item_cleanup_callback_context = (void*)item;
         (void)InterlockedExchange(&item->item.ref_count, 1);
     }
 

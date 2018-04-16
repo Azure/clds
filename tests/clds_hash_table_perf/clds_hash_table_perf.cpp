@@ -59,7 +59,7 @@ static int insert_thread(void* arg)
             for (i = 0; i < INSERT_COUNT; i++)
             {
                 TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i], NULL, NULL) != 0)
+                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i]) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -241,7 +241,7 @@ int clds_hash_table_perf_main(void)
 
                     for (j = 0; j < INSERT_COUNT; j++)
                     {
-                        thread_data[i].items[j] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM);
+                        thread_data[i].items[j] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
                         if (thread_data[i].items[j] == NULL)
                         {
                             LogError("Error allocating test item");

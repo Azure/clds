@@ -115,10 +115,6 @@ MOCKABLE_FUNCTION(, int, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_ha
 
 **SRS_CLDS_HASH_TABLE_01_038: [** `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_028: [** `item_cleanup_callback` shall be allowed to be NULL. **]**
-
-**SRS_CLDS_HASH_TABLE_01_029: [** `item_cleanup_callback_context` shall be allowed to be NULL. **]**
-
 **SRS_CLDS_HASH_TABLE_01_018: [** `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. **]**
 
 **SRS_CLDS_HASH_TABLE_01_019: [** If no singly linked list exists at the determined bucket index then a new list shall be created. **]**
