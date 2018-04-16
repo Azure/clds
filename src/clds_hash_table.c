@@ -100,7 +100,7 @@ static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LI
     (void)context;
     if (hash_table_item->item_cleanup_callback != NULL)
     {
-        hash_table_item->item_cleanup_callback(hash_table_item->item_cleanup_callback_context, (void*)hash_table_item);
+        hash_table_item->item_cleanup_callback(hash_table_item->item_cleanup_callback_context, (void*)item);
     }
 }
 
