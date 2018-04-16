@@ -420,6 +420,26 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete(CLDS_SINGLY
     return result;
 }
 
+CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete_st(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
+
+    if ((clds_singly_linked_list == NULL) ||
+        (clds_hazard_pointers_thread == NULL) ||
+        (item == NULL))
+    {
+        LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item = %p",
+            clds_singly_linked_list, clds_hazard_pointers_thread, item);
+        result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
+    }
+    else
+    {
+        result = internal_delete_st(clds_singly_linked_list, clds_hazard_pointers_thread, compare_item_by_ptr, item);
+    }
+
+    return result;
+}
+
 CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete_if(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_callback_context)
 {
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
