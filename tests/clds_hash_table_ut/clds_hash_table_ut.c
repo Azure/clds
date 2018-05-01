@@ -64,6 +64,25 @@ MOCK_FUNCTION_WITH_CODE(, uint64_t, test_compute_hash, void*, key)
     (void)key;
 MOCK_FUNCTION_END(0)
 
+static int test_key_compare_func(void* key_1, void* key_2)
+{
+    int result;
+    if (key_1 < key_2)
+    {
+        result = -1;
+    }
+    else if (key_1 > key_2)
+    {
+        result = 1;
+    }
+    else
+    {
+        result = 0;
+    }
+
+    return result;
+}
+
 typedef struct TEST_ITEM_TAG
 {
     int dummy;
@@ -146,7 +165,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -169,7 +188,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_fails_clds_hash_table_cr
         .SetReturn(NULL);
 
     // act
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -193,7 +212,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_array_fails_clds_hash_ta
     STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
 
     // act
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -212,7 +231,26 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_compute_hash_function_fails)
     umock_c_reset_all_calls();
 
     // act
-    hash_table = clds_hash_table_create(NULL, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(NULL, test_key_compare_func, 1, hazard_pointers);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(hash_table);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_045: [ If `key_compare_func` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_function_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    umock_c_reset_all_calls();
+
+    // act
+    hash_table = clds_hash_table_create(test_compute_hash, NULL, 1, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -231,7 +269,7 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_bucket_size_zero_fails)
     umock_c_reset_all_calls();
 
     // act
-    hash_table = clds_hash_table_create(test_compute_hash, 0, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 0, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -247,7 +285,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
     // arrange
 
     // act
-    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, 1, NULL);
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -270,8 +308,8 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_the_same_hazard_pointer_instan
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    hash_table_1 = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
-    hash_table_2 = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table_1 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
+    hash_table_2 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -302,8 +340,8 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_different_hazard_pointer_insta
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    hash_table_1 = clds_hash_table_create(test_compute_hash, 1, hazard_pointers_1);
-    hash_table_2 = clds_hash_table_create(test_compute_hash, 1, hazard_pointers_2);
+    hash_table_1 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers_1);
+    hash_table_2 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers_2);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -330,7 +368,7 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -349,7 +387,7 @@ TEST_FUNCTION(clds_hash_table_destroy_frees_the_hash_table_resources)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HASH_TABLE_HANDLE hash_table;
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
@@ -394,7 +432,7 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
     int result;
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
 
@@ -445,7 +483,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_clds_hazard_pointers_thread_fails
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
     // act
@@ -469,7 +507,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_key_fails)
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     int result;
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
     // act
@@ -493,7 +531,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
@@ -522,7 +560,7 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
@@ -555,7 +593,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
@@ -592,7 +630,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
     int result;
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     umock_c_reset_all_calls();
 
@@ -626,7 +664,7 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
     int result;
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     umock_c_reset_all_calls();
 
@@ -662,7 +700,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -714,7 +752,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_NULL_clds_hazard_pointers_thread_fails
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -739,7 +777,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_NULL_key_fails)
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -763,7 +801,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_a_key_that_is_not_in_the_hash_table_fa
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
@@ -789,7 +827,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_a_key_that_is_already_deleted_fails)
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     (void)clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1);
     umock_c_reset_all_calls();
@@ -817,7 +855,7 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_delete_
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HASH_TABLE_DELETE_RESULT result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 2, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -847,7 +885,7 @@ TEST_FUNCTION(delete_looks_in_2_buckets)
     CLDS_HASH_TABLE_DELETE_RESULT result;
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     umock_c_reset_all_calls();
@@ -887,7 +925,7 @@ TEST_FUNCTION(delete_looks_in_3_buckets)
     CLDS_HASH_TABLE_ITEM* item_3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     // 3rd bucket array has 4 buckets
     CLDS_HASH_TABLE_ITEM* item_4 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3);
@@ -925,7 +963,7 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
     CLDS_HASH_TABLE_DELETE_RESULT result;
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     umock_c_reset_all_calls();
@@ -964,7 +1002,7 @@ TEST_FUNCTION(clds_hash_table_find_succeeds)
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HASH_TABLE_ITEM* result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 3, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 3, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -999,7 +1037,7 @@ TEST_FUNCTION(clds_hash_table_find_2nd_item_out_of_3_succeeds)
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 3, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 3, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3);
@@ -1036,7 +1074,7 @@ TEST_FUNCTION(clds_hash_table_find_3rd_item_out_of_3_succeeds)
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 3, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 3, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3);
@@ -1090,7 +1128,7 @@ TEST_FUNCTION(clds_hash_table_find_with_NULL_clds_hazard_pointers_thread_fails)
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HASH_TABLE_ITEM* result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -1115,7 +1153,7 @@ TEST_FUNCTION(clds_hash_table_find_with_NULL_key_fails)
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HASH_TABLE_ITEM* result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
     umock_c_reset_all_calls();
 
@@ -1142,7 +1180,7 @@ TEST_FUNCTION(clds_hash_table_find_looks_up_in_the_2nd_array_of_buckets)
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3);
@@ -1179,7 +1217,7 @@ TEST_FUNCTION(when_key_is_not_found_in_any_bucket_levels_clds_hash_table_find_yi
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    hash_table = clds_hash_table_create(test_compute_hash, 1, hazard_pointers);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3);

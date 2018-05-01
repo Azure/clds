@@ -202,6 +202,11 @@ static uint64_t test_compute_hash(void* key)
     return (uint64_t)MurmurHash2(test_key, (int)strlen(test_key), 0);
 }
 
+static int key_compare_func(void* key_1, void* key_2)
+{
+    return strcmp((const char*)key_1, (const char*)key_2);
+}
+
 int clds_hash_table_perf_main(void)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
@@ -218,7 +223,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, 1024, clds_hazard_pointers);
+        hash_table = clds_hash_table_create(test_compute_hash, key_compare_func, 1024, clds_hazard_pointers);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");

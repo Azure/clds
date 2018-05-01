@@ -28,16 +28,25 @@ typedef struct BUCKET_ARRAY_TAG
 typedef struct CLDS_HASH_TABLE_TAG
 {
     COMPUTE_HASH_FUNC compute_hash;
+    KEY_COMPARE_FUNC key_compare_func;
     volatile BUCKET_ARRAY* first_hash_table;
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 } CLDS_HASH_TABLE;
 
-CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
+typedef struct FIND_BY_KEY_CONTEXT_TAG
+{
+    void* key;
+    KEY_COMPARE_FUNC key_compare_func;
+} FIND_BY_KEY_CONTEXT;
+
+CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_003: [ If `compute_hash` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
     if ((compute_hash == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_045: [ If `key_compare_func` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+        (key_compare_func == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_004: [ If `initial_bucket_size` is 0, `clds_hash_table_create` shall fail and return NULL. ]*/
         (initial_bucket_size == 0) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_005: [ If `clds_hazard_pointers` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
@@ -69,6 +78,7 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, si
                 // all OK
                 clds_hash_table->clds_hazard_pointers = clds_hazard_pointers;
                 clds_hash_table->compute_hash = compute_hash;
+                clds_hash_table->key_compare_func = key_compare_func;
 
                 // set the initial bucket count
                 (void)InterlockedExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table->next_bucket, NULL);
@@ -288,9 +298,10 @@ all_ok:
 bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     bool result;
+    FIND_BY_KEY_CONTEXT* find_by_key_context = (FIND_BY_KEY_CONTEXT*)item_compare_context;
     HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
 
-    if (hash_table_item->key != item_compare_context)
+    if (find_by_key_context->key_compare_func(hash_table_item->key, find_by_key_context->key) != 0)
     {
         result = false;
     }
@@ -346,7 +357,11 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
                 }
                 else
                 {
-                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result = clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
+                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result;
+                    FIND_BY_KEY_CONTEXT find_by_key_context;
+                    find_by_key_context.key = key;
+                    find_by_key_context.key_compare_func = clds_hash_table->key_compare_func;
+                    delete_result = clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, &find_by_key_context);
                     if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
@@ -415,7 +430,11 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_st(CLDS_HASH_TABLE_HANDLE c
                 }
                 else
                 {
-                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result = clds_singly_linked_list_delete_if_st(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
+                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result;
+                    FIND_BY_KEY_CONTEXT find_by_key_context;
+                    find_by_key_context.key = key;
+                    find_by_key_context.key_compare_func = clds_hash_table->key_compare_func;
+                    delete_result = clds_singly_linked_list_delete_if_st(bucket_list, clds_hazard_pointers_thread, find_by_key, &find_by_key_context);
                     if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
@@ -482,8 +501,12 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
+                    FIND_BY_KEY_CONTEXT find_by_key_context;
+                    find_by_key_context.key = key;
+                    find_by_key_context.key_compare_func = clds_hash_table->key_compare_func;
+
                     /* Codes_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
-                    result = (void*)clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, key);
+                    result = (void*)clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, &find_by_key_context);
                     if (result == NULL)
                     {
                         // go to the next level of buckets
@@ -548,7 +571,11 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find_st(CLDS_HASH_TABLE_HANDLE clds_hash_t
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
-                    result = (void*)clds_singly_linked_list_find_st(bucket_list, find_by_key, key);
+                    FIND_BY_KEY_CONTEXT find_by_key_context;
+                    find_by_key_context.key = key;
+                    find_by_key_context.key_compare_func = clds_hash_table->key_compare_func;
+
+                    result = (void*)clds_singly_linked_list_find_st(bucket_list, find_by_key, &find_by_key_context);
                     if (result == NULL)
                     {
                         // go to the next level of buckets
