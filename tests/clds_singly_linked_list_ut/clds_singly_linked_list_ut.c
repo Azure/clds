@@ -197,7 +197,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
 
 /* clds_singly_linked_list_destroy */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_004: [ `clds_singly_linked_list_destroy` shall free all resources associated with the hazard pointers instance. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_004: [ `clds_singly_linked_list_destroy` shall free all resources associated with the singly linked list instance. ]*/
 TEST_FUNCTION(clds_singly_linked_list_destroy_frees_the_allocated_list_resources)
 {
     // arrange

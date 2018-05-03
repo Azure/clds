@@ -93,7 +93,7 @@ MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_crea
 MOCKABLE_FUNCTION(, void, clds_singly_linked_list_destroy, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 ```
 
-**SRS_CLDS_SINGLY_LINKED_LIST_01_004: [** `clds_singly_linked_list_destroy` shall free all resources associated with the hazard pointers instance. **]**
+**SRS_CLDS_SINGLY_LINKED_LIST_01_004: [** `clds_singly_linked_list_destroy` shall free all resources associated with the singly linked list instance. **]**
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_005: [** If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_destroy` shall return. **]**
 

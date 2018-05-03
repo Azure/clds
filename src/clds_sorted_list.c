@@ -294,7 +294,7 @@ void clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
             current_item = next_item;
         } 
 
-        /* Codes_SRS_CLDS_SORTED_LIST_01_004: [ `clds_sorted_list_destroy` shall free all resources associated with the hazard pointers instance. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_004: [ `clds_sorted_list_destroy` shall free all resources associated with the sorted list instance. ]*/
         free(clds_sorted_list);
     }
 }

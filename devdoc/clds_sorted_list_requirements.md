@@ -98,7 +98,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZAR
 MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, SORTED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_004: [** `clds_sorted_list_destroy` shall free all resources associated with the hazard pointers instance. **]**
+**SRS_CLDS_SORTED_LIST_01_004: [** `clds_sorted_list_destroy` shall free all resources associated with the sorted list instance. **]**
 
 **SRS_CLDS_SORTED_LIST_01_005: [** If `clds_sorted_list` is NULL, `clds_sorted_list_destroy` shall return. **]**
 
