@@ -60,6 +60,7 @@ set(clds_h_files
     ./inc/clds/clds_st_hash_set.h
     ./inc/clds/clds_hazard_pointers.h
     ./inc/clds/clds_singly_linked_list.h
+    ./inc/clds/clds_sorted_list.h
 )
 
 set(clds_c_files
@@ -67,6 +68,7 @@ set(clds_c_files
     ./src/clds_st_hash_set.c
     ./src/clds_hazard_pointers.c
     ./src/clds_singly_linked_list.c
+    ./src/clds_sorted_list.c
 )
 
 add_library(clds
