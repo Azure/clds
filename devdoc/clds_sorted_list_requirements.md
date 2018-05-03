@@ -79,18 +79,18 @@ MOCKABLE_FUNCTION(, void, clds_sorted_list_node_release, CLDS_SORTED_LIST_ITEM*,
 ### clds_sorted_list_create
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_001: [** `clds_sorted_list_create` shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. **]**
+**SRS_CLDS_SORTED_LIST_01_001: [** `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. **]**
 
 **SRS_CLDS_SORTED_LIST_01_002: [** If any error happens, `clds_sorted_list_create` shall fail and return NULL. **]**
 
 **SRS_CLDS_SORTED_LIST_01_003: [** If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. **]**
 
-**SRS_CLDS_SORTED_LIST_01_035: [** `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. **]**
+**SRS_CLDS_SORTED_LIST_01_045: [** If `get_item_key_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_038: [** If `item_cleanup_callback` is NULL, no cleanup callbacks shall be triggered for any reclaimed items. **]**
+**SRS_CLDS_SORTED_LIST_01_046: [** If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. **]**
 
 ### clds_sorted_list_destroy
 

@@ -87,10 +87,6 @@ MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_crea
 
 **SRS_CLDS_SINGLY_LINKED_LIST_01_003: [** If `clds_hazard_pointers` is NULL, `clds_singly_linked_list_create` shall fail and return NULL. **]**
 
-**SRS_CLDS_SINGLY_LINKED_LIST_01_035: [** `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. **]**
-
-Y**SRS_CLDS_SINGLY_LINKED_LIST_01_038: [** If `item_cleanup_callback` is NULL, no cleanup callbacks shall be triggered for any reclaimed items. **]**
-
 ### clds_singly_linked_list_destroy
 
 ```c

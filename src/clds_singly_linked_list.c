@@ -312,8 +312,6 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     {
         bool restart_needed;
 
-        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_035: [ `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. ]*/
-
         do
         {
             // get current head

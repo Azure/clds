@@ -238,18 +238,21 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list;
 
-    (void)get_item_key_cb;
     (void)key_compare_cb;
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
-    if (clds_hazard_pointers == NULL)
+    if ((clds_hazard_pointers == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_045: [ If `get_item_key_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
+        (get_item_key_cb == NULL) ||
+        /* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
+        (key_compare_cb == NULL))
     {
-        LogError("NULL clds_hazard_pointers");
+        LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, key_compare_cb = %p");
         clds_sorted_list = NULL;
     }
     else
     {
-        /* Codes_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
         clds_sorted_list = (CLDS_SORTED_LIST_HANDLE)malloc(sizeof(CLDS_SORTED_LIST));
         if (clds_sorted_list == NULL)
         {
@@ -316,8 +319,6 @@ int clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZAR
     else
     {
         bool restart_needed;
-
-        /* Codes_SRS_CLDS_SORTED_LIST_01_035: [ `item_cleanup_callback` and `item_cleanup_callback_context` shall be saved in order to be used whenever singly linked list items are reclaimed to allow the user to perform any additional cleanup for each item. ]*/
 
         do
         {
