@@ -39,6 +39,13 @@ typedef struct FIND_BY_KEY_CONTEXT_TAG
     KEY_COMPARE_FUNC key_compare_func;
 } FIND_BY_KEY_CONTEXT;
 
+typedef struct FIND_BY_KEY_VALUE_CONTEXT_TAG
+{
+    void* key;
+    void* value;
+    KEY_COMPARE_FUNC key_compare_func;
+} FIND_BY_KEY_VALUE_CONTEXT;
+
 CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
@@ -313,6 +320,25 @@ bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
     return result;
 }
 
+bool find_by_key_value(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    bool result;
+    FIND_BY_KEY_VALUE_CONTEXT* find_by_key_value_context = (FIND_BY_KEY_VALUE_CONTEXT*)item_compare_context;
+    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+
+    if ((item != find_by_key_value_context->value) ||
+        (find_by_key_value_context->key_compare_func(hash_table_item->key, find_by_key_value_context->key) != 0))
+    {
+        result = false;
+    }
+    else
+    {
+        result = true;
+    }
+
+    return result;
+}
+
 CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
@@ -324,7 +350,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
         /* Codes_SRS_CLDS_HASH_TABLE_01_017: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_RESULT_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p", clds_hash_table, key, clds_hazard_pointers_thread);
         result = __FAILURE__;
     }
     else
@@ -391,6 +417,78 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
     return result;
 }
 
+CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value)
+{
+    CLDS_HASH_TABLE_DELETE_RESULT result;
+
+    if ((clds_hash_table == NULL) ||
+        (key == NULL) ||
+        (value == NULL) ||
+        (clds_hazard_pointers_thread == NULL))
+    {
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, value = %p, clds_hazard_pointers_thread = %p", clds_hash_table, key, value, clds_hazard_pointers_thread);
+        result = __FAILURE__;
+    }
+    else
+    {
+        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+        BUCKET_ARRAY* current_bucket_array;
+
+        // compute the hash
+        uint64_t hash = clds_hash_table->compute_hash(key);
+
+        result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
+
+        // always insert in the first bucket array
+        current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
+        {
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                // find the bucket
+                uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list == NULL)
+                {
+                    result = __FAILURE__;
+                }
+                else
+                {
+                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result;
+                    FIND_BY_KEY_VALUE_CONTEXT find_by_key_value_context;
+                    find_by_key_value_context.key = key;
+                    find_by_key_value_context.value = value;
+                    find_by_key_value_context.key_compare_func = clds_hash_table->key_compare_func;
+                    delete_result = clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key_value, &find_by_key_value_context);
+                    if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND)
+                    {
+                        // not found
+                    }
+                    else if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_OK)
+                    {
+                        (void)InterlockedDecrement(&current_bucket_array->item_count);
+
+                        result = CLDS_HASH_TABLE_DELETE_OK;
+                        break;
+                    }
+                    else
+                    {
+                        result = CLDS_HASH_TABLE_DELETE_ERROR;
+                        break;
+                    }
+                }
+            }
+
+            current_bucket_array = next_bucket_array;
+        }
+    }
+
+    return result;
+}
+
 CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_st(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
@@ -399,7 +497,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_st(CLDS_HASH_TABLE_HANDLE c
         (key == NULL) ||
         (clds_hazard_pointers_thread == NULL))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p", clds_hash_table, key, clds_hazard_pointers_thread);
         result = __FAILURE__;
     }
     else
