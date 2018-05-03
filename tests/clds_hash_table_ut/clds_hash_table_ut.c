@@ -546,7 +546,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     ASSERT_ARE_NOT_EQUAL(int, 0, result);
 
     // cleanup
-    CLDS_HASH_TABLE_NODE_DESTROY(TEST_ITEM, item);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }

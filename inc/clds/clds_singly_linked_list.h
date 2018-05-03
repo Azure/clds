@@ -44,10 +44,13 @@ typedef struct C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
 } C2(SINGLY_LINKED_LIST_NODE_,record_type); \
 
 #define CLDS_SINGLY_LINKED_LIST_NODE_CREATE(record_type, item_cleanup_callback, item_cleanup_callback_context) \
-clds_singly_linked_list_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context);
+clds_singly_linked_list_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
 
-#define CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(record_type, ptr) \
-clds_singly_linked_list_node_destroy(ptr);
+#define CLDS_SINGLY_LINKED_LIST_NODE_INC_REF(record_type, ptr) \
+clds_singly_linked_list_node_inc_ref(ptr)
+
+#define CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(record_type, ptr) \
+clds_singly_linked_list_node_release(ptr)
 
 #define CLDS_SINGLY_LINKED_LIST_GET_VALUE(record_type, ptr) \
 ((record_type*)((unsigned char*)ptr + offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))
@@ -75,7 +78,8 @@ MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_ITEM*, clds_singly_linked_list_get_n
 
 // helper APIs for creating/destroying a singly linked list node
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_ITEM*, clds_singly_linked_list_node_create, size_t, node_size, SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
-MOCKABLE_FUNCTION(, void, clds_singly_linked_list_node_destroy, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
+MOCKABLE_FUNCTION(, int, clds_singly_linked_list_node_inc_ref, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
+MOCKABLE_FUNCTION(, void, clds_singly_linked_list_node_release, CLDS_SINGLY_LINKED_LIST_ITEM*, item);
 
 #ifdef __cplusplus
 }

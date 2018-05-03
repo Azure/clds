@@ -195,7 +195,7 @@ int clds_singly_linked_list_perf_main(void)
 
                             for (k = 0; k < j; k++)
                             {
-                                CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, thread_data[i].items[k]);
+                                CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, thread_data[i].items[k]);
                             }
                             break;
                         }

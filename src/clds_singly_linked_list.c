@@ -710,7 +710,25 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
     return result;
 }
 
-void clds_singly_linked_list_node_destroy(CLDS_SINGLY_LINKED_LIST_ITEM* item)
+int clds_singly_linked_list_node_inc_ref(CLDS_SINGLY_LINKED_LIST_ITEM* item)
+{
+    int result;
+
+    if (item == NULL)
+    {
+        LogError("NULL item");
+        result = __FAILURE__;
+    }
+    else
+    {
+        (void)InterlockedIncrement(&item->ref_count);
+        result = 0;
+    }
+
+    return result;
+}
+
+void clds_singly_linked_list_node_release(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     if (item == NULL)
     {

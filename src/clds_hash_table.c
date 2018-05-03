@@ -626,7 +626,32 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, HASH_TABLE_I
     return result;
 }
 
-void clds_hash_table_node_destroy(CLDS_HASH_TABLE_ITEM* item)
+int clds_hash_table_node_inc_ref(CLDS_HASH_TABLE_ITEM* item)
+{
+    int result;
+
+    if (item == NULL)
+    {
+        LogError("NULL item");
+        result = __FAILURE__;
+    }
+    else
+    {
+        if (clds_singly_linked_list_node_inc_ref((void*)item) != 0)
+        {
+            LogError("clds_singly_linked_list_node_inc_ref failed");
+            result = __FAILURE__;
+        }
+        else
+        {
+            result = 0;
+        }
+    }
+
+    return result;
+}
+
+void clds_hash_table_node_release(CLDS_HASH_TABLE_ITEM* item)
 {
     if (item == NULL)
     {
@@ -634,6 +659,6 @@ void clds_hash_table_node_destroy(CLDS_HASH_TABLE_ITEM* item)
     }
     else
     {
-        clds_singly_linked_list_node_destroy((void*)item);
+        clds_singly_linked_list_node_release((void*)item);
     }
 }

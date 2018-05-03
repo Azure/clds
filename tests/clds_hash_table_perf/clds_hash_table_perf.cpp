@@ -173,7 +173,7 @@ static int find_thread(void* arg)
                 }
                 else
                 {
-                    CLDS_HASH_TABLE_NODE_DESTROY(TEST_ITEM, found_item);
+                    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, found_item);
                 }
             }
 
@@ -283,7 +283,7 @@ int clds_hash_table_perf_main(void)
 
                         for (k = 0; k < j; k++)
                         {
-                            CLDS_HASH_TABLE_NODE_DESTROY(TEST_ITEM, thread_data[i].items[k]);
+                            CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, thread_data[i].items[k]);
                         }
                     }
                 }

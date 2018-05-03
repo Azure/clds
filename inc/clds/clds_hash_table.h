@@ -43,10 +43,13 @@ typedef struct C3(HASH_TABLE_NODE_,record_type,_TAG) \
 } C2(HASH_TABLE_NODE_,record_type); \
 
 #define CLDS_HASH_TABLE_NODE_CREATE(record_type, item_cleanup_callback, item_cleanup_callback_context) \
-clds_hash_table_node_create(sizeof(C2(HASH_TABLE_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context);
+clds_hash_table_node_create(sizeof(C2(HASH_TABLE_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
 
-#define CLDS_HASH_TABLE_NODE_DESTROY(record_type, ptr) \
-clds_hash_table_node_destroy(ptr);
+#define CLDS_HASH_TABLE_NODE_INC_REF(record_type, ptr) \
+clds_hash_table_node_inc_ref(ptr)
+
+#define CLDS_HASH_TABLE_NODE_RELEASE(record_type, ptr) \
+clds_hash_table_node_release(ptr)
 
 #define CLDS_HASH_TABLE_GET_VALUE(record_type, ptr) \
 ((record_type*)((unsigned char*)ptr + offsetof(C2(HASH_TABLE_NODE_,record_type), record)))
@@ -68,7 +71,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find_st, CLDS_HASH_TA
 
 // helper APIs for creating/destroying a hash table node
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_node_create, size_t, node_size, HASH_TABLE_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
-MOCKABLE_FUNCTION(, void, clds_hash_table_node_destroy, CLDS_HASH_TABLE_ITEM*, item);
+MOCKABLE_FUNCTION(, int, clds_hash_table_node_inc_ref, CLDS_HASH_TABLE_ITEM*, item);
+MOCKABLE_FUNCTION(, void, clds_hash_table_node_release, CLDS_HASH_TABLE_ITEM*, item);
 
 #ifdef __cplusplus
 }

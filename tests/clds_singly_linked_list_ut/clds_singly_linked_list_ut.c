@@ -1616,7 +1616,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_suc
     ASSERT_IS_NOT_NULL(item);
 
     // cleanup
-    CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, item);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
@@ -1633,7 +1633,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_con
     ASSERT_IS_NOT_NULL(item);
 
     // cleanup
-    CLDS_SINGLY_LINKED_LIST_NODE_DESTROY(TEST_ITEM, item);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 END_TEST_SUITE(clds_singly_linked_list_unittests)
