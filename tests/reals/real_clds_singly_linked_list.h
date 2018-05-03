@@ -17,7 +17,8 @@
         clds_singly_linked_list_delete_if, \
         clds_singly_linked_list_find, \
         clds_singly_linked_list_node_create, \
-        clds_singly_linked_list_node_destroy \
+        clds_singly_linked_list_node_inc_ref, \
+        clds_singly_linked_list_node_release \
     )
 
 #ifdef __cplusplus
