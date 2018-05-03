@@ -320,6 +320,10 @@ int clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZAR
     {
         bool restart_needed;
 
+        /* Codes_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
+
+        // search where to insert
+
         do
         {
             // get current head

@@ -71,7 +71,7 @@ static bool test_item_compare_find_always(void* item_compare_context, struct CLD
 
 typedef struct TEST_ITEM_TAG
 {
-    int dummy;
+    uint32_t key;
 } TEST_ITEM;
 
 DECLARE_SORTED_LIST_NODE_TYPE(TEST_ITEM)
@@ -263,7 +263,6 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_handle_returns)
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
-#if 0
 /* Tests_SRS_CLDS_SORTED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_sorted_list_node_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_with_1_item_in_the_list_frees_the_item_and_triggers_user_cleanup_callback)
@@ -446,7 +445,8 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_hazard_pointers_thread_handle_fa
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_009: [ `clds_sorted_list_insert` inserts an item in the list. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return 0. ]*/
-TEST_FUNCTION(clds_sorted_list_insert_2_items_succeeds)
+/* Tests_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
+TEST_FUNCTION(clds_sorted_list_insert_2_items_in_order_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -457,6 +457,44 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_succeeds)
     list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    umock_c_reset_all_calls();
+
+    // act
+    result_1 = clds_sorted_list_insert(list, hazard_pointers_thread, item_1);
+    result_2 = clds_sorted_list_insert(list, hazard_pointers_thread, item_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(int, 0, result_1);
+    ASSERT_ARE_EQUAL(int, 0, result_2);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ `clds_sorted_list_insert` inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
+TEST_FUNCTION(clds_sorted_list_insert_2_items_in_reverse_order_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list;
+    int result_1;
+    int result_2;
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_1_payload->key = 0x43;
+    item_2_payload->key = 0x42;
     umock_c_reset_all_calls();
 
     // act
@@ -475,6 +513,7 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_succeeds)
 
 /* clds_sorted_list_delete */
 
+#if 0
 /* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete` deletes an item from the list by its pointer. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/

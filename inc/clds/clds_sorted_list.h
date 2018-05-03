@@ -21,8 +21,8 @@ typedef struct CLDS_SORTED_LIST_TAG* CLDS_SORTED_LIST_HANDLE;
 
 struct CLDS_SORTED_LIST_ITEM_TAG;
 
-typedef int(*SORTED_LIST_KEY_COMPARE_CB)(void* key1, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 typedef void*(*SORTED_LIST_GET_ITEM_KEY_CB)(struct CLDS_SORTED_LIST_ITEM_TAG* item);
+typedef int(*SORTED_LIST_KEY_COMPARE_CB)(void* key1, void* key2);
 typedef void(*SORTED_LIST_ITEM_CLEANUP_CB)(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 
 // this is the structure needed for one singly linked list item
