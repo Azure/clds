@@ -191,11 +191,11 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key,
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM**, item);
 ```
 
-X**SRS_CLDS_SORTED_LIST_01_051: [** `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. **]**
+**SRS_CLDS_SORTED_LIST_01_051: [** `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. **]**
 
-X**SRS_CLDS_SORTED_LIST_01_052: [** On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. **]**
+**SRS_CLDS_SORTED_LIST_01_052: [** On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. **]**
 
-X**SRS_CLDS_SORTED_LIST_01_054: [** On success, the found item shall be returned in the `item` argument. **]**
+**SRS_CLDS_SORTED_LIST_01_054: [** On success, the found item shall be returned in the `item` argument. **]**
 
 **SRS_CLDS_SORTED_LIST_01_053: [** If `clds_sorted_list` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
 
