@@ -54,6 +54,13 @@ clds_sorted_list_node_release(ptr)
 #define CLDS_SORTED_LIST_GET_VALUE(record_type, ptr) \
 ((record_type*)((unsigned char*)ptr + offsetof(C2(SORTED_LIST_NODE_,record_type), record)))
 
+#define CLDS_SORTED_LIST_INSERT_RESULT_VALUES \
+    CLDS_SORTED_LIST_INSERT_OK, \
+    CLDS_SORTED_LIST_INSERT_ERROR, \
+    CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS
+
+DEFINE_ENUM(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
+
 #define CLDS_SORTED_LIST_DELETE_RESULT_VALUES \
     CLDS_SORTED_LIST_DELETE_OK, \
     CLDS_SORTED_LIST_DELETE_ERROR, \
@@ -65,7 +72,7 @@ DEFINE_ENUM(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUE
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 
-MOCKABLE_FUNCTION(, int, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
@@ -116,15 +123,17 @@ MOCKABLE_FUNCTION(, int, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_
 
 **SRS_CLDS_SORTED_LIST_01_009: [** `clds_sorted_list_insert` inserts an item in the list. **]**
 
-**SRS_CLDS_SORTED_LIST_01_010: [** On success `clds_sorted_list_insert` shall return 0. **]**
+**SRS_CLDS_SORTED_LIST_01_010: [** On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_011: [** If `clds_sorted_list` is NULL, `clds_sorted_list_insert` shall fail and return a non-zero value. **]**
+**SRS_CLDS_SORTED_LIST_01_011: [** If `clds_sorted_list` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_012: [** If `item` is NULL, `clds_sorted_list_insert` shall fail and return a non-zero value. **]**
+**SRS_CLDS_SORTED_LIST_01_012: [** If `item` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_013: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_insert` shall fail and return a non-zero value. **]**
+**SRS_CLDS_SORTED_LIST_01_013: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_047: [** `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. **]**
+
+**SRS_CLDS_SORTED_LIST_01_048: [** If the item with the given key already exists in the list, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS`. **]**
 
 ### clds_sorted_list_delete
 
