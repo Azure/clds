@@ -24,7 +24,7 @@ void real_free(void* ptr)
 #define ENABLE_MOCKS
 
 #include "azure_c_shared_utility/gballoc.h"
-#include "clds/clds_singly_linked_list.h"
+#include "clds/clds_sorted_list.h"
 #include "clds/clds_st_hash_set.h"
 #include "clds/clds_hazard_pointers.h"
 
@@ -33,13 +33,15 @@ void real_free(void* ptr)
 #include "clds/clds_hash_table.h"
 #include "../reals/real_clds_st_hash_set.h"
 #include "../reals/real_clds_hazard_pointers.h"
-#include "../reals/real_clds_singly_linked_list.h"
+#include "../reals/real_clds_sorted_list.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
 static TEST_MUTEX_HANDLE g_dllByDll;
 
-TEST_DEFINE_ENUM_TYPE(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_RESULT_VALUES);
-IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
 
@@ -109,7 +111,7 @@ TEST_SUITE_INITIALIZE(suite_init)
 
     REGISTER_CLDS_ST_HASH_SET_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
-    REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS();
+    REGISTER_CLDS_SORTED_LIST_GLOBAL_MOCK_HOOKS();
 
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, real_malloc);
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
@@ -117,14 +119,16 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_UMOCK_ALIAS_TYPE(RECLAIM_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTER_RECORD_HANDLE, void*);
-    REGISTER_UMOCK_ALIAS_TYPE(CLDS_SINGLY_LINKED_LIST_HANDLE, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_SORTED_LIST_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_THREAD_HANDLE, void*);
-    REGISTER_UMOCK_ALIAS_TYPE(SINGLY_LINKED_LIST_ITEM_CLEANUP_CB, void*);
-    REGISTER_UMOCK_ALIAS_TYPE(SINGLY_LINKED_LIST_ITEM_COMPARE_CB, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(SORTED_LIST_ITEM_CLEANUP_CB, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(SORTED_LIST_GET_ITEM_KEY_CB, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(SORTED_LIST_KEY_COMPARE_CB, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_HANDLE, void*);
 
-    REGISTER_TYPE(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_RESULT);
+    REGISTER_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT);
+    REGISTER_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -418,11 +422,11 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 /* clds_hash_table_insert */
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
 {
@@ -430,17 +434,17 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
+    CLDS_SORTED_LIST_HANDLE linked_list;
     int result;
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item))
-        .ValidateArgumentValue_clds_singly_linked_list(&linked_list);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item))
+        .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item);
@@ -535,7 +539,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .SetReturn(NULL);
 
     // act
@@ -564,8 +568,8 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item))
         .SetReturn(1);
 
     // act
@@ -581,10 +585,10 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_create_another_list)
 {
@@ -593,14 +597,21 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
     int result;
+    uint64_t first_hash;
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers);
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
+        .CaptureReturn(&first_hash);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2));
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
+        .SetReturn(first_hash);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2));
 
     // act
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
@@ -615,10 +626,10 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_another_list)
 {
@@ -626,7 +637,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
+    CLDS_SORTED_LIST_HANDLE linked_list;
     int result;
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -636,10 +647,10 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
         .SetReturn(1);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2))
-        .ValidateArgumentValue_clds_singly_linked_list(&linked_list);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2))
+        .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2);
@@ -660,7 +671,7 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list;
+    CLDS_SORTED_LIST_HANDLE linked_list;
     int result;
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
@@ -670,10 +681,10 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_create(hazard_pointers))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2))
-        .ValidateArgumentValue_clds_singly_linked_list(&linked_list);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2))
+        .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_2);
@@ -709,7 +720,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -860,8 +871,8 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_delete_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
-        .SetReturn(CLDS_SINGLY_LINKED_LIST_DELETE_ERROR);
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+        .SetReturn(CLDS_SORTED_LIST_DELETE_ERROR);
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -895,8 +906,8 @@ TEST_FUNCTION(delete_looks_in_2_buckets)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -937,9 +948,9 @@ TEST_FUNCTION(delete_looks_in_3_buckets)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -973,8 +984,8 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_delete_if(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x3);
@@ -993,7 +1004,7 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
 /* Tests_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_040: [ `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_041: [ `clds_hash_table_find` shall look up the key in the biggest array of buckets. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_singly_linked_list_find`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_sorted_list_find`. ]*/
 TEST_FUNCTION(clds_hash_table_find_succeeds)
 {
     // arrange
@@ -1011,7 +1022,7 @@ TEST_FUNCTION(clds_hash_table_find_succeeds)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -1048,7 +1059,7 @@ TEST_FUNCTION(clds_hash_table_find_2nd_item_out_of_3_succeeds)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x2));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x2);
@@ -1085,7 +1096,7 @@ TEST_FUNCTION(clds_hash_table_find_3rd_item_out_of_3_succeeds)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x3);
@@ -1191,8 +1202,8 @@ TEST_FUNCTION(clds_hash_table_find_looks_up_in_the_2nd_array_of_buckets)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -1228,8 +1239,8 @@ TEST_FUNCTION(when_key_is_not_found_in_any_bucket_levels_clds_hash_table_find_yi
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x4));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_singly_linked_list_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x4));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x4));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x4);

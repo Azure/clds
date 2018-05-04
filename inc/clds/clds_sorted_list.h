@@ -25,18 +25,18 @@ typedef void*(*SORTED_LIST_GET_ITEM_KEY_CB)(void* context, struct CLDS_SORTED_LI
 typedef int(*SORTED_LIST_KEY_COMPARE_CB)(void* context, void* key1, void* key2);
 typedef void(*SORTED_LIST_ITEM_CLEANUP_CB)(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 
-// this is the structure needed for one singly linked list item
+// this is the structure needed for one sorted list item
 // it contains information like ref count, next pointer, etc.
 typedef struct CLDS_SORTED_LIST_ITEM_TAG
 {
-    // these are internal variables used by the singly linked list
+    // these are internal variables used by the sorted list
     volatile LONG ref_count;
     SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
     volatile struct CLDS_SORTED_LIST_ITEM_TAG* next;
 } CLDS_SORTED_LIST_ITEM;
 
-// these are macros that help declaring a type that can be stored in the singly linked list
+// these are macros that help declaring a type that can be stored in the sorted list
 #define DECLARE_SORTED_LIST_NODE_TYPE(record_type) \
 typedef struct C3(SORTED_LIST_NODE_,record_type,_TAG) \
 { \
@@ -70,7 +70,7 @@ DEFINE_ENUM(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUE
 
 DEFINE_ENUM(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
 
-// singly linked list API
+// sorted list API
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 
@@ -79,7 +79,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 
-// helper APIs for creating/destroying a singly linked list node
+// helper APIs for creating/destroying a sorted list node
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_node_create, size_t, node_size, SORTED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
 MOCKABLE_FUNCTION(, int, clds_sorted_list_node_inc_ref, CLDS_SORTED_LIST_ITEM*, item);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_node_release, CLDS_SORTED_LIST_ITEM*, item);
