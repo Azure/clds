@@ -384,14 +384,14 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
                 }
                 else
                 {
-                    CLDS_SORTED_LIST_DELETE_RESULT delete_result;
-                    delete_result = clds_sorted_list_delete_key(bucket_list, clds_hazard_pointers_thread, key);
-                    if (delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
+                    CLDS_SORTED_LIST_DELETE_RESULT list_delete_result;
+                    list_delete_result = clds_sorted_list_delete_key(bucket_list, clds_hazard_pointers_thread, key);
+                    if (list_delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
                         /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. ]*/
                     }
-                    else if (delete_result == CLDS_SORTED_LIST_DELETE_OK)
+                    else if (list_delete_result == CLDS_SORTED_LIST_DELETE_OK)
                     {
                         (void)InterlockedDecrement(&current_bucket_array->item_count);
 
@@ -425,7 +425,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
         (clds_hazard_pointers_thread == NULL))
     {
         LogError("Invalid arguments: clds_hash_table = %p, key = %p, value = %p, clds_hazard_pointers_thread = %p", clds_hash_table, key, value, clds_hazard_pointers_thread);
-        result = __FAILURE__;
+        result = CLDS_HASH_TABLE_DELETE_ERROR;
     }
     else
     {
@@ -451,17 +451,17 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list == NULL)
                 {
-                    result = __FAILURE__;
+                    result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
                 }
                 else
                 {
-                    CLDS_SORTED_LIST_DELETE_RESULT delete_result;
-                    delete_result = clds_sorted_list_delete_item(bucket_list, clds_hazard_pointers_thread, (void*)value);
-                    if (delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
+                    CLDS_SORTED_LIST_DELETE_RESULT list_delete_result;
+                    list_delete_result = clds_sorted_list_delete_item(bucket_list, clds_hazard_pointers_thread, (void*)value);
+                    if (list_delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
                     }
-                    else if (delete_result == CLDS_SORTED_LIST_DELETE_OK)
+                    else if (list_delete_result == CLDS_SORTED_LIST_DELETE_OK)
                     {
                         (void)InterlockedDecrement(&current_bucket_array->item_count);
 
