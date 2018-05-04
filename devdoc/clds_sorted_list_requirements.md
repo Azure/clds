@@ -161,7 +161,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_019: [** `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. **]**
+**SRS_CLDS_SORTED_LIST_01_019: [** `clds_sorted_list_delete_key` shall delete an item by its key. **]**
 
 **SRS_CLDS_SORTED_LIST_01_025: [** On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. **]**
 

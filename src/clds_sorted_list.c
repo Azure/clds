@@ -40,20 +40,10 @@ static int compare_item_by_ptr(void* context, CLDS_SORTED_LIST_ITEM* item, void*
 
 static int compare_item_by_key(void* context, CLDS_SORTED_LIST_ITEM* item, void* item_compare_target)
 {
-    int result;
-
-    (void)context;
-
-    if (item == item_compare_target)
-    {
-        result = 0;
-    }
-    else
-    {
-        result = 1;
-    }
-
-    return result;
+    CLDS_SORTED_LIST_HANDLE clds_sorted_list = (CLDS_SORTED_LIST_HANDLE)context;
+    // get item key
+    void* item_key = clds_sorted_list->get_item_key_cb(item);
+    return clds_sorted_list->key_compare_cb(item_key, item_compare_target);
 }
 
 static void internal_node_destroy(CLDS_SORTED_LIST_ITEM* item)
@@ -564,11 +554,8 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
     }
     else
     {
-        /* Codes_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
-#if 0
-        result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, item_compare_callback, item_compare_callback_context);
-#endif
-        result = 0;
+        /* Codes_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
+        result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key);
     }
 
     return result;

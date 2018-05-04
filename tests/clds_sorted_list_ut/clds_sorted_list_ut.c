@@ -1081,8 +1081,7 @@ TEST_FUNCTION(clds_sorted_list_delete_twice_on_the_same_item_returns_NOT_FOUND)
 
 /* clds_sorted_list_delete_key */
 
-#if 0
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
@@ -1093,6 +1092,8 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
@@ -1107,7 +1108,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
     STRICT_EXPECTED_CALL(free(item));
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1118,7 +1119,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_succeeds_with_NULL_item_cleanup_callback)
@@ -1128,6 +1129,8 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds_with_NULL_item_cleanup_callba
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     CLDS_SORTED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
@@ -1142,7 +1145,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds_with_NULL_item_cleanup_callba
     STRICT_EXPECTED_CALL(free(item));
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1162,12 +1165,14 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_clds_sorted_list_fails)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_delete_key(NULL, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_delete_key(NULL, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1187,12 +1192,14 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_hazard_pointers_thread_fails
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_delete_key(list, NULL, test_item_compare, item);
+    result = clds_sorted_list_delete_key(list, NULL, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1212,12 +1219,14 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_item_compare_callback_fails)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, NULL, item);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1228,7 +1237,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_item_compare_callback_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
@@ -1239,6 +1248,10 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
     CLDS_SORTED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1);
@@ -1255,7 +1268,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
     STRICT_EXPECTED_CALL(free(item_2));
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item_2);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x43);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1266,7 +1279,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
@@ -1278,6 +1291,10 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2);
@@ -1293,7 +1310,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
     STRICT_EXPECTED_CALL(free(item_1));
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item_1);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1304,7 +1321,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_2nd_out_of_3_items)
@@ -1317,6 +1334,12 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_2nd_out_of_3_items)
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x44;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2);
@@ -1333,7 +1356,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_2nd_out_of_3_items)
     STRICT_EXPECTED_CALL(free(item_2));
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item_2);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x43);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1351,7 +1374,6 @@ TEST_FUNCTION(clds_sorted_list_delete_key_on_an_empty_list_yields_NOT_FOUND)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
-    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     umock_c_reset_all_calls();
@@ -1363,7 +1385,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_on_an_empty_list_yields_NOT_FOUND)
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1383,6 +1405,8 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     (void)clds_sorted_list_delete_item(list, hazard_pointers_thread, item);
@@ -1395,7 +1419,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_delete_key(list, hazard_pointers_thread, (void*)0x43);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1406,6 +1430,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+#if 0
 /* clds_sorted_list_find */
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
