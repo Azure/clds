@@ -138,42 +138,40 @@ MOCKABLE_FUNCTION(, int, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_
 ### clds_sorted_list_delete
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_014: [** `clds_sorted_list_delete` deletes an item from the list by its pointer. **]**
+**SRS_CLDS_SORTED_LIST_01_014: [** `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. **]**
 
-**SRS_CLDS_SORTED_LIST_01_026: [** On success, `clds_sorted_list_delete` shall return `CLDS_SORTED_LIST_DELETE_OK`. **]**
+**SRS_CLDS_SORTED_LIST_01_026: [** On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_015: [** If `clds_sorted_list` is NULL, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_015: [** If `clds_sorted_list` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_016: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_016: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_017: [** If `item` is NULL, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_017: [** If `item` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_018: [** If the item does not exist in the list, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
+**SRS_CLDS_SORTED_LIST_01_018: [** If the item does not exist in the list, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_042: [** When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. **]**
 
-### clds_sorted_list_delete_if
+### clds_sorted_list_delete_key
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_if, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_019: [** `clds_sorted_list_delete_if` deletes an item that matches the criteria given by a user compare function. **]**
+**SRS_CLDS_SORTED_LIST_01_019: [** `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. **]**
 
-**SRS_CLDS_SORTED_LIST_01_025: [** On success, `clds_sorted_list_delete_if` shall return `CLDS_SORTED_LIST_DELETE_OK`. **]**
+**SRS_CLDS_SORTED_LIST_01_025: [** On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_020: [** If `clds_sorted_list` is NULL, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_020: [** If `clds_sorted_list` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_021: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_021: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_022: [** If `item_compare_callback` is NULL, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_022: [** If `key` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_023: [** `item_compare_callback_context` shall be allowed to be NULL. **]**
-
-**SRS_CLDS_SORTED_LIST_01_024: [** If no item matches the criteria, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
+**SRS_CLDS_SORTED_LIST_01_024: [** If no item matches the criteria, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
 
 ### clds_sorted_list_find
 

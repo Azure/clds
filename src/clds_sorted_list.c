@@ -103,8 +103,8 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
 
                 restart_needed = false;
 
-                /* Codes_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
-                /* Codes_SRS_CLDS_SORTED_LIST_01_024: [ If no item matches the criteria, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+                /* Codes_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+                /* Codes_SRS_CLDS_SORTED_LIST_01_024: [ If no item matches the criteria, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
                 result = CLDS_SORTED_LIST_DELETE_NOT_FOUND;
                 break;
             }
@@ -195,8 +195,8 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
                                         restart_needed = false;
 
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_if` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
                                         result = CLDS_SORTED_LIST_DELETE_OK;
 
                                         break;
@@ -225,8 +225,8 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
 
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_if` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
                                         result = CLDS_SORTED_LIST_DELETE_OK;
 
                                         restart_needed = false;
@@ -349,7 +349,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
             volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
             volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
-            result = __FAILURE__;
+            result = CLDS_SORTED_LIST_INSERT_ERROR;
 
             do
             {
@@ -370,6 +370,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                         }
                         else
                         {
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                             restart_needed = false;
 
                             /* Codes_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. ]*/
@@ -470,6 +471,8 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                     }
                                     else
                                     {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                                         restart_needed = false;
 
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return 0. ]*/
@@ -488,6 +491,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                     }
                                     else
                                     {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                                         restart_needed = false;
 
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. ]*/
@@ -523,11 +527,11 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HAN
 {
     CLDS_SORTED_LIST_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_015: [ If `clds_sorted_list` is NULL, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_015: [ If `clds_sorted_list` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
     if ((clds_sorted_list == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_016: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_016: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_017: [ If `item` is NULL, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_017: [ If `item` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
         (item == NULL))
     {
         LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, item = %p",
@@ -536,7 +540,7 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HAN
     }
     else
     {
-        /* Codes_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete` deletes an item from the list by its pointer. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
         result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_ptr, item);
     }
 
@@ -547,13 +551,11 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
 {
     CLDS_SORTED_LIST_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_023: [ `item_compare_callback_context` shall be allowed to be NULL. ]*/
-
-    /* Codes_SRS_CLDS_SORTED_LIST_01_020: [ If `clds_sorted_list` is NULL, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_020: [ If `clds_sorted_list` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
     if ((clds_sorted_list == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_021: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_021: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_022: [ If `item_compare_callback` is NULL, `clds_sorted_list_delete_if` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_022: [ If `key` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
         (key == NULL))
     {
         LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, key = %p",
@@ -562,7 +564,7 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
     }
     else
     {
-        /* Codes_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` deletes an item that matches the criteria given by a user compare function. ]*/
 #if 0
         result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, item_compare_callback, item_compare_callback_context);
 #endif
