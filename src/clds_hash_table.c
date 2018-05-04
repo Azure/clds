@@ -255,7 +255,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             else
             {
                 // create a list
-                /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
+                /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
                 bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table);
                 if (bucket_list == NULL)
                 {
@@ -290,10 +290,10 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         {
             CLDS_SORTED_LIST_INSERT_RESULT list_insert_result;
 
-            /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+            /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
             hash_table_item->key = key;
 
-            /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+            /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
             list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value);
             
             if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)

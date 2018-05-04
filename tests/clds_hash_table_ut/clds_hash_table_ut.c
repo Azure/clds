@@ -429,9 +429,9 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
 {
@@ -592,8 +592,8 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_create_another_list)
 {
@@ -633,8 +633,8 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
 /* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_another_list)
 {
