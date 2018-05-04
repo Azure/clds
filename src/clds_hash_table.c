@@ -167,17 +167,17 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
 
 CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value)
 {
-    int result;
+    CLDS_HASH_TABLE_INSERT_RESULT result;
 
-    /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If `clds_hash_table` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. ]*/
+    /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If `clds_hash_table` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
     if ((clds_hash_table == NULL) ||
-        /* Codes_SRS_CLDS_HASH_TABLE_01_011: [ If `key` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_011: [ If `key` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
         (key == NULL) ||
-        /* Codes_SRS_CLDS_HASH_TABLE_01_012: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return a non-zero value. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_012: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL))
     {
         LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
-        result = __FAILURE__;
+        result = CLDS_HASH_TABLE_INSERT_ERROR;
     }
     else
     {
@@ -259,6 +259,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                 bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table);
                 if (bucket_list == NULL)
                 {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
                     LogError("Cannot allocate list for hash table bucket");
                     restart_needed = false;
                 }
@@ -283,23 +284,34 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         if (bucket_list == NULL)
         {
             LogError("Cannot acquire bucket list");
-            result = __FAILURE__;
+            result = CLDS_HASH_TABLE_INSERT_ERROR;
         }
         else
         {
+            CLDS_SORTED_LIST_INSERT_RESULT list_insert_result;
+
             /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
             hash_table_item->key = key;
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
-            if (clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value) != 0)
+            list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value);
+            
+            if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
             {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS`. ]*/
+                LogError("Key already exists in hash table");
+                result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
+            }
+            else if (list_insert_result != CLDS_SORTED_LIST_INSERT_OK)
+            {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
                 LogError("Cannot insert hash table item into list");
-                result = __FAILURE__;
+                result = CLDS_HASH_TABLE_INSERT_ERROR;
             }
             else
             {
                 /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
-                result = 0;
+                result = CLDS_HASH_TABLE_INSERT_OK;
                 goto all_ok;
             }
         }
