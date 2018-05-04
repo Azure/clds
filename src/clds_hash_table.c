@@ -12,7 +12,7 @@
 #include "azure_c_shared_utility/xlogging.h"
 #include "clds/clds_hash_table.h"
 #include "clds/clds_atomics.h"
-#include "clds/clds_singly_linked_list.h"
+#include "clds/clds_sorted_list.h"
 #include "clds/clds_hazard_pointers.h"
 
 /* this is a hash table implementation */
@@ -22,7 +22,7 @@ typedef struct BUCKET_ARRAY_TAG
     volatile struct BUCKET_ARRAY_TAG* next_bucket;
     volatile LONG bucket_count;
     volatile LONG item_count;
-    CLDS_SINGLY_LINKED_LIST_HANDLE hash_table[];
+    CLDS_SORTED_LIST_HANDLE hash_table[];
 } BUCKET_ARRAY;
 
 typedef struct CLDS_HASH_TABLE_TAG
@@ -33,18 +33,25 @@ typedef struct CLDS_HASH_TABLE_TAG
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 } CLDS_HASH_TABLE;
 
-typedef struct FIND_BY_KEY_CONTEXT_TAG
-{
-    void* key;
-    KEY_COMPARE_FUNC key_compare_func;
-} FIND_BY_KEY_CONTEXT;
-
 typedef struct FIND_BY_KEY_VALUE_CONTEXT_TAG
 {
     void* key;
     void* value;
     KEY_COMPARE_FUNC key_compare_func;
 } FIND_BY_KEY_VALUE_CONTEXT;
+
+static void* get_item_key_cb(void* context, CLDS_SORTED_LIST_ITEM* item)
+{
+    HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+    (void)context;
+    return hash_table_item->key;
+}
+
+static int key_compare_cb(void* context, void* key1, void* key2)
+{
+    CLDS_HASH_TABLE_HANDLE clds_hash_table = (CLDS_HASH_TABLE_HANDLE)context;
+    return clds_hash_table->key_compare_func(key1, key2);
+}
 
 CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
@@ -73,7 +80,7 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
         }
         else
         {
-            clds_hash_table->first_hash_table = malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SINGLY_LINKED_LIST_HANDLE) * initial_bucket_size));
+            clds_hash_table->first_hash_table = malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SORTED_LIST_HANDLE) * initial_bucket_size));
             if (clds_hash_table->first_hash_table == NULL)
             {
                 LogError("Cannot allocate memory for hash table array");
@@ -110,9 +117,9 @@ all_ok:
     return clds_hash_table;
 }
 
-static void singly_linked_list_item_cleanup(void* context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+static void sorted_list_item_cleanup(void* context, CLDS_SORTED_LIST_ITEM* item)
 {
-    HASH_TABLE_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+    HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
 
     (void)context;
     if (hash_table_item->item_cleanup_callback != NULL)
@@ -142,10 +149,10 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
             {
                 if (bucket_array->hash_table[i] != NULL)
                 {
-                    CLDS_SINGLY_LINKED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&bucket_array->hash_table[i], NULL, NULL);
+                    CLDS_SORTED_LIST_HANDLE linked_list = InterlockedCompareExchangePointer(&bucket_array->hash_table[i], NULL, NULL);
                     if (linked_list != NULL)
                     {
-                        clds_singly_linked_list_destroy(linked_list);
+                        clds_sorted_list_destroy(linked_list);
                     }
                 }
             }
@@ -175,8 +182,8 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
     else
     {
         bool restart_needed;
-        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list = NULL;
-        HASH_TABLE_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, value);
+        CLDS_SORTED_LIST_HANDLE bucket_list = NULL;
+        HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, value);
         uint64_t hash;
         BUCKET_ARRAY* current_bucket;
         volatile LONG bucket_count;
@@ -189,7 +196,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         while (InterlockedAdd(&current_bucket->item_count, 0) >= bucket_count)
         {
             // allocate a new bucket array
-            BUCKET_ARRAY* new_bucket_array = (BUCKET_ARRAY*)malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SINGLY_LINKED_LIST_HANDLE) * bucket_count * 2));
+            BUCKET_ARRAY* new_bucket_array = (BUCKET_ARRAY*)malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count * 2));
             if (new_bucket_array == NULL)
             {
                 // cannot allocate new bucket, will stick to what we have, but do not fail
@@ -249,7 +256,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
             {
                 // create a list
                 /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no singly linked list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_singly_linked_list_create(clds_hash_table->clds_hazard_pointers);
+                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table);
                 if (bucket_list == NULL)
                 {
                     LogError("Cannot allocate list for hash table bucket");
@@ -261,7 +268,7 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
                     if (InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], bucket_list, NULL) != NULL)
                     {
                         // oops, someone else inserted a new list, just bail on our list and restart
-                        clds_singly_linked_list_destroy(bucket_list);
+                        clds_sorted_list_destroy(bucket_list);
                         restart_needed = true;
                     }
                     else
@@ -280,11 +287,11 @@ int clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_P
         }
         else
         {
-            /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_singly_linked_list_node_create`. ]*/
+            /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new singly linked list item shall be created by calling `clds_sorted_list_node_create`. ]*/
             hash_table_item->key = key;
 
-            /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_singly_linked_list_insert`. ]*/
-            if (clds_singly_linked_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value) != 0)
+            /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new singly linked list node shall be inserted in the singly linked list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+            if (clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value) != 0)
             {
                 LogError("Cannot insert hash table item into list");
                 result = __FAILURE__;
@@ -302,29 +309,11 @@ all_ok:
     return result;
 }
 
-bool find_by_key(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
-{
-    bool result;
-    FIND_BY_KEY_CONTEXT* find_by_key_context = (FIND_BY_KEY_CONTEXT*)item_compare_context;
-    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
-
-    if (find_by_key_context->key_compare_func(hash_table_item->key, find_by_key_context->key) != 0)
-    {
-        result = false;
-    }
-    else
-    {
-        result = true;
-    }
-
-    return result;
-}
-
-bool find_by_key_value(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
+bool find_by_key_value(void* item_compare_context, CLDS_SORTED_LIST_ITEM* item)
 {
     bool result;
     FIND_BY_KEY_VALUE_CONTEXT* find_by_key_value_context = (FIND_BY_KEY_VALUE_CONTEXT*)item_compare_context;
-    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
 
     if ((item != find_by_key_value_context->value) ||
         (find_by_key_value_context->key_compare_func(hash_table_item->key, find_by_key_value_context->key) != 0))
@@ -355,7 +344,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
     }
     else
     {
-        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+        CLDS_SORTED_LIST_HANDLE bucket_list;
         BUCKET_ARRAY* current_bucket_array;
 
         // compute the hash
@@ -383,17 +372,14 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
                 }
                 else
                 {
-                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result;
-                    FIND_BY_KEY_CONTEXT find_by_key_context;
-                    find_by_key_context.key = key;
-                    find_by_key_context.key_compare_func = clds_hash_table->key_compare_func;
-                    delete_result = clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key, &find_by_key_context);
-                    if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND)
+                    CLDS_SORTED_LIST_DELETE_RESULT delete_result;
+                    delete_result = clds_sorted_list_delete_key(bucket_list, clds_hazard_pointers_thread, key);
+                    if (delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
                         /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table, `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_RESULT_NOT_FOUND`. ]*/
                     }
-                    else if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_OK)
+                    else if (delete_result == CLDS_SORTED_LIST_DELETE_OK)
                     {
                         (void)InterlockedDecrement(&current_bucket_array->item_count);
 
@@ -431,7 +417,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
     }
     else
     {
-        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+        CLDS_SORTED_LIST_HANDLE bucket_list;
         BUCKET_ARRAY* current_bucket_array;
 
         // compute the hash
@@ -457,17 +443,13 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
                 }
                 else
                 {
-                    CLDS_SINGLY_LINKED_LIST_DELETE_RESULT delete_result;
-                    FIND_BY_KEY_VALUE_CONTEXT find_by_key_value_context;
-                    find_by_key_value_context.key = key;
-                    find_by_key_value_context.value = value;
-                    find_by_key_value_context.key_compare_func = clds_hash_table->key_compare_func;
-                    delete_result = clds_singly_linked_list_delete_if(bucket_list, clds_hazard_pointers_thread, find_by_key_value, &find_by_key_value_context);
-                    if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND)
+                    CLDS_SORTED_LIST_DELETE_RESULT delete_result;
+                    delete_result = clds_sorted_list_delete_item(bucket_list, clds_hazard_pointers_thread, (void*)value);
+                    if (delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
                     }
-                    else if (delete_result == CLDS_SINGLY_LINKED_LIST_DELETE_OK)
+                    else if (delete_result == CLDS_SORTED_LIST_DELETE_OK)
                     {
                         (void)InterlockedDecrement(&current_bucket_array->item_count);
 
@@ -505,7 +487,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
     }
     else
     {
-        CLDS_SINGLY_LINKED_LIST_HANDLE bucket_list;
+        CLDS_SORTED_LIST_HANDLE bucket_list;
 
         result = NULL;
 
@@ -523,18 +505,14 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
             if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
             {
                 // find the bucket
-                /* Codes_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_singly_linked_list_find`. ]*/
+                /* Codes_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_sorted_list_find`. ]*/
                 uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
 
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
-                    FIND_BY_KEY_CONTEXT find_by_key_context;
-                    find_by_key_context.key = key;
-                    find_by_key_context.key_compare_func = clds_hash_table->key_compare_func;
-
                     /* Codes_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
-                    result = (void*)clds_singly_linked_list_find(bucket_list, clds_hazard_pointers_thread, find_by_key, &find_by_key_context);
+                    result = (void*)clds_sorted_list_find_key(bucket_list, clds_hazard_pointers_thread, key);
                     if (result == NULL)
                     {
                         // go to the next level of buckets
@@ -576,10 +554,10 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, HASH_TABLE_I
     else
     {
         volatile CLDS_HASH_TABLE_ITEM* item = (volatile CLDS_HASH_TABLE_ITEM*)((unsigned char*)result);
-        HASH_TABLE_ITEM* hash_table_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+        HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
         hash_table_item->item_cleanup_callback = item_cleanup_callback;
         hash_table_item->item_cleanup_callback_context = item_cleanup_callback_context;
-        item->item.item_cleanup_callback = singly_linked_list_item_cleanup;
+        item->item.item_cleanup_callback = sorted_list_item_cleanup;
         item->item.item_cleanup_callback_context = (void*)item;
         (void)InterlockedExchange(&item->item.ref_count, 1);
     }
@@ -598,9 +576,9 @@ int clds_hash_table_node_inc_ref(CLDS_HASH_TABLE_ITEM* item)
     }
     else
     {
-        if (clds_singly_linked_list_node_inc_ref((void*)item) != 0)
+        if (clds_sorted_list_node_inc_ref((void*)item) != 0)
         {
-            LogError("clds_singly_linked_list_node_inc_ref failed");
+            LogError("clds_sorted_list_node_inc_ref failed");
             result = __FAILURE__;
         }
         else
@@ -620,6 +598,6 @@ void clds_hash_table_node_release(CLDS_HASH_TABLE_ITEM* item)
     }
     else
     {
-        clds_singly_linked_list_node_release((void*)item);
+        clds_sorted_list_node_release((void*)item);
     }
 }

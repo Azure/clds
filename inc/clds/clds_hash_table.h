@@ -6,7 +6,7 @@
 #include "windows.h"
 #include "azure_c_shared_utility/umock_c_prod.h"
 #include "clds_hazard_pointers.h"
-#include "clds_singly_linked_list.h"
+#include "clds_sorted_list.h"
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -30,9 +30,9 @@ typedef struct HASH_TABLE_ITEM_TAG
     void* key;
 } HASH_TABLE_ITEM;
 
-DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(HASH_TABLE_ITEM)
+DECLARE_SORTED_LIST_NODE_TYPE(HASH_TABLE_ITEM)
 
-typedef struct SINGLY_LINKED_LIST_NODE_HASH_TABLE_ITEM_TAG CLDS_HASH_TABLE_ITEM;
+typedef struct SORTED_LIST_NODE_HASH_TABLE_ITEM_TAG CLDS_HASH_TABLE_ITEM;
 
 // these are macros that help declaring a type that can be stored in the hash table
 #define DECLARE_HASH_TABLE_NODE_TYPE(record_type) \

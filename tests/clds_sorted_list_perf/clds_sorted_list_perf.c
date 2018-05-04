@@ -11,7 +11,7 @@
 #include "clds_sorted_list_perf.h"
 
 #define THREAD_COUNT 10
-#define INSERT_COUNT 100000
+#define INSERT_COUNT 1000
 
 typedef struct TEST_ITEM_TAG
 {
@@ -29,14 +29,16 @@ typedef struct THREAD_DATA_TAG
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
 } THREAD_DATA;
 
-static void* test_get_item_key(struct CLDS_SORTED_LIST_ITEM_TAG* item)
+static void* test_get_item_key(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item)
 {
     TEST_ITEM* test_item = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    (void)context;
     return test_item->key;
 }
 
-static int test_key_compare(void* key1, void* key2)
+static int test_key_compare(void* context, void* key1, void* key2)
 {
+    (void)context;
     return strcmp((const char*)key1, (const char*)key2);
 }
 
@@ -160,7 +162,7 @@ int clds_sorted_list_perf_main(void)
     }
     else
     {
-        sorted_list = clds_sorted_list_create(clds_hazard_pointers, test_get_item_key, test_key_compare);
+        sorted_list = clds_sorted_list_create(clds_hazard_pointers, test_get_item_key, NULL, test_key_compare, NULL);
         if (sorted_list == NULL)
         {
             LogError("Error creating sorted list");

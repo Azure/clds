@@ -15,7 +15,9 @@ typedef struct CLDS_SORTED_LIST_TAG
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
     volatile CLDS_SORTED_LIST_ITEM* head;
     SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb;
+    void* get_item_key_cb_context;
     SORTED_LIST_KEY_COMPARE_CB key_compare_cb;
+    void* key_compare_cb_context;
 } CLDS_SORTED_LIST;
 
 typedef int(*SORTED_LIST_ITEM_COMPARE_CB)(void* context, CLDS_SORTED_LIST_ITEM* item1, void* item_compare_target);
@@ -42,8 +44,8 @@ static int compare_item_by_key(void* context, CLDS_SORTED_LIST_ITEM* item, void*
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list = (CLDS_SORTED_LIST_HANDLE)context;
     // get item key
-    void* item_key = clds_sorted_list->get_item_key_cb(item);
-    return clds_sorted_list->key_compare_cb(item_key, item_compare_target);
+    void* item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
+    return clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, item_key, item_compare_target);
 }
 
 static void internal_node_destroy(CLDS_SORTED_LIST_ITEM* item)
@@ -247,9 +249,12 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
     return result;
 }
 
-CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, SORTED_LIST_KEY_COMPARE_CB key_compare_cb)
+CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context)
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list;
+
+    /* Codes_SRS_CLDS_SORTED_LIST_01_049: [ `get_item_key_cb_context` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_050: [ `key_compare_cb_context` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
     if ((clds_hazard_pointers == NULL) ||
@@ -275,7 +280,9 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             // all ok
             clds_sorted_list->clds_hazard_pointers = clds_hazard_pointers;
             clds_sorted_list->get_item_key_cb = get_item_key_cb;
+            clds_sorted_list->get_item_key_cb_context = get_item_key_cb_context;
             clds_sorted_list->key_compare_cb = key_compare_cb;
+            clds_sorted_list->key_compare_cb_context = key_compare_cb_context;
 
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL);
         }
@@ -330,7 +337,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
     else
     {
         bool restart_needed;
-        void* new_item_key = clds_sorted_list->get_item_key_cb(item);
+        void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
 
         /* Codes_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 
@@ -347,6 +354,8 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                 volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
                 if (current_item == NULL)
                 {
+                    item->next = NULL;
+
                     // not found, so insert it here
                     if (previous_item != NULL)
                     {
@@ -425,8 +434,8 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                         else
                         {
                             // we are in a stable state, compare the current item key to our key
-                            void* current_item_key = clds_sorted_list->get_item_key_cb((struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
-                            int compare_result = clds_sorted_list->key_compare_cb(new_item_key, current_item_key);
+                            void* current_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, (struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
+                            int compare_result = clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, new_item_key, current_item_key);
 
                             if (compare_result == 0)
                             {
@@ -640,8 +649,8 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
                         }
                         else
                         {
-                            void* item_key = clds_sorted_list->get_item_key_cb((struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
-                            int compare_result = clds_sorted_list->key_compare_cb(key, item_key);
+                            void* item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, (struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
+                            int compare_result = clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, key, item_key);
                             if (compare_result == 0)
                             {
                                 if (previous_hp != NULL)
