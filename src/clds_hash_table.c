@@ -484,6 +484,85 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
     return result;
 }
 
+CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM** item)
+{
+    CLDS_HASH_TABLE_DELETE_RESULT result;
+
+    /* Codes_SRS_CLDS_HASH_TABLE_01_050: [ If `clds_hash_table` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+    if ((clds_hash_table == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_051: [ If `key` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+        (key == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_052: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_056: [ If `item` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+        (item == NULL))
+    {
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, item = %p", clds_hash_table, key, clds_hazard_pointers_thread, item);
+        result = CLDS_HASH_TABLE_REMOVE_ERROR;
+    }
+    else
+    {
+        CLDS_SORTED_LIST_HANDLE bucket_list;
+        BUCKET_ARRAY* current_bucket_array;
+
+        /* Codes_SRS_CLDS_HASH_TABLE_01_047: [ `clds_hash_table_remove` shall remove a key from the hash table and return a pointer to the item to the user. ]*/
+
+        // compute the hash
+        /* Codes_SRS_CLDS_HASH_TABLE_01_048: [ `clds_hash_table_remove` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
+        uint64_t hash = clds_hash_table->compute_hash(key);
+
+        result = CLDS_HASH_TABLE_REMOVE_NOT_FOUND;
+
+        // always insert in the first bucket array
+        current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
+        {
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                // find the bucket
+                uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list == NULL)
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. ]*/
+                    result = CLDS_HASH_TABLE_REMOVE_NOT_FOUND;
+                }
+                else
+                {
+                    CLDS_SORTED_LIST_REMOVE_RESULT list_remove_result;
+                    list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item);
+                    if (list_remove_result == CLDS_SORTED_LIST_REMOVE_NOT_FOUND)
+                    {
+                        // not found
+                    }
+                    else if (list_remove_result == CLDS_SORTED_LIST_REMOVE_OK)
+                    {
+                        (void)InterlockedDecrement(&current_bucket_array->item_count);
+
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_049: [ On success `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_OK`. ]*/
+                        result = CLDS_HASH_TABLE_REMOVE_OK;
+                        break;
+                    }
+                    else
+                    {
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_054: [ If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+                        result = CLDS_HASH_TABLE_REMOVE_ERROR;
+                        break;
+                    }
+                }
+            }
+
+            /* Codes_SRS_CLDS_HASH_TABLE_01_055: [ If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. ]*/
+            current_bucket_array = next_bucket_array;
+        }
+    }
+
+    return result;
+}
+
 CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     CLDS_HASH_TABLE_ITEM* result;

@@ -188,9 +188,9 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item);
 ```
 
-**SRS_CLDS_HASH_TABLE_01_047: [** `clds_hash_table_remove` shall remove a key from the hash table and return a pointer to the item to the user. **]**
+X**SRS_CLDS_HASH_TABLE_01_047: [** `clds_hash_table_remove` shall remove a key from the hash table and return a pointer to the item to the user. **]**
 
-**SRS_CLDS_HASH_TABLE_01_048: [** `clds_hash_table_remove` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+X**SRS_CLDS_HASH_TABLE_01_048: [** `clds_hash_table_remove` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_049: [** On success `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_OK`. **]**
 
@@ -200,13 +200,13 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_052: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_053: [** If the desired key is not found in the hash table, `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. **]**
+**SRS_CLDS_HASH_TABLE_01_056: [** If `item` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_053: [** If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_054: [** If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_055: [** If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. **]**
-
-**SRS_CLDS_HASH_TABLE_01_056: [** If the key is not found in any of the arrays of buckets, `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. **]**
 
 ### clds_hash_table_find
 
