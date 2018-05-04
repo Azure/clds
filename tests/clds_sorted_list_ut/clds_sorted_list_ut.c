@@ -1211,7 +1211,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_hazard_pointers_thread_fails
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_022: [ If `key` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
-TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_item_compare_callback_fails)
+TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_key_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1430,12 +1430,11 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-#if 0
-/* clds_sorted_list_find */
+/* clds_sorted_list_find_key */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
-TEST_FUNCTION(clds_sorted_list_find_succeeds_in_finding_an_item)
+/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_succeeds_in_finding_an_item)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1443,6 +1442,8 @@ TEST_FUNCTION(clds_sorted_list_find_succeeds_in_finding_an_item)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
@@ -1454,7 +1455,7 @@ TEST_FUNCTION(clds_sorted_list_find_succeeds_in_finding_an_item)
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1465,9 +1466,9 @@ TEST_FUNCTION(clds_sorted_list_find_succeeds_in_finding_an_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
-TEST_FUNCTION(clds_sorted_list_find_finds_the_2nd_out_of_3_added_items)
+/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_finds_the_2nd_out_of_3_added_items)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1477,6 +1478,12 @@ TEST_FUNCTION(clds_sorted_list_find_finds_the_2nd_out_of_3_added_items)
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x44;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2);
@@ -1490,7 +1497,7 @@ TEST_FUNCTION(clds_sorted_list_find_finds_the_2nd_out_of_3_added_items)
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item_2);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x43);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1501,9 +1508,9 @@ TEST_FUNCTION(clds_sorted_list_find_finds_the_2nd_out_of_3_added_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
-TEST_FUNCTION(clds_sorted_list_find_finds_the_last_added_item)
+/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_finds_the_last_added_item)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1513,6 +1520,12 @@ TEST_FUNCTION(clds_sorted_list_find_finds_the_last_added_item)
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x44;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2);
@@ -1526,7 +1539,7 @@ TEST_FUNCTION(clds_sorted_list_find_finds_the_last_added_item)
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item_3);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x44);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1537,8 +1550,8 @@ TEST_FUNCTION(clds_sorted_list_find_finds_the_last_added_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_028: [ If `clds_sorted_list` is NULL, `clds_sorted_list_find` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_with_NULL_clds_sorted_list_fails)
+/* Tests_SRS_CLDS_SORTED_LIST_01_028: [ If `clds_sorted_list` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_clds_sorted_list_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1546,12 +1559,14 @@ TEST_FUNCTION(clds_sorted_list_find_with_NULL_clds_sorted_list_fails)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_find(NULL, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_find_key(NULL, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1562,8 +1577,8 @@ TEST_FUNCTION(clds_sorted_list_find_with_NULL_clds_sorted_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_030: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_find` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_with_NULL_hazard_pointers_thread_fails)
+/* Tests_SRS_CLDS_SORTED_LIST_01_030: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_hazard_pointers_thread_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1571,12 +1586,14 @@ TEST_FUNCTION(clds_sorted_list_find_with_NULL_hazard_pointers_thread_fails)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_find(list, NULL, test_item_compare, item);
+    result = clds_sorted_list_find_key(list, NULL, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1587,8 +1604,8 @@ TEST_FUNCTION(clds_sorted_list_find_with_NULL_hazard_pointers_thread_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_031: [ If `item_compare_callback` is NULL, `clds_sorted_list_find` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_with_NULL_item_compare_callback_fails)
+/* Tests_SRS_CLDS_SORTED_LIST_01_031: [ If `key` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_key_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1596,12 +1613,14 @@ TEST_FUNCTION(clds_sorted_list_find_with_NULL_item_compare_callback_fails)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, NULL, item);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1612,45 +1631,13 @@ TEST_FUNCTION(clds_sorted_list_find_with_NULL_item_compare_callback_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_032: [ `item_compare_callback_context` shall be allowed to be NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_with_NULL_item_compare_callback_context_succeeds_in_finding_an_item)
+/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_on_an_empty_list_returns_NULL)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
-    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    CLDS_SORTED_LIST_ITEM* result;
-    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
-    umock_c_reset_all_calls();
-
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-
-    // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare_find_always, NULL);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(void_ptr, item, result);
-
-    // cleanup
-    clds_sorted_list_destroy(list);
-    clds_hazard_pointers_destroy(hazard_pointers);
-}
-
-/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_on_an_empty_list_returns_NULL)
-{
-    // arrange
-    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
-    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     umock_c_reset_all_calls();
@@ -1662,7 +1649,7 @@ TEST_FUNCTION(clds_sorted_list_find_on_an_empty_list_returns_NULL)
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1673,8 +1660,8 @@ TEST_FUNCTION(clds_sorted_list_find_on_an_empty_list_returns_NULL)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_after_the_item_was_deleted_returns_NULL)
+/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_after_the_item_was_deleted_returns_NULL)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1682,6 +1669,8 @@ TEST_FUNCTION(clds_sorted_list_find_after_the_item_was_deleted_returns_NULL)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
     (void)clds_sorted_list_delete_item(list, hazard_pointers_thread, item);
@@ -1694,7 +1683,7 @@ TEST_FUNCTION(clds_sorted_list_find_after_the_item_was_deleted_returns_NULL)
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1705,8 +1694,8 @@ TEST_FUNCTION(clds_sorted_list_find_after_the_item_was_deleted_returns_NULL)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_find_when_the_item_is_not_in_the_list_returns_NULL)
+/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_when_the_item_is_not_in_the_list_returns_NULL)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1716,6 +1705,12 @@ TEST_FUNCTION(clds_sorted_list_find_when_the_item_is_not_in_the_list_returns_NUL
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x44;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_3);
@@ -1728,19 +1723,20 @@ TEST_FUNCTION(clds_sorted_list_find_when_the_item_is_not_in_the_list_returns_NUL
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     // act
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item_1);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x42);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NULL(result);
 
     // cleanup
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item_1);
     clds_sorted_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_034: [ `clds_sorted_list_find` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
-TEST_FUNCTION(clds_sorted_list_find_result_has_the_ref_count_incremented)
+/* Tests_SRS_CLDS_SORTED_LIST_01_034: [ `clds_sorted_list_find_key` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
+TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1748,9 +1744,11 @@ TEST_FUNCTION(clds_sorted_list_find_result_has_the_ref_count_incremented)
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, test_key_compare);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item);
-    result = clds_sorted_list_find(list, hazard_pointers_thread, test_item_compare, item);
+    result = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x42);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
@@ -1781,6 +1779,8 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_succeeds)
     // arrange
     CLDS_SORTED_LIST_ITEM* item;
 
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
     // act
     item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
 
@@ -1798,6 +1798,8 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_context_su
     // arrange
     CLDS_SORTED_LIST_ITEM* item;
 
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
     // act
     item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, NULL);
 
@@ -1808,6 +1810,5 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_context_su
     // cleanup
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
-#endif
 
 END_TEST_SUITE(clds_sorted_list_unittests)

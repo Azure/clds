@@ -173,27 +173,25 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key,
 
 **SRS_CLDS_SORTED_LIST_01_024: [** If no item matches the criteria, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
 
-### clds_sorted_list_find
+### clds_sorted_list_find_key
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB, item_compare_callback, void*, item_compare_callback_context);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_027: [** `clds_sorted_list_find` shall find in the list the first item that matches the criteria given by a user compare function. **]**
+**SRS_CLDS_SORTED_LIST_01_027: [** `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. **]**
 
-**SRS_CLDS_SORTED_LIST_01_029: [** On success `clds_sorted_list_find` shall return a non-NULL pointer to the found linked list item. **]**
+**SRS_CLDS_SORTED_LIST_01_029: [** On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. **]**
 
-**SRS_CLDS_SORTED_LIST_01_028: [** If `clds_sorted_list` is NULL, `clds_sorted_list_find` shall fail and return NULL. **]**
+**SRS_CLDS_SORTED_LIST_01_028: [** If `clds_sorted_list` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. **]**
 
-**SRS_CLDS_SORTED_LIST_01_030: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_find` shall fail and return NULL. **]**
+**SRS_CLDS_SORTED_LIST_01_030: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. **]**
 
-**SRS_CLDS_SORTED_LIST_01_031: [** If `item_compare_callback` is NULL, `clds_sorted_list_find` shall fail and return NULL. **]**
+**SRS_CLDS_SORTED_LIST_01_031: [** If `key` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. **]**
 
-**SRS_CLDS_SORTED_LIST_01_032: [** `item_compare_callback_context` shall be allowed to be NULL. **]**
+**SRS_CLDS_SORTED_LIST_01_033: [** If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. **]**
 
-**SRS_CLDS_SORTED_LIST_01_033: [** If no item satisfying the user compare function is found in the list, `clds_sorted_list_find` shall fail and return NULL. **]**
-
-**SRS_CLDS_SORTED_LIST_01_034: [** `clds_sorted_list_find` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. **]**
+**SRS_CLDS_SORTED_LIST_01_034: [** `clds_sorted_list_find_key` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. **]**
 
 ### clds_sorted_list_node_create
 

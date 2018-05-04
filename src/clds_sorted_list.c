@@ -561,7 +561,7 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
     return result;
 }
 
-CLDS_SORTED_LIST_ITEM* clds_sorted_list_find(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
+CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     CLDS_SORTED_LIST_ITEM* result;
 
@@ -569,7 +569,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find(CLDS_SORTED_LIST_HANDLE clds_sorted
     if ((clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_030: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_find` shall fail and return NULL. ]*/
         (clds_hazard_pointers_thread == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_031: [ If `item_compare_callback` is NULL, `clds_sorted_list_find` shall fail and return NULL. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_031: [ If `key` is NULL, `clds_sorted_list_find` shall fail and return NULL. ]*/
         (key == NULL))
     {
         LogError("Invalid arguments: clds_sorted_list = %p, key = %p",
@@ -640,8 +640,9 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find(CLDS_SORTED_LIST_HANDLE clds_sorted
                         }
                         else
                         {
-#if 0
-                            if (item_compare_callback(item_compare_callback_context, (CLDS_SORTED_LIST_ITEM*)current_item))
+                            void* item_key = clds_sorted_list->get_item_key_cb((struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
+                            int compare_result = clds_sorted_list->key_compare_cb(key, item_key);
+                            if (compare_result == 0)
                             {
                                 if (previous_hp != NULL)
                                 {
@@ -659,7 +660,6 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find(CLDS_SORTED_LIST_HANDLE clds_sorted
                                 break;
                             }
                             else
-#endif
                             {
                                 // we have a stable pointer to the current item, now simply set the previous to be this
                                 if (previous_hp != NULL)
