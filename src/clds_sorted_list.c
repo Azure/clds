@@ -18,6 +18,7 @@ typedef struct CLDS_SORTED_LIST_TAG
     void* get_item_key_cb_context;
     SORTED_LIST_KEY_COMPARE_CB key_compare_cb;
     void* key_compare_cb_context;
+    volatile LONG64* sequence_number;
 } CLDS_SORTED_LIST;
 
 typedef int(*SORTED_LIST_ITEM_COMPARE_CB)(void* context, CLDS_SORTED_LIST_ITEM* item1, void* item_compare_target);
@@ -68,7 +69,7 @@ static void reclaim_list_node(void* node)
     internal_node_destroy((CLDS_SORTED_LIST_ITEM*)node);
 }
 
-static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_target)
+static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_target, int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_DELETE_RESULT result = CLDS_SORTED_LIST_DELETE_ERROR;
 
@@ -159,6 +160,9 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                             }
                             else
                             {
+                                // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
+                                (void)InterlockedExchange64(&current_item->seq_no, InterlockedIncrement64(clds_sorted_list->sequence_number));
+
                                 // the current node is marked for deletion, now try to change the previous link to the next value
 
                                 // If in the meanwhile someone would be deleting node A they would have to first set the
@@ -179,6 +183,9 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
+                                        // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                        *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+
                                         // delete succesfull
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
@@ -209,6 +216,9 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
+                                        // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                        *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+
                                         // delete succesfull, no-one deleted the left node in the meanwhile
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -431,7 +441,7 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
     return result;
 }
 
-CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context)
+CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list;
 
@@ -465,6 +475,7 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             clds_sorted_list->get_item_key_cb_context = get_item_key_cb_context;
             clds_sorted_list->key_compare_cb = key_compare_cb;
             clds_sorted_list->key_compare_cb_context = key_compare_cb_context;
+            clds_sorted_list->sequence_number = sequence_number;
 
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL);
         }
@@ -501,7 +512,7 @@ void clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
     }
 }
 
-CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM* item)
+CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM* item, int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_INSERT_RESULT result;
 
@@ -520,6 +531,9 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
     {
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
+
+        *sequence_number = InterlockedIncrement64(clds_sorted_list->sequence_number);
+        item->seq_no = *sequence_number;
 
         /* Codes_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 
@@ -704,7 +718,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
     return result;
 }
 
-CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM* item)
+CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM* item, int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_DELETE_RESULT result;
 
@@ -722,13 +736,13 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HAN
     else
     {
         /* Codes_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-        result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_ptr, item);
+        result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_ptr, item, sequence_number);
     }
 
     return result;
 }
 
-CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
+CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_DELETE_RESULT result;
 
@@ -746,7 +760,7 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
     else
     {
         /* Codes_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
-        result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key);
+        result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key, sequence_number);
     }
 
     return result;

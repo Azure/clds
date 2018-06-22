@@ -59,7 +59,7 @@ static int insert_thread(void* arg)
             for (i = 0; i < INSERT_COUNT; i++)
             {
                 TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i]) != 0)
+                if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i], NULL) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -112,7 +112,7 @@ static int delete_thread(void* arg)
             for (i = 0; i < INSERT_COUNT; i++)
             {
                 TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key) != 0)
+                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, NULL) != 0)
                 {
                     LogError("Error deleting");
                     break;
@@ -223,7 +223,8 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        hash_table = clds_hash_table_create(test_compute_hash, key_compare_func, 1024, clds_hazard_pointers);
+        int64_t sequence_number;
+        hash_table = clds_hash_table_create(test_compute_hash, key_compare_func, 1024, clds_hazard_pointers, &sequence_number);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");

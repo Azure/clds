@@ -68,7 +68,9 @@ static int insert_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_sorted_list_insert(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
+                int64_t insert_seq_no;
+
+                if (clds_sorted_list_insert(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], &insert_seq_no) != 0)
                 {
                     LogError("Error inserting");
                     break;
@@ -120,7 +122,8 @@ static int delete_thread(void* arg)
             tickcounter_ms_t end_time;
             for (i = 0; i < INSERT_COUNT; i++)
             {
-                if (clds_sorted_list_delete_item(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
+                int64_t delete_seq_no;
+                if (clds_sorted_list_delete_item(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], &delete_seq_no) != 0)
                 {
                     LogError("Error deleting");
                     break;
@@ -154,6 +157,7 @@ int clds_sorted_list_perf_main(void)
     THREAD_DATA* thread_data;
     size_t i;
     size_t j;
+    volatile int64_t sequence_number;
 
     clds_hazard_pointers = clds_hazard_pointers_create();
     if (clds_hazard_pointers == NULL)
@@ -162,7 +166,7 @@ int clds_sorted_list_perf_main(void)
     }
     else
     {
-        sorted_list = clds_sorted_list_create(clds_hazard_pointers, test_get_item_key, NULL, test_key_compare, NULL);
+        sorted_list = clds_sorted_list_create(clds_hazard_pointers, test_get_item_key, NULL, test_key_compare, NULL, &sequence_number);
         if (sorted_list == NULL)
         {
             LogError("Error creating sorted list");
