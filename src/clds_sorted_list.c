@@ -783,7 +783,7 @@ CLDS_SORTED_LIST_REMOVE_RESULT clds_sorted_list_remove_key(CLDS_SORTED_LIST_HAND
     }
     else
     {
-        /* Codes_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
         result = internal_remove(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key, item);
     }
 

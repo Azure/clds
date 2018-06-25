@@ -1489,7 +1489,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
 
 /* clds_sorted_list_remove_key */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_succeeds)
@@ -1527,7 +1527,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_succeeds_with_NULL_item_cleanup_callback)
@@ -1649,7 +1649,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
@@ -1692,7 +1692,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_second_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
@@ -1735,7 +1735,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_oldest_out_of_2_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
