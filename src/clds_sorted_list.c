@@ -278,7 +278,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
     return result;
 }
 
-static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_target, CLDS_SORTED_LIST_ITEM** item)
+static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_target, CLDS_SORTED_LIST_ITEM** item, int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_REMOVE_RESULT result = CLDS_SORTED_LIST_DELETE_ERROR;
 
@@ -368,6 +368,14 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                             }
                             else
                             {
+                                /* Codes_SRS_CLDS_SORTED_LIST_01_073: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+                                if (clds_sorted_list->sequence_number != NULL)
+                                {
+                                    // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_074: [ If the `sequence_number` argument passed to `clds_sorted_list_remove_key` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
+                                    (void)InterlockedExchange64(&current_item->seq_no, InterlockedIncrement64(clds_sorted_list->sequence_number));
+                                }
+
                                 // the current node is marked for deletion, now try to change the previous link to the next value
 
                                 // If in the meanwhile someone would be deleting node A they would have to first set the
@@ -390,6 +398,13 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                     {
                                         *item = (CLDS_SORTED_LIST_ITEM*)current_item;
                                         clds_sorted_list_node_inc_ref(*item);
+
+                                        if (sequence_number != NULL)
+                                        {
+                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                        }
 
                                         // delete succesfull
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -421,6 +436,13 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                     {
                                         *item = (CLDS_SORTED_LIST_ITEM*)current_item;
                                         clds_sorted_list_node_inc_ref(*item);
+
+                                        if (sequence_number != NULL)
+                                        {
+                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                        }
 
                                         // delete succesfull, no-one deleted the left node in the meanwhile
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -806,7 +828,7 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
     return result;
 }
 
-CLDS_SORTED_LIST_REMOVE_RESULT clds_sorted_list_remove_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_SORTED_LIST_ITEM** item)
+CLDS_SORTED_LIST_REMOVE_RESULT clds_sorted_list_remove_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_SORTED_LIST_ITEM** item, int64_t* sequence_number)
 {
     CLDS_SORTED_LIST_REMOVE_RESULT result;
 
@@ -815,16 +837,18 @@ CLDS_SORTED_LIST_REMOVE_RESULT clds_sorted_list_remove_key(CLDS_SORTED_LIST_HAND
         /* Codes_SRS_CLDS_SORTED_LIST_01_055: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_056: [ If `key` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
-        (key == NULL))
+        (key == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_075: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, key = %p",
-            clds_sorted_list, clds_hazard_pointers_thread, key);
-        result = CLDS_SORTED_LIST_DELETE_ERROR;
+        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, key = %p, sequence_number = %p",
+            clds_sorted_list, clds_hazard_pointers_thread, key, sequence_number);
+        result = CLDS_SORTED_LIST_REMOVE_ERROR;
     }
     else
     {
         /* Codes_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
-        result = internal_remove(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key, item);
+        result = internal_remove(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key, item, sequence_number);
     }
 
     return result;

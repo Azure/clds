@@ -543,7 +543,7 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
                 else
                 {
                     CLDS_SORTED_LIST_REMOVE_RESULT list_remove_result;
-                    list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item);
+                    list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item, NULL);
                     if (list_remove_result == CLDS_SORTED_LIST_REMOVE_NOT_FOUND)
                     {
                         // not found
