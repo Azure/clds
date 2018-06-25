@@ -161,7 +161,7 @@ Y**SRS_CLDS_SORTED_LIST_01_062: [** If the `sequence_number` argument is non-NUL
 ### clds_sorted_list_delete
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item, int64_t*, sequence_number);
 ```
 
 **SRS_CLDS_SORTED_LIST_01_014: [** `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. **]**
@@ -187,7 +187,7 @@ Y**SRS_CLDS_SORTED_LIST_01_065: [** If the `sequence_number` argument is non-NUL
 ### clds_sorted_list_delete_key
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 ```
 
 **SRS_CLDS_SORTED_LIST_01_019: [** `clds_sorted_list_delete_key` shall delete an item by its key. **]**
