@@ -9,10 +9,6 @@ The module provides the following functionality:
 
 All operations can be concurrent with other operations of the same or different kind.
 
-No uniqueness in enforced yet on the hash table.
-That means that multiple keys could be inserted succesfully.
-When deleting a key, the first found key would be deleted.
-
 ## Exposed API
 
 ```c
@@ -76,12 +72,12 @@ DEFINE_ENUM(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES)
 
 DEFINE_ENUM(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
 
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile int64_t*, start_sequence_number);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value);
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value);
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 
 // helper APIs for creating/destroying a hash table node
@@ -93,7 +89,7 @@ MOCKABLE_FUNCTION(, void, clds_hash_table_node_release, CLDS_HASH_TABLE_ITEM*, i
 ### clds_hash_table_create
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile int64_t*, start_sequence_number);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_001: [** `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. **]**
@@ -123,7 +119,7 @@ MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_
 ### clds_hash_table_insert
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_008: [** `clds_hash_table_insert` shall insert a key/value pair in the hash table. **]**
@@ -159,7 +155,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 ### clds_hash_table_delete
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_013: [** `clds_hash_table_delete` shall delete a key from the hash table. **]**
@@ -183,7 +179,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_
 ### clds_hash_table_remove
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item, int64_t*, sequence_number);
 ```
 
 **SRS_CLDS_HASH_TABLE_01_047: [** `clds_hash_table_remove` shall remove a key from the hash table and return a pointer to the item to the user. **]**

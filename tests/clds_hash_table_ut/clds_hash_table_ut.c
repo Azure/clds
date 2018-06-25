@@ -1070,7 +1070,7 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
     STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1092,7 +1092,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_hash_table_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_hash_table_remove(NULL, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(NULL, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1117,7 +1117,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_clds_hazard_pointers_thread_fails
     umock_c_reset_all_calls();
 
     // act
-    result = clds_hash_table_remove(hash_table, NULL, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, NULL, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1143,7 +1143,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_key_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, NULL, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, NULL, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1168,7 +1168,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_item_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1194,7 +1194,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_a_key_that_is_not_in_the_hash_table_fa
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1223,7 +1223,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_a_key_that_is_already_deleted_fails)
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1253,7 +1253,7 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_remove_
         .SetReturn(CLDS_SORTED_LIST_REMOVE_ERROR);
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1289,7 +1289,7 @@ TEST_FUNCTION(remove_looks_in_2_buckets)
     STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1333,7 +1333,7 @@ TEST_FUNCTION(remove_looks_in_3_buckets)
     STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1369,7 +1369,7 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_remove_returns_NOT_FOUND)
     STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
 
     // act
-    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x3, &removed_item);
+    result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x3, &removed_item, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());

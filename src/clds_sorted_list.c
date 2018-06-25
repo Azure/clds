@@ -482,14 +482,14 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
     return result;
 }
 
-CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* sequence_number)
+CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* start_sequence_number)
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list;
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_049: [ `get_item_key_cb_context` shall be allowed to be NULL. ]*/
     /* Codes_SRS_CLDS_SORTED_LIST_01_050: [ `key_compare_cb_context` shall be allowed to be NULL. ]*/
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_059: [ `sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
     if ((clds_hazard_pointers == NULL) ||
@@ -498,8 +498,8 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
         /* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
         (key_compare_cb == NULL))
     {
-        LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, get_item_key_cb_context = %p, key_compare_cb = %p, key_compare_cb_context = %p, sequence_number = %p",
-            clds_hazard_pointers, get_item_key_cb, get_item_key_cb_context, key_compare_cb, key_compare_cb_context, sequence_number);
+        LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, get_item_key_cb_context = %p, key_compare_cb = %p, key_compare_cb_context = %p, start_sequence_number = %p",
+            clds_hazard_pointers, get_item_key_cb, get_item_key_cb_context, key_compare_cb, key_compare_cb_context, start_sequence_number);
         clds_sorted_list = NULL;
     }
     else
@@ -520,8 +520,8 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             clds_sorted_list->key_compare_cb = key_compare_cb;
             clds_sorted_list->key_compare_cb_context = key_compare_cb_context;
 
-            /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ `sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
-            clds_sorted_list->sequence_number = sequence_number;
+            /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ `start_sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
+            clds_sorted_list->sequence_number = start_sequence_number;
 
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL);
         }

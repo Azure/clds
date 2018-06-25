@@ -77,7 +77,7 @@ DEFINE_ENUM(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUE
 DEFINE_ENUM(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
 
 // sorted list API
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, start_sequence_number);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item, int64_t*, sequence_number);
@@ -95,7 +95,7 @@ MOCKABLE_FUNCTION(, void, clds_sorted_list_node_release, CLDS_SORTED_LIST_ITEM*,
 ### clds_sorted_list_create
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, start_sequence_number);
 ```
 
 **SRS_CLDS_SORTED_LIST_01_001: [** `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. **]**
@@ -112,9 +112,9 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZAR
 
 **SRS_CLDS_SORTED_LIST_01_050: [** `key_compare_cb_context` shall be allowed to be NULL. **]**
 
-**SRS_CLDS_SORTED_LIST_01_058: [** `sequence_number` shall be used by the sorted list to compute the sequence number of each operation. **]**
+**SRS_CLDS_SORTED_LIST_01_058: [** `start_sequence_number` shall be used by the sorted list to compute the sequence number of each operation. **]**
 
-**SRS_CLDS_SORTED_LIST_01_059: [** `sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. **]**
+**SRS_CLDS_SORTED_LIST_01_059: [** `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. **]**
 
 ### clds_sorted_list_destroy
 

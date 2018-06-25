@@ -151,7 +151,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 /* clds_sorted_list_create */
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
@@ -291,7 +291,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_context_context_su
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_058: [ `sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_058: [ `start_sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_non_NULL_sequence_number_succeeds)
 {
     // arrange
