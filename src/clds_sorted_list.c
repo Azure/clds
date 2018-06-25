@@ -160,6 +160,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                             }
                             else
                             {
+                                /* Codes_SRS_CLDS_SORTED_LIST_01_070: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
                                 if (clds_sorted_list->sequence_number != NULL)
                                 {
                                     // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
@@ -186,9 +187,11 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
                                         if (sequence_number != NULL)
                                         {
                                             // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
                                             *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
                                         }
 
@@ -222,9 +225,11 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
                                         if (sequence_number != NULL)
                                         {
                                             // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
                                             *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
                                         }
 
@@ -466,7 +471,8 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
         /* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
         (key_compare_cb == NULL))
     {
-        LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, key_compare_cb = %p");
+        LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, get_item_key_cb_context = %p, key_compare_cb = %p, key_compare_cb_context = %p, sequence_number = %p",
+            clds_hazard_pointers, get_item_key_cb, get_item_key_cb_context, key_compare_cb, key_compare_cb_context, sequence_number);
         clds_sorted_list = NULL;
     }
     else
@@ -538,8 +544,8 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
         /* Codes_SRS_CLDS_SORTED_LIST_01_062: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. ]*/
         ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, item = %p, clds_hazard_pointers_thread = %p",
-            clds_sorted_list, item, clds_hazard_pointers_thread);
+        LogError("Invalid arguments: clds_sorted_list = %p, item = %p, clds_hazard_pointers_thread = %p, sequence_number = %p",
+            clds_sorted_list, item, clds_hazard_pointers_thread, sequence_number);
         result = CLDS_SORTED_LIST_INSERT_ERROR;
     }
     else
@@ -752,10 +758,12 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HAN
         /* Codes_SRS_CLDS_SORTED_LIST_01_016: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_017: [ If `item` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
-        (item == NULL))
+        (item == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_065: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, item = %p",
-            clds_sorted_list, clds_hazard_pointers_thread, item);
+        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, item = %p, sequence_number = %p",
+            clds_sorted_list, clds_hazard_pointers_thread, item, sequence_number);
         result = CLDS_SORTED_LIST_DELETE_ERROR;
     }
     else

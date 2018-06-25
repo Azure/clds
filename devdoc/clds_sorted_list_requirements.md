@@ -180,13 +180,13 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 
 **SRS_CLDS_SORTED_LIST_01_042: [** When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_063: [** For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
+**SRS_CLDS_SORTED_LIST_01_063: [** For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_070: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
+**SRS_CLDS_SORTED_LIST_01_070: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_064: [** If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. **]**
+**SRS_CLDS_SORTED_LIST_01_064: [** If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_065: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_065: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
 ### clds_sorted_list_delete_key
 
