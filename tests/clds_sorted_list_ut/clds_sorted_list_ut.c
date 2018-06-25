@@ -465,7 +465,6 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_item_cleanup_callback_does_not_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-#if 0
 /* clds_sorted_list_insert */
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_009: [ `clds_sorted_list_insert` inserts an item in the list. ]*/
@@ -2274,6 +2273,5 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_context_su
     // cleanup
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
-#endif
 
 END_TEST_SUITE(clds_sorted_list_unittests)

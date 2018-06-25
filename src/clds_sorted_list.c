@@ -160,8 +160,11 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                             }
                             else
                             {
-                                // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
-                                (void)InterlockedExchange64(&current_item->seq_no, InterlockedIncrement64(clds_sorted_list->sequence_number));
+                                if (clds_sorted_list->sequence_number != NULL)
+                                {
+                                    // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
+                                    (void)InterlockedExchange64(&current_item->seq_no, InterlockedIncrement64(clds_sorted_list->sequence_number));
+                                }
 
                                 // the current node is marked for deletion, now try to change the previous link to the next value
 
@@ -183,8 +186,11 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
-                                        // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
-                                        *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                        if (sequence_number != NULL)
+                                        {
+                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                        }
 
                                         // delete succesfull
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -216,8 +222,11 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
-                                        // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
-                                        *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                        if (sequence_number != NULL)
+                                        {
+                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                        }
 
                                         // delete succesfull, no-one deleted the left node in the meanwhile
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
