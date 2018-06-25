@@ -206,13 +206,13 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key,
 
 **SRS_CLDS_SORTED_LIST_01_024: [** If the key is not found, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_066: [** For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
+**SRS_CLDS_SORTED_LIST_01_066: [** For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_071: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
+**SRS_CLDS_SORTED_LIST_01_071: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_067: [** If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. **]**
+**SRS_CLDS_SORTED_LIST_01_067: [** If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_068: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_068: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
 ### clds_sorted_list_remove_key
 
@@ -233,6 +233,14 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key,
 **SRS_CLDS_SORTED_LIST_01_056: [** If `key` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_057: [** If the key is not found, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_NOT_FOUND`. **]**
+
+Y**SRS_CLDS_SORTED_LIST_01_072: [** For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
+
+Y**SRS_CLDS_SORTED_LIST_01_073: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
+
+Y**SRS_CLDS_SORTED_LIST_01_074: [** If the `sequence_number` argument passed to `clds_sorted_list_remove_key` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. **]**
+
+Y**SRS_CLDS_SORTED_LIST_01_075: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
 
 ### clds_sorted_list_find_key
 
