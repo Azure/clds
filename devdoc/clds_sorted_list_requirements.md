@@ -214,7 +214,7 @@ Y**SRS_CLDS_SORTED_LIST_01_068: [** If the `sequence_number` argument is non-NUL
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM**, item);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_051: [** `clds_sorted_list_remove_key` shall delete an remove an item by its key and return the pointer to it. **]**
+**SRS_CLDS_SORTED_LIST_01_051: [** `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. **]**
 
 **SRS_CLDS_SORTED_LIST_01_052: [** On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. **]**
 
