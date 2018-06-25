@@ -152,13 +152,13 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLD
 
 **SRS_CLDS_SORTED_LIST_01_048: [** If the item with the given key already exists in the list, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS`. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_060: [** For each insert the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
+**SRS_CLDS_SORTED_LIST_01_060: [** For each insert the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_069: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
+**SRS_CLDS_SORTED_LIST_01_069: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_061: [** If the `sequence_number` argument passed to `clds_sorted_list_insert` is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. **]**
+**SRS_CLDS_SORTED_LIST_01_061: [** If the `sequence_number` argument passed to `clds_sorted_list_insert` is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
+**SRS_CLDS_SORTED_LIST_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
 
 ### clds_sorted_list_delete
 
