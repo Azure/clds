@@ -448,6 +448,8 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
     /* Codes_SRS_CLDS_SORTED_LIST_01_049: [ `get_item_key_cb_context` shall be allowed to be NULL. ]*/
     /* Codes_SRS_CLDS_SORTED_LIST_01_050: [ `key_compare_cb_context` shall be allowed to be NULL. ]*/
 
+    /* Codes_SRS_CLDS_SORTED_LIST_01_059: [ `sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+
     /* Codes_SRS_CLDS_SORTED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
     if ((clds_hazard_pointers == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_045: [ If `get_item_key_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
@@ -475,6 +477,8 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             clds_sorted_list->get_item_key_cb_context = get_item_key_cb_context;
             clds_sorted_list->key_compare_cb = key_compare_cb;
             clds_sorted_list->key_compare_cb_context = key_compare_cb_context;
+
+            /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ `sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
             clds_sorted_list->sequence_number = sequence_number;
 
             (void)InterlockedExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL);
@@ -532,8 +536,11 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
 
-        *sequence_number = InterlockedIncrement64(clds_sorted_list->sequence_number);
-        item->seq_no = *sequence_number;
+        if (clds_sorted_list->sequence_number != NULL)
+        {
+            *sequence_number = InterlockedIncrement64(clds_sorted_list->sequence_number);
+            item->seq_no = *sequence_number;
+        }
 
         /* Codes_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 
