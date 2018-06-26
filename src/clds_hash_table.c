@@ -54,11 +54,17 @@ static int key_compare_cb(void* context, void* key1, void* key2)
     return clds_hash_table->key_compare_func(key1, key2);
 }
 
+static void sorted_list_skipped_seq_no(void* context, int64_t skipped_sequence_no)
+{
+    (void)context;
+    (void)skipped_sequence_no;
+}
+
 CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, volatile int64_t* start_sequence_number)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
 
-    /* Codes_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequenc number computations shall be performed. ]*/
+    /* Codes_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_003: [ If `compute_hash` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
     if ((compute_hash == NULL) ||
@@ -266,7 +272,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             {
                 // create a list
                 /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number);
+                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, sorted_list_skipped_seq_no, clds_hash_table);
                 if (bucket_list == NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/

@@ -106,7 +106,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH
 
 **SRS_CLDS_HASH_TABLE_01_057: [** `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. **]**
 
-**SRS_CLDS_HASH_TABLE_01_058: [** `start_sequence_number` shall be allowed to be NULL, in which case no sequenc number computations shall be performed. **]**
+**SRS_CLDS_HASH_TABLE_01_058: [** `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. **]**
 
 **SRS_CLDS_HASH_TABLE_01_027: [** The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. **]**
 

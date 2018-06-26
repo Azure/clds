@@ -166,7 +166,7 @@ int clds_sorted_list_perf_main(void)
     }
     else
     {
-        sorted_list = clds_sorted_list_create(clds_hazard_pointers, test_get_item_key, NULL, test_key_compare, NULL, &sequence_number);
+        sorted_list = clds_sorted_list_create(clds_hazard_pointers, test_get_item_key, NULL, test_key_compare, NULL, &sequence_number, NULL, NULL);
         if (sorted_list == NULL)
         {
             LogError("Error creating sorted list");

@@ -133,6 +133,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_UMOCK_ALIAS_TYPE(SORTED_LIST_KEY_COMPARE_CB, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_HANDLE, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(SORTED_LIST_SKIPPED_SEQ_NO_CB, void*);
 
     REGISTER_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT);
     REGISTER_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT);
@@ -169,7 +170,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_027: [ The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequenc number computations shall be performed. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
@@ -479,7 +480,7 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, NULL, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
@@ -511,7 +512,7 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair_with_non_NULL_st
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
@@ -609,7 +610,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .SetReturn(NULL);
 
     // act
@@ -638,7 +639,7 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item, NULL))
         .SetReturn(CLDS_SORTED_LIST_INSERT_ERROR);
 
@@ -717,7 +718,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
         .SetReturn(1);
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
@@ -751,7 +752,7 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_2, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
@@ -818,7 +819,7 @@ TEST_FUNCTION(clds_hash_table_insert_passes_the_sequence_number_to_the_sorted_li
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
         .CaptureReturn(&linked_list);
     STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item, &insert_seq_no))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);

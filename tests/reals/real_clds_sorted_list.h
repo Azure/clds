@@ -30,7 +30,7 @@ extern "C"
 #include <stddef.h>
 #endif
 
-CLDS_SORTED_LIST_HANDLE real_clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* sequence_no);
+CLDS_SORTED_LIST_HANDLE real_clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* sequence_no, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context);
 void real_clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list);
 
 CLDS_SORTED_LIST_INSERT_RESULT real_clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM* item, int64_t* sequence_no);

@@ -19,6 +19,8 @@ typedef struct CLDS_SORTED_LIST_TAG
     SORTED_LIST_KEY_COMPARE_CB key_compare_cb;
     void* key_compare_cb_context;
     volatile LONG64* sequence_number;
+    SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb;
+    void* skipped_seq_no_cb_context;
 } CLDS_SORTED_LIST;
 
 typedef int(*SORTED_LIST_ITEM_COMPARE_CB)(void* context, CLDS_SORTED_LIST_ITEM* item1, void* item_compare_target);
@@ -482,12 +484,14 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
     return result;
 }
 
-CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* start_sequence_number)
+CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context)
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list;
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_049: [ `get_item_key_cb_context` shall be allowed to be NULL. ]*/
     /* Codes_SRS_CLDS_SORTED_LIST_01_050: [ `key_compare_cb_context` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_077: [ `skipped_seq_no_cb_context` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
 
@@ -519,6 +523,8 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             clds_sorted_list->get_item_key_cb_context = get_item_key_cb_context;
             clds_sorted_list->key_compare_cb = key_compare_cb;
             clds_sorted_list->key_compare_cb_context = key_compare_cb_context;
+            clds_sorted_list->skipped_seq_no_cb = skipped_seq_no_cb;
+            clds_sorted_list->skipped_seq_no_cb_context = skipped_seq_no_cb_context;
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ `start_sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
             clds_sorted_list->sequence_number = start_sequence_number;

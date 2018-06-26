@@ -152,7 +152,8 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
-TEST_FUNCTION(clds_hash_table_create_succeeds)
+/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_create_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -162,7 +163,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -174,7 +175,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_002: [ If any error happens, `clds_sorted_list_create` shall fail and return NULL. ]*/
-TEST_FUNCTION(when_allocating_memory_fails_clds_hash_table_create_fails)
+TEST_FUNCTION(when_allocating_memory_fails_clds_sorted_list_create_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -185,7 +186,7 @@ TEST_FUNCTION(when_allocating_memory_fails_clds_hash_table_create_fails)
         .SetReturn(NULL);
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -196,13 +197,13 @@ TEST_FUNCTION(when_allocating_memory_fails_clds_hash_table_create_fails)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
+TEST_FUNCTION(clds_sorted_list_create_with_NULL_clds_hazard_pointers_fails)
 {
     // arrange
     CLDS_SORTED_LIST_HANDLE list;
 
     // act
-    list = clds_sorted_list_create(NULL, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(NULL, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -210,7 +211,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_045: [ If `get_item_key_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_hash_table_create_with_NULL_get_item_key_cb_fails)
+TEST_FUNCTION(clds_sorted_list_create_with_NULL_get_item_key_cb_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -218,7 +219,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_get_item_key_cb_fails)
     umock_c_reset_all_calls();
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, NULL, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, NULL, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -229,7 +230,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_get_item_key_cb_fails)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_049: [ `get_item_key_cb_context` shall be allowed to be NULL. ]*/
-TEST_FUNCTION(clds_hash_table_create_with_NULL_get_item_key_cb_context_succeeds)
+TEST_FUNCTION(clds_sorted_list_create_with_NULL_get_item_key_cb_context_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -239,7 +240,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_get_item_key_cb_context_succeeds)
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, NULL, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, NULL, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -251,7 +252,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_get_item_key_cb_context_succeeds)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
-TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_fails)
+TEST_FUNCTION(clds_sorted_list_create_with_NULL_key_compare_cb_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -259,7 +260,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_fails)
     umock_c_reset_all_calls();
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, NULL, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, NULL, (void*)0x4243, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -270,7 +271,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_fails)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_050: [ `key_compare_cb_context` shall be allowed to be NULL. ]*/
-TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_context_context_succeeds)
+TEST_FUNCTION(clds_sorted_list_create_with_NULL_key_compare_cb_context_context_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -280,7 +281,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_context_context_su
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, NULL, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -292,7 +293,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_cb_context_context_su
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_058: [ `start_sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
-TEST_FUNCTION(clds_hash_table_create_with_non_NULL_sequence_number_succeeds)
+TEST_FUNCTION(clds_sorted_list_create_with_non_NULL_sequence_number_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -303,7 +304,7 @@ TEST_FUNCTION(clds_hash_table_create_with_non_NULL_sequence_number_succeeds)
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -322,7 +323,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
@@ -344,7 +345,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources_for_a_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
     volatile int64_t sequence_number;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
@@ -379,7 +380,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_1_item_in_the_list_frees_the_item_an
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
     item_payload->key = 0x42;
@@ -408,7 +409,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_2_items_in_the_list_frees_the_item_a
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -445,7 +446,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_item_cleanup_callback_does_not_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
     item_payload->key = 0x42;
@@ -477,7 +478,7 @@ TEST_FUNCTION(clds_sorted_list_insert_succeeds)
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
     item_payload->key = 0x42;
@@ -526,7 +527,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_fails)
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     umock_c_reset_all_calls();
 
     // act
@@ -548,7 +549,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_hazard_pointers_thread_handle_fa
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
     item_payload->key = 0x42;
@@ -577,7 +578,7 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_in_order_succeeds)
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result_1;
     CLDS_SORTED_LIST_INSERT_RESULT result_2;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -614,7 +615,7 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_in_reverse_order_succeeds)
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result_1;
     CLDS_SORTED_LIST_INSERT_RESULT result_2;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -648,7 +649,7 @@ TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_fails)
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -686,7 +687,7 @@ TEST_FUNCTION(clds_sorted_list_insert_provides_sequence_numbers)
     volatile int64_t sequence_number = 0x42;
     int64_t insert_seq_no_1 = 0;
     int64_t insert_seq_no_2 = 0;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -725,7 +726,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_sequence_number_still_computes_s
     CLDS_SORTED_LIST_INSERT_RESULT result_2;
     volatile int64_t sequence_number = 0x42;
     int64_t insert_seq_no_2 = 0;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -761,7 +762,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_non_NULL_sequence_number_but_no_start
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result;
     int64_t insert_seq_no = 0;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
     item_1_payload->key = 0x42;
@@ -792,7 +793,7 @@ TEST_FUNCTION(clds_sorted_list_delete_item_deletes_the_item)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -831,7 +832,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_item_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -875,7 +876,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_oldest_out_of_2_items_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
@@ -919,7 +920,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_out_of_3_items_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -966,7 +967,7 @@ TEST_FUNCTION(clds_sorted_list_delete_deletes_the_item_NULL_cleanup_callback)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1004,7 +1005,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_item_succeeds_NULL_cleanup_cal
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
@@ -1046,7 +1047,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_oldest_out_of_2_items_succeeds_NUL
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
@@ -1088,7 +1089,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_out_of_3_items_succeeds_NULL_c
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
@@ -1131,7 +1132,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_NULL_list_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1157,7 +1158,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_NULL_clds_hazard_pointers_thread_fail
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item, NULL);
@@ -1185,7 +1186,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_NULL_item_fails)
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_DELETE_RESULT result;
-    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
     item_payload->key = 0x42;
@@ -1210,7 +1211,7 @@ TEST_FUNCTION(clds_sorted_list_delete_on_an_empty_lists_returns_NOT_FOUND)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     umock_c_reset_all_calls();
@@ -1234,7 +1235,7 @@ TEST_FUNCTION(clds_sorted_list_delete_when_the_item_is_not_in_the_list_returns_N
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
@@ -1267,7 +1268,7 @@ TEST_FUNCTION(clds_sorted_list_delete_twice_on_the_same_item_returns_NOT_FOUND)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1297,7 +1298,7 @@ TEST_FUNCTION(clds_sorted_list_delete_stamps_the_order)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     volatile int64_t sequence_number = 42;
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result_1;
@@ -1348,7 +1349,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_no_start_seq_no_stamps_the_order)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     volatile int64_t sequence_number = 42;
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result_1;
@@ -1396,7 +1397,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_non_NULL_sequence_no_and_no_start_seq
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -1429,7 +1430,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1467,7 +1468,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds_with_NULL_item_cleanup_callba
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
     item_payload->key = 0x42;
@@ -1502,7 +1503,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_clds_sorted_list_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1529,7 +1530,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_hazard_pointers_thread_fails
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1556,7 +1557,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_key_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1585,7 +1586,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -1627,7 +1628,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
@@ -1669,7 +1670,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_2nd_out_of_3_items)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -1713,7 +1714,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_on_an_empty_list_yields_NOT_FOUND)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     umock_c_reset_all_calls();
@@ -1742,7 +1743,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1777,7 +1778,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_stamps_the_sequence_no)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     volatile int64_t sequence_number = 42;
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
     CLDS_SORTED_LIST_DELETE_RESULT result_1;
@@ -1830,7 +1831,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_sequence_no_and_non_NULL_sta
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     volatile int64_t sequence_number = 42;
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
     CLDS_SORTED_LIST_DELETE_RESULT result_1;
@@ -1880,7 +1881,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_non_NULL_sequence_no_and_no_start
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_DELETE_RESULT result;
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -1913,7 +1914,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
     CLDS_SORTED_LIST_REMOVE_RESULT result;
@@ -1951,7 +1952,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_succeeds_with_NULL_item_cleanup_callba
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -1987,7 +1988,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_clds_sorted_list_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
     CLDS_SORTED_LIST_REMOVE_RESULT result;
@@ -2015,7 +2016,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_hazard_pointers_thread_fails
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
     CLDS_SORTED_LIST_REMOVE_RESULT result;
@@ -2043,7 +2044,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_key_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
     CLDS_SORTED_LIST_REMOVE_RESULT result;
@@ -2074,7 +2075,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_second_item)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
@@ -2117,7 +2118,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_oldest_out_of_2_items)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_REMOVE_RESULT result;
@@ -2160,7 +2161,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_2nd_out_of_3_items)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -2204,7 +2205,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_on_an_empty_list_yields_NOT_FOUND)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_REMOVE_RESULT result;
     CLDS_SORTED_LIST_ITEM* removed_item;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
@@ -2234,7 +2235,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_after_the_item_was_deleted_yields_NOT_
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_REMOVE_RESULT result;
     CLDS_SORTED_LIST_ITEM* removed_item;
@@ -2270,7 +2271,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_stamps_the_sequence_numbers)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     volatile int64_t sequence_number = 42;
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
@@ -2320,7 +2321,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_sequence_number_and_non_NULL
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     volatile int64_t sequence_number = 42;
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
@@ -2367,7 +2368,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_non_NULL_sequence_number_and_NULL
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* removed_item;
     TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
@@ -2399,7 +2400,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_succeeds_in_finding_an_item)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -2433,7 +2434,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_finds_the_2nd_out_of_3_added_items)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -2475,7 +2476,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_finds_the_last_added_item)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -2516,7 +2517,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_clds_sorted_list_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -2543,7 +2544,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_hazard_pointers_thread_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -2570,7 +2571,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_key_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -2597,7 +2598,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_on_an_empty_list_returns_NULL)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* result;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     umock_c_reset_all_calls();
@@ -2626,7 +2627,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_after_the_item_was_deleted_returns_NULL)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
@@ -2660,7 +2661,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_when_the_item_is_not_in_the_list_returns
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -2701,7 +2702,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* result;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
