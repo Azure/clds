@@ -104,9 +104,9 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH
 
 **SRS_CLDS_HASH_TABLE_01_005: [** If `clds_hazard_pointers` is NULL, `clds_hash_table_create` shall fail and return NULL. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_057: [** `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. **]**
+**SRS_CLDS_HASH_TABLE_01_057: [** `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_058: [** `start_sequence_number` shall be allowed to be NULL, in which case no sequenc number computations shall be performed. **]**
+**SRS_CLDS_HASH_TABLE_01_058: [** `start_sequence_number` shall be allowed to be NULL, in which case no sequenc number computations shall be performed. **]**
 
 **SRS_CLDS_HASH_TABLE_01_027: [** The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. **]**
 
@@ -142,7 +142,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_019: [** If no sorted list exists at the determined bucket index then a new list shall be created. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_071: [** When a new list is created, the start sequence number passed to `clds_hash_tabel_create` shall be passed as the `start_sequence_number` argument. **]**
+**SRS_CLDS_HASH_TABLE_01_071: [** When a new list is created, the start sequence number passed to `clds_hash_tabel_create` shall be passed as the `start_sequence_number` argument. **]**
 
 **SRS_CLDS_HASH_TABLE_01_020: [** A new sorted list item shall be created by calling `clds_sorted_list_node_create`. **]**
 
