@@ -117,9 +117,11 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZAR
 
 **SRS_CLDS_SORTED_LIST_01_059: [** `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_076: [** `skipped_seq_no_cb` shall be allowed to be NULL. **]**
+**SRS_CLDS_SORTED_LIST_01_076: [** `skipped_seq_no_cb` shall be allowed to be NULL. **]**
 
-Y**SRS_CLDS_SORTED_LIST_01_077: [** `skipped_seq_no_cb_context` shall be allowed to be NULL. **]**
+**SRS_CLDS_SORTED_LIST_01_077: [** `skipped_seq_no_cb_context` shall be allowed to be NULL. **]**
+
+**SRS_CLDS_SORTED_LIST_01_078: [** If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. **]**
 
 ### clds_sorted_list_destroy
 

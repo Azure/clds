@@ -54,6 +54,8 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 
 MOCK_FUNCTION_WITH_CODE(, void, test_item_cleanup_func, void*, context, CLDS_SORTED_LIST_ITEM*, item)
 MOCK_FUNCTION_END()
+MOCK_FUNCTION_WITH_CODE(, void, test_skipped_seq_no_cb, void*, context, int64_t, skipped_seq_no)
+MOCK_FUNCTION_END()
 
 typedef struct TEST_ITEM_TAG
 {
@@ -152,8 +154,60 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list;
+    volatile int64_t sequence_number = 45;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(list);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_077: [ `skipped_seq_no_cb_context` shall be allowed to be NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_skipped_seq_no_cb_and_context)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list;
+    volatile int64_t sequence_number = 44;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(list);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_077: [ `skipped_seq_no_cb_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_078: [ If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_start_sequence_no)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -171,6 +225,25 @@ TEST_FUNCTION(clds_sorted_list_create_succeeds)
 
     // cleanup
     clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_078: [ If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_sorted_list_create_with_NULL_sequence_no_and_non_NULL_skipped_seq_no_cb_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list;
+    umock_c_reset_all_calls();
+
+    // act
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, test_skipped_seq_no_cb, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(list);
+
+    // cleanup
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
