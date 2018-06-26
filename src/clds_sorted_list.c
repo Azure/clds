@@ -162,12 +162,16 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                             }
                             else
                             {
+                                int64_t local_seq_no = 0;
+
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_070: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_071: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
                                 if (clds_sorted_list->sequence_number != NULL)
                                 {
+                                    local_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+
                                     // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
-                                    (void)InterlockedExchange64(&current_item->seq_no, InterlockedIncrement64(clds_sorted_list->sequence_number));
+                                    (void)InterlockedExchange64(&current_item->seq_no, local_seq_no);
                                 }
 
                                 // the current node is marked for deletion, now try to change the previous link to the next value
@@ -190,14 +194,26 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_067: [ If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
-                                        if (sequence_number != NULL)
+                                        if (clds_sorted_list->sequence_number != NULL)
                                         {
-                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
-                                            /* Codes_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
-                                            /* Codes_SRS_CLDS_SORTED_LIST_01_066: [ For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
-                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                            int64_t temp_seq_no = InterlockedAdd64(&current_item->seq_no, 0);
+                                            if (temp_seq_no != local_seq_no)
+                                            {
+                                                if (clds_sorted_list->skipped_seq_no_cb != NULL)
+                                                {
+                                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
+                                                }
+                                            }
+
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_067: [ If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
+                                            if (sequence_number != NULL)
+                                            {
+                                                // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                                /* Codes_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                                /* Codes_SRS_CLDS_SORTED_LIST_01_066: [ For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                                *sequence_number = temp_seq_no;
+                                            }
                                         }
 
                                         // delete succesfull
@@ -230,15 +246,28 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                     }
                                     else
                                     {
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_067: [ If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
-                                        if (sequence_number != NULL)
+                                        if (clds_sorted_list->sequence_number != NULL)
                                         {
-                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
-                                            /* Codes_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
-                                            /* Codes_SRS_CLDS_SORTED_LIST_01_066: [ For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
-                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                            int64_t temp_seq_no = InterlockedAdd64(&current_item->seq_no, 0);
+                                            if (temp_seq_no != local_seq_no)
+                                            {
+                                                if (clds_sorted_list->skipped_seq_no_cb != NULL)
+                                                {
+                                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
+                                                }
+                                            }
+
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_067: [ If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
+                                            if (sequence_number != NULL)
+                                            {
+                                                // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                                /* Codes_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                                /* Codes_SRS_CLDS_SORTED_LIST_01_066: [ For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                                *sequence_number = temp_seq_no;
+                                            }
                                         }
+
 
                                         // delete succesfull, no-one deleted the left node in the meanwhile
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -370,12 +399,16 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                             }
                             else
                             {
+                                int64_t local_seq_no = 0;
+
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_073: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
                                 if (clds_sorted_list->sequence_number != NULL)
                                 {
+                                    local_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+
                                     // get a new seq no and stamp it on the node to be deleted, if any other thread deletes they will alter the seq no.
                                     /* Codes_SRS_CLDS_SORTED_LIST_01_074: [ If the `sequence_number` argument passed to `clds_sorted_list_remove_key` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
-                                    (void)InterlockedExchange64(&current_item->seq_no, InterlockedIncrement64(clds_sorted_list->sequence_number));
+                                    (void)InterlockedExchange64(&current_item->seq_no, local_seq_no);
                                 }
 
                                 // the current node is marked for deletion, now try to change the previous link to the next value
@@ -401,11 +434,23 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                         *item = (CLDS_SORTED_LIST_ITEM*)current_item;
                                         clds_sorted_list_node_inc_ref(*item);
 
-                                        if (sequence_number != NULL)
+                                        if (clds_sorted_list->sequence_number != NULL)
                                         {
-                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
-                                            /* Codes_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
-                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                            int64_t temp_seq_no = InterlockedAdd64(&current_item->seq_no, 0);
+                                            if (temp_seq_no != local_seq_no)
+                                            {
+                                                if (clds_sorted_list->skipped_seq_no_cb != NULL)
+                                                {
+                                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
+                                                }
+                                            }
+
+                                            if (sequence_number != NULL)
+                                            {
+                                                // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                                /* Codes_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                                *sequence_number = temp_seq_no;
+                                            }
                                         }
 
                                         // delete succesfull
@@ -439,11 +484,23 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                         *item = (CLDS_SORTED_LIST_ITEM*)current_item;
                                         clds_sorted_list_node_inc_ref(*item);
 
-                                        if (sequence_number != NULL)
+                                        if (clds_sorted_list->sequence_number != NULL)
                                         {
-                                            // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
-                                            /* Codes_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
-                                            *sequence_number = InterlockedAdd64(&current_item->seq_no, 0);
+                                            int64_t temp_seq_no = InterlockedAdd64(&current_item->seq_no, 0);
+                                            if (temp_seq_no != local_seq_no)
+                                            {
+                                                if (clds_sorted_list->skipped_seq_no_cb != NULL)
+                                                {
+                                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
+                                                }
+                                            }
+
+                                            if (sequence_number != NULL)
+                                            {
+                                                // since we deleted the node, simply pick up the current sequence number (has to be greater than the insert)
+                                                /* Codes_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+                                                *sequence_number = temp_seq_no;
+                                            }
                                         }
 
                                         // delete succesfull, no-one deleted the left node in the meanwhile
