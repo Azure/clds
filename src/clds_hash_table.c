@@ -32,6 +32,8 @@ typedef struct CLDS_HASH_TABLE_TAG
     volatile BUCKET_ARRAY* first_hash_table;
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
     volatile LONG64* sequence_number;
+    HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb;
+    void* skipped_seq_no_cb_context;
 } CLDS_HASH_TABLE;
 
 typedef struct FIND_BY_KEY_VALUE_CONTEXT_TAG
@@ -60,11 +62,13 @@ static void sorted_list_skipped_seq_no(void* context, int64_t skipped_sequence_n
     (void)skipped_sequence_no;
 }
 
-CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, volatile int64_t* start_sequence_number)
+CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, volatile int64_t* start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
+    /* Codes_SRS_CLDS_HASH_TABLE_01_072: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
+    /* Codes_SRS_CLDS_HASH_TABLE_01_073: [ `skipped_seq_no_cb_context` shall be allowed to be NULL. ]*/
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_003: [ If `compute_hash` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
     if ((compute_hash == NULL) ||
@@ -73,7 +77,9 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
         /* Codes_SRS_CLDS_HASH_TABLE_01_004: [ If `initial_bucket_size` is 0, `clds_hash_table_create` shall fail and return NULL. ]*/
         (initial_bucket_size == 0) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_005: [ If `clds_hazard_pointers` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
-        (clds_hazard_pointers == NULL))
+        (clds_hazard_pointers == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_074: [ If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. ]*/
+        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL)))
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
         LogError("Invalid arguments: compute_hash = %p, key_compare_func = %p, initial_bucket_size = %zu, clds_hazard_pointers = %p, start_sequence_number = %p",
@@ -103,6 +109,8 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
                 clds_hash_table->clds_hazard_pointers = clds_hazard_pointers;
                 clds_hash_table->compute_hash = compute_hash;
                 clds_hash_table->key_compare_func = key_compare_func;
+                clds_hash_table->skipped_seq_no_cb = skipped_seq_no_cb;
+                clds_hash_table->skipped_seq_no_cb_context = skipped_seq_no_cb_context;
 
                 /* Codes_SRS_CLDS_HASH_TABLE_01_057: [ `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. ]*/
                 clds_hash_table->sequence_number = start_sequence_number;
@@ -272,7 +280,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             {
                 // create a list
                 /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, sorted_list_skipped_seq_no, clds_hash_table);
+                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, clds_hash_table->sequence_number == NULL ? NULL : sorted_list_skipped_seq_no, clds_hash_table);
                 if (bucket_list == NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/

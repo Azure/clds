@@ -224,7 +224,7 @@ int clds_hash_table_perf_main(void)
     else
     {
         int64_t sequence_number;
-        hash_table = clds_hash_table_create(test_compute_hash, key_compare_func, 1024, clds_hazard_pointers, &sequence_number);
+        hash_table = clds_hash_table_create(test_compute_hash, key_compare_func, 1024, clds_hazard_pointers, &sequence_number, NULL, NULL);
         if (hash_table == NULL)
         {
             LogError("Error creating hash table");

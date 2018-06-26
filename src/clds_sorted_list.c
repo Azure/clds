@@ -502,7 +502,7 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
         /* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
         (key_compare_cb == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_078: [ If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. ]*/
-        ((start_sequence_number == NULL) && ((skipped_seq_no_cb != NULL) || (skipped_seq_no_cb_context != NULL))))
+        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL)))
     {
         LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, get_item_key_cb_context = %p, key_compare_cb = %p, key_compare_cb_context = %p, start_sequence_number = %p, skipped_seq_no_cb = %p, skipped_seq_no_cb_context = %p",
             clds_hazard_pointers, get_item_key_cb, get_item_key_cb_context, key_compare_cb, key_compare_cb_context, start_sequence_number, skipped_seq_no_cb, skipped_seq_no_cb_context);
