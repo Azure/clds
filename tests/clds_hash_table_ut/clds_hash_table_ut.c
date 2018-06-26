@@ -394,6 +394,30 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_HASH_TABLE_01_057: [ `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. ]*/
+TEST_FUNCTION(clds_hash_table_create_with_non_NULL_start_sequence_number_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    volatile int64_t sequence_number;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(hash_table);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 /* clds_hash_table_destroy */
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/

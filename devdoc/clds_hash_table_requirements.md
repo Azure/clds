@@ -142,6 +142,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_019: [** If no sorted list exists at the determined bucket index then a new list shall be created. **]**
 
+Y**SRS_CLDS_HASH_TABLE_01_071: [** When a new list is created, the start sequence number passed to `clds_hash_tabel_create` shall be passed as the `start_sequence_number` argument. **]**
+
 **SRS_CLDS_HASH_TABLE_01_020: [** A new sorted list item shall be created by calling `clds_sorted_list_node_create`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_021: [** The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. **]**
@@ -156,11 +158,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_059: [** For each insert the order of the operation shall be computed based on the start sequence number passed to `clds_hash_table_create`. **]**
-
-Y**SRS_CLDS_HASH_TABLE_01_060: [** If no start sequence number was provided in `clds_hash_table_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
-
-Y**SRS_CLDS_HASH_TABLE_01_061: [** If the `sequence_number` argument passed to `clds_hash_table_insert` is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. **]**
+Y**SRS_CLDS_HASH_TABLE_01_059: [** For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. **]**
 
 Y**SRS_CLDS_HASH_TABLE_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
 
@@ -188,11 +186,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_025: [** If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_063: [** For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_hash_table_create`. **]**
-
-Y**SRS_CLDS_HASH_TABLE_01_064: [** If no start sequence number was provided in `clds_hash_table_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
-
-Y**SRS_CLDS_HASH_TABLE_01_065: [** If the `sequence_number` argument passed to `clds_hash_table_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. **]**
+Y**SRS_CLDS_HASH_TABLE_01_063: [** For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete`. **]**
 
 Y**SRS_CLDS_HASH_TABLE_01_066: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
 
@@ -222,13 +216,11 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_055: [** If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_067: [** For each remove the order of the operation shall be computed based on the start sequence number passed to `clds_hash_table_create`. **]**
-
-Y**SRS_CLDS_HASH_TABLE_01_068: [** If no start sequence number was provided in `clds_hash_table_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
-
-Y**SRS_CLDS_HASH_TABLE_01_069: [** If the `sequence_number` argument passed to `clds_hash_table_remove` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. **]**
+Y**SRS_CLDS_HASH_TABLE_01_067: [** For each remove the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_remove`. **]**
 
 Y**SRS_CLDS_HASH_TABLE_01_070: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
+
+The `sequence_number`
 
 ### clds_hash_table_find
 

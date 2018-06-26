@@ -167,11 +167,9 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     }
 }
 
-CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t* sequence_no)
+CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t* sequence_number)
 {
     CLDS_HASH_TABLE_INSERT_RESULT result;
-
-    (void)sequence_no;
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If `clds_hash_table` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
     if ((clds_hash_table == NULL) ||
@@ -293,13 +291,12 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         else
         {
             CLDS_SORTED_LIST_INSERT_RESULT list_insert_result;
-            int64_t insert_seq_no;
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
             hash_table_item->key = key;
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
-            list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, &insert_seq_no);
+            list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, sequence_number);
             
             if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
             {
@@ -345,11 +342,9 @@ bool find_by_key_value(void* item_compare_context, CLDS_SORTED_LIST_ITEM* item)
     return result;
 }
 
-CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, int64_t* sequence_no)
+CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, int64_t* sequence_number)
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
-
-    (void)sequence_no;
 
     /* Codes_SRS_CLDS_HASH_TABLE_01_015: [ If `clds_hash_table` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
     if ((clds_hash_table == NULL) ||
@@ -392,8 +387,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
                 else
                 {
                     CLDS_SORTED_LIST_DELETE_RESULT list_delete_result;
-                    int64_t delete_seq_no;
-                    list_delete_result = clds_sorted_list_delete_key(bucket_list, clds_hazard_pointers_thread, key, &delete_seq_no);
+                    list_delete_result = clds_sorted_list_delete_key(bucket_list, clds_hazard_pointers_thread, key, sequence_number);
                     if (list_delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
@@ -423,11 +417,9 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
     return result;
 }
 
-CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t* sequence_no)
+CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t* sequence_number)
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
-
-    (void)sequence_no;
 
     if ((clds_hash_table == NULL) ||
         (key == NULL) ||
@@ -466,8 +458,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
                 else
                 {
                     CLDS_SORTED_LIST_DELETE_RESULT list_delete_result;
-                    int64_t delete_seq_no;
-                    list_delete_result = clds_sorted_list_delete_item(bucket_list, clds_hazard_pointers_thread, (void*)value, &delete_seq_no);
+                    list_delete_result = clds_sorted_list_delete_item(bucket_list, clds_hazard_pointers_thread, (void*)value, sequence_number);
                     if (list_delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
                         // not found
@@ -512,8 +503,6 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
     }
     else
     {
-        (void)sequence_number;
-
         CLDS_SORTED_LIST_HANDLE bucket_list;
         BUCKET_ARRAY* current_bucket_array;
 
@@ -545,7 +534,7 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
                 else
                 {
                     CLDS_SORTED_LIST_REMOVE_RESULT list_remove_result;
-                    list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item, NULL);
+                    list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item, sequence_number);
                     if (list_remove_result == CLDS_SORTED_LIST_REMOVE_NOT_FOUND)
                     {
                         // not found
