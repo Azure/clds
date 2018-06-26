@@ -185,7 +185,8 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         /* Codes_SRS_CLDS_HASH_TABLE_01_062: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
         ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, sequence_number = %p", clds_hash_table, key, sequence_number);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, sequence_number = %p",
+            clds_hash_table, key, sequence_number);
         result = CLDS_HASH_TABLE_INSERT_ERROR;
     }
     else
@@ -359,9 +360,12 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
         /* Codes_SRS_CLDS_HASH_TABLE_01_017: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_016: [ If `key` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
-        (key == NULL))
+        (key == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_066: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p", clds_hash_table, key, clds_hazard_pointers_thread);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, sequence_number = %p",
+            clds_hash_table, key, clds_hazard_pointers_thread, sequence_number);
         result = CLDS_HASH_TABLE_DELETE_ERROR;
     }
     else
@@ -395,6 +399,8 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
                 else
                 {
                     CLDS_SORTED_LIST_DELETE_RESULT list_delete_result;
+
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_063: [ For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_key`. ]*/
                     list_delete_result = clds_sorted_list_delete_key(bucket_list, clds_hazard_pointers_thread, key, sequence_number);
                     if (list_delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
@@ -434,7 +440,8 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
         (value == NULL) ||
         (clds_hazard_pointers_thread == NULL))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, value = %p, clds_hazard_pointers_thread = %p", clds_hash_table, key, value, clds_hazard_pointers_thread);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, value = %p, clds_hazard_pointers_thread = %p, sequence_number = %p",
+            clds_hash_table, key, value, clds_hazard_pointers_thread, sequence_number);
         result = CLDS_HASH_TABLE_DELETE_ERROR;
     }
     else
@@ -504,9 +511,12 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
         /* Codes_SRS_CLDS_HASH_TABLE_01_051: [ If `key` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
         (key == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_056: [ If `item` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
-        (item == NULL))
+        (item == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_070: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, item = %p", clds_hash_table, key, clds_hazard_pointers_thread, item);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, item = %p, sequence_number = %p",
+            clds_hash_table, key, clds_hazard_pointers_thread, item, sequence_number);
         result = CLDS_HASH_TABLE_REMOVE_ERROR;
     }
     else
@@ -542,6 +552,7 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
                 else
                 {
                     CLDS_SORTED_LIST_REMOVE_RESULT list_remove_result;
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_remove_key`. ]*/
                     list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item, sequence_number);
                     if (list_remove_result == CLDS_SORTED_LIST_REMOVE_NOT_FOUND)
                     {
