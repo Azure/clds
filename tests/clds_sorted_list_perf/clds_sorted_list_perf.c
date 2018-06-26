@@ -123,7 +123,7 @@ static int delete_thread(void* arg)
             for (i = 0; i < INSERT_COUNT; i++)
             {
                 int64_t delete_seq_no;
-                if (clds_sorted_list_delete_item(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], &delete_seq_no) != 0)
+                if (clds_sorted_list_delete_item(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], &delete_seq_no) != CLDS_SORTED_LIST_DELETE_OK)
                 {
                     LogError("Error deleting");
                     break;

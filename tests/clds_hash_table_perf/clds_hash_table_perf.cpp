@@ -8,10 +8,11 @@
 #include "azure_c_shared_utility/threadapi.h"
 #include "azure_c_shared_utility/xlogging.h"
 #include "azure_c_shared_utility/tickcounter.h"
-#include "azure_c_shared_utility/uuid.h"
 #include "windows.h"
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
+#define UUID UUID_T
+#include "azure_c_shared_utility/uuid.h"
 
 #define THREAD_COUNT 8
 #define INSERT_COUNT 100000
@@ -112,7 +113,7 @@ static int delete_thread(void* arg)
             for (i = 0; i < INSERT_COUNT; i++)
             {
                 TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, NULL) != 0)
+                if (clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, NULL) != CLDS_HASH_TABLE_DELETE_OK)
                 {
                     LogError("Error deleting");
                     break;
@@ -255,7 +256,7 @@ int clds_hash_table_perf_main(void)
                         }
                         else
                         {
-                            UUID_T uuid;
+                            UUID uuid;
                             if (UUID_generate(&uuid) != 0)
                             {
                                 LogError("Cannot get uuid");
