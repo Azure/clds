@@ -465,6 +465,7 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 /* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_071: [ When a new list is created, the start sequence number passed to `clds_hash_tabel_create` shall be passed as the `start_sequence_number` argument. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
 TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
 {
     // arrange
@@ -797,6 +798,66 @@ TEST_FUNCTION(clds_hash_table_insert_with_the_same_key_2_times_returns_KEY_ALREA
 
     // cleanup
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_2);
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
+TEST_FUNCTION(clds_hash_table_insert_passes_the_sequence_number_to_the_sorted_list_insert)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    CLDS_SORTED_LIST_HANDLE linked_list;
+    CLDS_HASH_TABLE_INSERT_RESULT result;
+    volatile int64_t sequence_number = 42;
+    int64_t insert_seq_no = 0;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &sequence_number);
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number))
+        .CaptureReturn(&linked_list);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item, &insert_seq_no))
+        .ValidateArgumentValue_clds_sorted_list(&linked_list);
+
+    // act
+    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, &insert_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, result);
+    ASSERT_ARE_EQUAL(int64_t, 43, insert_seq_no);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_062: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_insert_with_non_NULL_sequence_no_but_NULL_start_sequence_no_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    CLDS_HASH_TABLE_INSERT_RESULT result;
+    int64_t insert_seq_no = 0;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, NULL);
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, &insert_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_ERROR, result);
+
+    // cleanup
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }

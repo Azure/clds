@@ -158,9 +158,9 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_059: [** For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. **]**
+**SRS_CLDS_HASH_TABLE_01_059: [** For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
 
 ### clds_hash_table_delete
 

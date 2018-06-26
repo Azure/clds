@@ -70,7 +70,8 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
         (clds_hazard_pointers == NULL))
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
-        LogError("Zero initial bucket size");
+        LogError("Invalid arguments: compute_hash = %p, key_compare_func = %p, initial_bucket_size = %zu, clds_hazard_pointers = %p, start_sequence_number = %p",
+            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, start_sequence_number);
     }
     else
     {
@@ -180,9 +181,11 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         /* Codes_SRS_CLDS_HASH_TABLE_01_011: [ If `key` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
         (key == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_012: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
-        (clds_hazard_pointers_thread == NULL))
+        (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_062: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, sequence_number = %p", clds_hash_table, key, sequence_number);
         result = CLDS_HASH_TABLE_INSERT_ERROR;
     }
     else
@@ -300,6 +303,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             hash_table_item->key = key;
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+            /* Codes_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
             list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, sequence_number);
             
             if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
