@@ -146,7 +146,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                             volatile CLDS_SORTED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
                             // mark that the node is deleted
-                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
+                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)((uintptr_t)current_next & ~0x1)) != (PVOID)((uintptr_t)current_next & ~0x1))
                             {
                                 if (previous_hp != NULL)
                                 {
@@ -383,7 +383,7 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                             volatile CLDS_SORTED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
                             // mark that the node is deleted
-                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
+                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)((uintptr_t)current_next & ~0x1)) != (PVOID)((uintptr_t)current_next & ~0x1))
                             {
                                 if (previous_hp != NULL)
                                 {
