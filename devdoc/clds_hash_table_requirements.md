@@ -250,3 +250,13 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE
 **SRS_CLDS_HASH_TABLE_01_043: [** If the key is not found at all, `clds_hash_table_find` shall return NULL. **]**
 
 **SRS_CLDS_HASH_TABLE_01_044: [** Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_sorted_list_find`. **]**
+
+### on_sorted_list_skipped_seq_no
+
+```c
+static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequence_no)
+```
+
+**SRS_CLDS_HASH_TABLE_01_075: [** `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. **]**
+
+**SRS_CLDS_HASH_TABLE_01_076: [** `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. **]**
