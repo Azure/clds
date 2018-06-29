@@ -180,7 +180,7 @@ static int delete_thread(void* arg)
     size_t i;
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
     int result;
-    CLDS_SORTED_LIST_ITEM** items = thread_data->context;
+    CLDS_SORTED_LIST_ITEM** items = (CLDS_SORTED_LIST_ITEM**)thread_data->context;
 
     for (i = 0; i < ITEM_COUNT; i++)
     {
@@ -218,7 +218,7 @@ TEST_FUNCTION(clds_sorted_list_contended_delete_test)
     THREAD_HANDLE threads[THREAD_COUNT];
     SEQUENCE_NO_MAP sequence_no_map;
 
-    sequence_no_map.sequence_no_map = malloc(sizeof(volatile LONG) * ITEM_COUNT * 100);
+    sequence_no_map.sequence_no_map = (volatile LONG*)malloc(sizeof(volatile LONG) * ITEM_COUNT * 100);
     sequence_no_map.sequence_no_map_entry_count = ITEM_COUNT * 100;
     sequence_no_map.max_seq_no = -1;
 
