@@ -159,6 +159,8 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLD
 
 **SRS_CLDS_SORTED_LIST_01_048: [** If the item with the given key already exists in the list, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS`. **]**
 
+**SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to `clds_sorted_list_create`, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. **]**
+
 **SRS_CLDS_SORTED_LIST_01_060: [** For each insert the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_069: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**

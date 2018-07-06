@@ -767,6 +767,12 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                 clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                                 restart_needed = false;
 
+                                if (clds_sorted_list->skipped_seq_no_cb != NULL)
+                                {
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to `clds_sorted_list_create`, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
+                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, item->seq_no);
+                                }
+
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_048: [ If the item with the given key already exists in the list, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS`. ]*/
                                 result = CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS;
                                 break;
