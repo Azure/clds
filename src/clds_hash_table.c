@@ -604,6 +604,32 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
     return result;
 }
 
+CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* new_item, CLDS_HASH_TABLE_ITEM** old_item, int64_t* sequence_number)
+{
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+
+    if ((clds_hash_table == NULL) ||
+        (clds_hazard_pointers_thread == NULL) ||
+        (key == NULL) ||
+        (new_item == NULL) ||
+        (old_item == NULL) ||
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
+    {
+        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, new_item = %p, old_item = %p, sequence_number = %p",
+            clds_hash_table, key, clds_hazard_pointers_thread, new_item, old_item, sequence_number);
+        result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
+    }
+    else
+    {
+        /* For now just do insert blindly */
+        clds_hash_table_insert(clds_hash_table, clds_hazard_pointers_thread, key, new_item, sequence_number);
+        *old_item = NULL;
+        result = CLDS_HASH_TABLE_SET_VALUE_OK;
+    }
+
+    return result;
+}
+
 CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key)
 {
     CLDS_HASH_TABLE_ITEM* result;
