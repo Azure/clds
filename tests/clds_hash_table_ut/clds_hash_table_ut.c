@@ -51,6 +51,8 @@ TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESU
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 
 DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 
@@ -144,6 +146,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT);
     REGISTER_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT);
     REGISTER_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT);
+    REGISTER_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -621,6 +624,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_hash_table_fails)
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_ERROR, result);
 
     // cleanup
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -644,6 +648,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_clds_hazard_pointers_thread_fails
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -668,6 +673,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_key_fails)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -726,6 +732,7 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1335,6 +1342,7 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1371,6 +1379,7 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list_with_non_NULL
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1590,6 +1599,7 @@ TEST_FUNCTION(remove_looks_in_2_buckets)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1634,6 +1644,7 @@ TEST_FUNCTION(remove_looks_in_3_buckets)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1734,6 +1745,7 @@ TEST_FUNCTION(clds_hash_table_find_succeeds)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, result);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1771,6 +1783,7 @@ TEST_FUNCTION(clds_hash_table_find_2nd_item_out_of_3_succeeds)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, result);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1808,6 +1821,7 @@ TEST_FUNCTION(clds_hash_table_find_3rd_item_out_of_3_succeeds)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, result);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1915,6 +1929,7 @@ TEST_FUNCTION(clds_hash_table_find_looks_up_in_the_2nd_array_of_buckets)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, result);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1953,6 +1968,32 @@ TEST_FUNCTION(when_key_is_not_found_in_any_bucket_levels_clds_hash_table_find_yi
     // cleanup
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_hash_table_set_value */
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_079: [ If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_set_value_with_NULL_hash_table_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_HASH_TABLE_ITEM* old_item;
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+    int64_t set_value_seq_no;
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_set_value(NULL, hazard_pointers_thread, (void*)0x4, item_1, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, result);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
 END_TEST_SUITE(clds_hash_table_unittests)

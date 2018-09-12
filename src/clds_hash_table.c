@@ -608,7 +608,9 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 {
     CLDS_HASH_TABLE_SET_VALUE_RESULT result;
 
-    if ((clds_hash_table == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_HASH_TABLE_01_079: [ If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+        (clds_hash_table == NULL) ||
         (clds_hazard_pointers_thread == NULL) ||
         (key == NULL) ||
         (new_item == NULL) ||

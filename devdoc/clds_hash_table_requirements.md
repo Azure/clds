@@ -2,7 +2,8 @@
 
 ## Overview
 
-`clds_hash_table` is module that implements a hash table.
+`clds_hash_table` is module that implements a lockless hash table.
+
 The module provides the following functionality:
 - Inserting items in the hash table
 - Delete an item from the hash table by its key
