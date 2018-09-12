@@ -239,17 +239,17 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 
 **SRS_CLDS_HASH_TABLE_01_078: [** `clds_hash_table_set_value` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_079: [** If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_HASH_TABLE_01_079: [** If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_080: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_HASH_TABLE_01_080: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_081: [** If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_HASH_TABLE_01_081: [** If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_082: [** If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_HASH_TABLE_01_082: [** If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_083: [** If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_HASH_TABLE_01_083: [** If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
+X**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall iterate through the array of buckets and: **]**
 

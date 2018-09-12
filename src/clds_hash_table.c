@@ -611,10 +611,15 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
     if (
         /* Codes_SRS_CLDS_HASH_TABLE_01_079: [ If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
         (clds_hash_table == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_080: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
         (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_081: [ If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
         (key == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_082: [ If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
         (new_item == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_083: [ If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
         (old_item == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_01_084: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
         ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
     {
         LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, new_item = %p, old_item = %p, sequence_number = %p",

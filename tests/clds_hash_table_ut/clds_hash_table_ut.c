@@ -1996,4 +1996,134 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_hash_table_fails)
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
+/* Tests_SRS_CLDS_HASH_TABLE_01_080: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_set_value_with_NULL_clds_hazard_pointers_thread_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_HASH_TABLE_ITEM* old_item;
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+    int64_t set_value_seq_no;
+    int64_t sequence_number = 42;
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_set_value(hash_table, NULL, (void*)0x4, item_1, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_081: [ If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_set_value_with_NULL_key_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_HASH_TABLE_ITEM* old_item;
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+    int64_t set_value_seq_no;
+    int64_t sequence_number = 42;
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, NULL, item_1, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_082: [ If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_set_value_with_NULL_new_item_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_ITEM* old_item;
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+    int64_t set_value_seq_no;
+    int64_t sequence_number = 42;
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x4, NULL, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_083: [ If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_set_value_with_NULL_old_item_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+    int64_t set_value_seq_no;
+    int64_t sequence_number = 42;
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x4, item_1, NULL, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_084: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_hash_table_set_value_with_non_NULL_sequence_number_when_a_starting_sequence_number_was_not_specified)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_HASH_TABLE_ITEM* old_item;
+    CLDS_HASH_TABLE_SET_VALUE_RESULT result;
+    int64_t set_value_seq_no;
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, NULL, NULL, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x4, item_1, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
+}
+
 END_TEST_SUITE(clds_hash_table_unittests)
