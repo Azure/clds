@@ -79,6 +79,12 @@ DEFINE_ENUM(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUE
 
 DEFINE_ENUM(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
 
+#define CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES \
+    CLDS_SORTED_LIST_SET_VALUE_OK, \
+    CLDS_SORTED_LIST_SET_VALUE_ERROR
+
+DEFINE_ENUM(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
+
 // sorted list API
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
@@ -88,6 +94,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM**, item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, const void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number);
 
 // helper APIs for creating/destroying a sorted list node
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_node_create, size_t, node_size, SORTED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
@@ -272,6 +279,38 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORT
 **SRS_CLDS_SORTED_LIST_01_033: [** If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. **]**
 
 **SRS_CLDS_SORTED_LIST_01_034: [** `clds_sorted_list_find_key` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. **]**
+
+### clds_sorted_list_set_value
+
+```c
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, const void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number);
+```
+
+**SRS_CLDS_SORTED_LIST_01_080: [** `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_081: [** If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_082: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_083: [** If `key` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_084: [** If `new_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_085: [** If `old_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_086: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_087: [** If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. **]**
+
+**SRS_CLDS_SORTED_LIST_01_088: [** If the `key` entry exists in the list, its value shall be replaced with `new_item`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_089: [** The previous value shall be returned in `old_item`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_090: [** For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_091: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
+
+**SRS_CLDS_SORTED_LIST_01_092: [** If the `sequence_number` argument passed to `clds_sorted_list_remove_key` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. **]**
 
 ### clds_sorted_list_node_create
 
