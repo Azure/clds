@@ -300,11 +300,11 @@ X**SRS_CLDS_SORTED_LIST_01_085: [** If `old_item` is NULL, `clds_sorted_list_set
 
 X**SRS_CLDS_SORTED_LIST_01_086: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_087: [** If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. **]**
+X**SRS_CLDS_SORTED_LIST_01_087: [** If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. **]**
 
-**SRS_CLDS_SORTED_LIST_01_088: [** If the `key` entry exists in the list, its value shall be replaced with `new_item`. **]**
+X**SRS_CLDS_SORTED_LIST_01_088: [** If the `key` entry exists in the list, its value shall be replaced with `new_item`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_089: [** The previous value shall be returned in `old_item`. **]**
+X**SRS_CLDS_SORTED_LIST_01_089: [** The previous value shall be returned in `old_item`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_090: [** For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
 

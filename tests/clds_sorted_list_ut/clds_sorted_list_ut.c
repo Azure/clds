@@ -3058,6 +3058,8 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_when_no_start
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts_the_item)
 {
     // arrange
@@ -3092,6 +3094,8 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the `key` entry exists in the list, its value shall be replaced with `new_item`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
 {
     // arrange
@@ -3130,6 +3134,158 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
     result_item_2 = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x42);
     ASSERT_IS_NOT_NULL(result_item_2);
     ASSERT_ARE_EQUAL(void_ptr, item_1, old_item);
+
+    // cleanup
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, result_item_2);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the `key` entry exists in the list, its value shall be replaced with `new_item`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd_item_in_the_list_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    volatile int64_t sequence_number = 45;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
+    CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4244);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_ITEM* result_item_3;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    int64_t set_value_seq_no;
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x43;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2, NULL);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_2, IGNORED_PTR_ARG));
+
+    // act
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, result);
+    ASSERT_ARE_EQUAL(int64_t, 48, set_value_seq_no);
+    result_item_3 = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x43);
+    ASSERT_IS_NOT_NULL(result_item_3);
+    ASSERT_ARE_EQUAL(void_ptr, item_2, old_item);
+
+    // cleanup
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, result_item_3);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_091: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd_item_in_the_list_succeeds_no_seq_computation)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
+    CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4244);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_ITEM* result_item_3;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x43;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2, NULL);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_2, IGNORED_PTR_ARG));
+
+    // act
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, result);
+    result_item_3 = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x43);
+    ASSERT_IS_NOT_NULL(result_item_3);
+    ASSERT_ARE_EQUAL(void_ptr, item_2, old_item);
+
+    // cleanup
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, result_item_3);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_092: [ If the `sequence_number` argument passed to `clds_sorted_list_set_value` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_still_increments_the_seq_no)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    volatile int64_t sequence_number = 45;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
+    CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4244);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_ITEM* result_item_2;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    TEST_ITEM* item_3_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    int64_t set_value_seq_no;
+    item_1_payload->key = 0x42;
+    item_2_payload->key = 0x43;
+    item_3_payload->key = 0x43;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+    (void)clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, NULL);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_3, IGNORED_PTR_ARG));
+
+    // act
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_2, &old_item, &set_value_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, result);
+    ASSERT_ARE_EQUAL(int64_t, 48, set_value_seq_no);
+    result_item_2 = clds_sorted_list_find_key(list, hazard_pointers_thread, (void*)0x43);
+    ASSERT_IS_NOT_NULL(result_item_2);
+    ASSERT_ARE_EQUAL(void_ptr, item_3, old_item);
 
     // cleanup
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
