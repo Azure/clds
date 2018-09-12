@@ -11,7 +11,6 @@
 #include "windows.h"
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
-#define UUID UUID_T
 #include "azure_c_shared_utility/uuid.h"
 
 #define THREAD_COUNT 8
@@ -256,7 +255,7 @@ int clds_hash_table_perf_main(void)
                         }
                         else
                         {
-                            UUID uuid;
+                            UUID_T uuid;
                             if (UUID_generate(&uuid) != 0)
                             {
                                 LogError("Cannot get uuid");
