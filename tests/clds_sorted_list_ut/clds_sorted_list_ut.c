@@ -3057,6 +3057,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_when_no_start
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
@@ -3093,6 +3094,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the `key` entry exists in the list, its value shall be replaced with `new_item`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
@@ -3142,6 +3144,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the `key` entry exists in the list, its value shall be replaced with `new_item`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/

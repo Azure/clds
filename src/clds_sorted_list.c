@@ -1128,6 +1128,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
                             *old_item = NULL;
 
+                            /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
                             result = CLDS_SORTED_LIST_SET_VALUE_OK;
                             break;
                         }
@@ -1149,6 +1150,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
                             *old_item = NULL;
 
+                            /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
                             result = CLDS_SORTED_LIST_SET_VALUE_OK;
                             break;
                         }
@@ -1260,6 +1262,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
 
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
                                         result = CLDS_SORTED_LIST_SET_VALUE_OK;
                                         break;
                                     }
@@ -1295,6 +1298,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
                                         clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
 
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
                                         result = CLDS_SORTED_LIST_SET_VALUE_OK;
                                         break;
                                     }
@@ -1329,6 +1333,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
                                         *old_item = NULL;
 
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
                                         result = CLDS_SORTED_LIST_SET_VALUE_OK;
                                         break;
                                     }
@@ -1351,6 +1356,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
                                         *old_item = NULL;
 
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
                                         result = CLDS_SORTED_LIST_SET_VALUE_OK;
                                         break;
                                     }
