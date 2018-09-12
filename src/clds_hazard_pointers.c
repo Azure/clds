@@ -1,6 +1,7 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "windows.h"
 #include "azure_c_shared_utility/gballoc.h"
@@ -41,7 +42,7 @@ typedef struct CLDS_HAZARD_POINTERS_TAG
     volatile CLDS_HAZARD_POINTERS_THREAD* head;
 } CLDS_HAZARD_POINTERS;
 
-static uint64_t hp_key_hask(void* key)
+static uint64_t hp_key_hash(void* key)
 {
     return (uint64_t)key;
 }
@@ -49,7 +50,7 @@ static uint64_t hp_key_hask(void* key)
 static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
-    CLDS_ST_HASH_SET_HANDLE all_hps_set = clds_st_hash_set_create(hp_key_hask, clds_hazard_pointers_thread->clds_hazard_pointers->reclaim_threshold);
+    CLDS_ST_HASH_SET_HANDLE all_hps_set = clds_st_hash_set_create(hp_key_hash, clds_hazard_pointers_thread->clds_hazard_pointers->reclaim_threshold);
     if (all_hps_set == NULL)
     {
         // oops, panic now!

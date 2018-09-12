@@ -2,8 +2,10 @@
 
 #ifdef __cplusplus
 #include <cstdlib>
+#include <cstdint>
 #else
 #include <stdlib.h>
+#include <stdint.h>
 #endif
 
 #include "testrunnerswitcher.h"

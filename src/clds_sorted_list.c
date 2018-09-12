@@ -1,6 +1,7 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "azure_c_shared_utility/gballoc.h"
 #include "azure_c_shared_utility/xlogging.h"
@@ -8,7 +9,7 @@
 #include "clds/clds_atomics.h"
 #include "clds/clds_hazard_pointers.h"
 
-/* this is a lock free singly linked list implementation */
+/* this is a lock free sorted list implementation */
 
 typedef struct CLDS_SORTED_LIST_TAG
 {
