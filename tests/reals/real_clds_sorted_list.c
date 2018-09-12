@@ -9,6 +9,7 @@
 #define clds_sorted_list_delete_key real_clds_sorted_list_delete_key
 #define clds_sorted_list_remove_key real_clds_sorted_list_remove_key
 #define clds_sorted_list_find_key real_clds_sorted_list_find_key
+#define clds_sorted_list_set_value real_clds_sorted_list_set_value
 
 #define clds_sorted_list_node_create real_clds_sorted_list_node_create
 #define clds_sorted_list_node_inc_ref real_clds_sorted_list_node_inc_ref

@@ -3,6 +3,7 @@
 ## Overview
 
 `clds_singly_linked_list` is module that implements a lock free singly linked list.
+
 The module provides the following functionality:
 - Inserting items in the list
 - Delete an item from the list by its previously obtained pointer

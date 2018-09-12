@@ -3,11 +3,13 @@
 ## Overview
 
 `clds_sorted_list` is module that implements a lock free sorted singly linked list.
+
 The module provides the following functionality:
 - Inserting items in the list based on a user specified order given by a key compare function
 - Delete an item from the list by its previously obtained pointer
 - Delete an item from the list by using a custom item compare function
 - Find an item in the list by using a custom item compare function
+- Replace the value of an item in the list by its key
 
 All operations can be concurrent with other operations of the same or different kind.
 

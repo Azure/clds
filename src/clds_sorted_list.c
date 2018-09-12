@@ -1097,3 +1097,14 @@ void clds_sorted_list_node_release(CLDS_SORTED_LIST_ITEM* item)
         internal_node_destroy(item);
     }
 }
+
+CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, const void* key, CLDS_SORTED_LIST_ITEM* new_item, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number)
+{
+    (void)clds_sorted_list;
+    (void)clds_hazard_pointers_thread;
+    (void)key;
+    (void)new_item;
+    (void)old_item;
+    (void)sequence_number;
+    return CLDS_SORTED_LIST_SET_VALUE_OK;
+}
