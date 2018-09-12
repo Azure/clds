@@ -1053,7 +1053,9 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
     if (
         /* Codes_SRS_CLDS_SORTED_LIST_01_081: [ If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
-        (clds_sorted_list == NULL)
+        (clds_sorted_list == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_082: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+        (clds_hazard_pointers_thread == NULL)
         )
     {
         LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, const void* key=%p, CLDS_SORTED_LIST_ITEM* new_item=%p, CLDS_SORTED_LIST_ITEM** old_item=%p, int64_t* sequence_number=%p",
