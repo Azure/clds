@@ -79,6 +79,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item, int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, const void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 
 // helper APIs for creating/destroying a hash table node
@@ -226,6 +227,50 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 **SRS_CLDS_HASH_TABLE_01_067: [** For each remove the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_remove`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_070: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
+
+### clds_hash_table_set_value
+
+```c
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, const void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
+```
+
+**SRS_CLDS_HASH_TABLE_01_077: [** `clds_hash_table_set_value` shall set a key value in the hash table and on success it shall return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_078: [** `clds_hash_table_set_value` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_079: [** If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_080: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_081: [** If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_082: [** If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_083: [** If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall iterate through the array of buckets and: **]**
+
+**SRS_CLDS_HASH_TABLE_01_086: [** - If the bucket for the computed hash has a list, then `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` while passing `key`, `new_item` and `old_item` as arguments. **]**
+
+**SRS_CLDS_HASH_TABLE_01_087: [** - If the bucket for the computed hash does not have a list, `clds_hash_table_set_value` shall move to the next buckets in the buckets array. **]**
+
+**SRS_CLDS_HASH_TABLE_01_088: [** If the key is not found in any of the buckets, `clds_hash_table_set_value` shall compare the current top bucket level with the one that was used when the search for the `key` started. **]**
+
+**SRS_CLDS_HASH_TABLE_01_089: [** If there is a newer top bucket level (the hash table has been enlarged), the process of finding the `key` in the buckets and replacing it shall be restarted. **]**
+
+**SRS_CLDS_HASH_TABLE_01_090: [** If the top bucket level is the same `clds_hash_table_set_value` shall attempt to insert the value in the top bucket level: **]**
+
+**SRS_CLDS_HASH_TABLE_01_091: [** - If no list exists in the bucket corresponding to the computed hash, a list shall be created. **]**
+
+**SRS_CLDS_HASH_TABLE_01_092: [** - `clds_sorted_list_insert` shall be called to insert the key and value in the list corresponding to the computed hash. **]**
+
+**SRS_CLDS_HASH_TABLE_01_093: [** - If `clds_sorted_list_insert` returns `CLDS_SORTED_LIST_INSERT_ALREADY_EXISTS`, the whole process of replacing the key shall be restarted. **]**
+
+**SRS_CLDS_HASH_TABLE_01_094: [** - If `clds_sorted_list_insert` returns `CLDS_SORTED_LIST_INSERT_OK`, `clds_hash_table_set_value` shall set `old_item` to NULL and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_095: [** If any error occurs, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
 ### clds_hash_table_find
 

@@ -621,7 +621,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
     }
     else
     {
-        /* For now just do insert blindly */
+
         clds_hash_table_insert(clds_hash_table, clds_hazard_pointers_thread, key, new_item, sequence_number);
         *old_item = NULL;
         result = CLDS_HASH_TABLE_SET_VALUE_OK;
