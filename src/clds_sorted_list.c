@@ -1072,8 +1072,6 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
     }
     else
     {
-        (void)sequence_number;
-
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, new_item);
 
