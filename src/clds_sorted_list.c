@@ -801,7 +801,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                         restart_needed = false;
 
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return 0. ]*/
-                                        result = 0;
+                                        result = CLDS_SORTED_LIST_INSERT_OK;
                                         break;
                                     }
                                 }
@@ -1055,7 +1055,15 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
         /* Codes_SRS_CLDS_SORTED_LIST_01_081: [ If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
         (clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_082: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
-        (clds_hazard_pointers_thread == NULL)
+        (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_083: [ If `key` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+        (key == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_084: [ If `new_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+        (new_item == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_085: [ If `old_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+        (old_item == NULL) ||
+        /* Codes_SRS_CLDS_SORTED_LIST_01_086: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL))
         )
     {
         LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, const void* key=%p, CLDS_SORTED_LIST_ITEM* new_item=%p, CLDS_SORTED_LIST_ITEM** old_item=%p, int64_t* sequence_number=%p",
@@ -1064,13 +1072,248 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
     }
     else
     {
-        (void)clds_hazard_pointers_thread;
-        (void)key;
-        (void)new_item;
-        (void)old_item;
         (void)sequence_number;
 
-        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+        bool restart_needed;
+        void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, new_item);
+
+        if (clds_sorted_list->sequence_number != NULL)
+        {
+            new_item->seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+
+            if (sequence_number != NULL)
+            {
+                *sequence_number = new_item->seq_no;
+            }
+        }
+
+        do
+        {
+            CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
+            volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
+            volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
+            result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+
+            do
+            {
+                // get the current_item value
+                volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+                if (current_item == NULL)
+                {
+                    new_item->next = NULL;
+
+                    // not found, so insert it here
+                    if (previous_item != NULL)
+                    {
+                        // have a previous item
+                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
+                        if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, NULL) != NULL)
+                        {
+                            // let go of previous hazard pointer
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                            restart_needed = true;
+                            break;
+                        }
+                        else
+                        {
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                            restart_needed = false;
+
+                            *old_item = NULL;
+
+                            result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // no previous item, replace the head
+                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
+                        if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, new_item, NULL) != NULL)
+                        {
+                            restart_needed = true;
+                            break;
+                        }
+                        else
+                        {
+                            // insert done
+                            restart_needed = false;
+
+                            *old_item = NULL;
+
+                            result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+                else
+                {
+                    // acquire hazard pointer
+                    CLDS_HAZARD_POINTER_RECORD_HANDLE current_item_hp = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1));
+                    if (current_item_hp == NULL)
+                    {
+                        if (previous_hp != NULL)
+                        {
+                            // let go of previous hazard pointer
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                        }
+
+                        LogError("Cannot acquire hazard pointer");
+                        restart_needed = false;
+                        result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+                        break;
+                    }
+                    else
+                    {
+                        // now make sure the item has not changed
+                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)((uintptr_t)current_item & ~0x1))
+                        {
+                            if (previous_hp != NULL)
+                            {
+                                // let go of previous hazard pointer
+                                clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                            }
+
+                            // item changed, it is likely that the node is no longer reachable, so we should not use its memory, restart
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                            restart_needed = true;
+                            break;
+                        }
+                        else
+                        {
+                            // we are in a stable state, compare the current item key to our key
+                            void* current_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, (struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
+                            int compare_result = clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, new_item_key, current_item_key);
+
+                            if (compare_result == 0)
+                            {
+                                // first insert, then remove the previous
+                                new_item->next = current_item->next;
+
+                                if (previous_item != NULL)
+                                {
+                                    // have a previous item
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    {
+                                        // let go of previous hazard pointer
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = true;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = false;
+
+                                        *old_item = (CLDS_SORTED_LIST_ITEM*)(void*)((uintptr_t)current_item & ~0x1);
+                                        (void)clds_sorted_list_node_inc_ref(*old_item);
+
+                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
+                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    {
+                                        // let go of previous hazard pointer
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = true;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = false;
+
+                                        *old_item = (CLDS_SORTED_LIST_ITEM*)(void*)((uintptr_t)current_item & ~0x1);
+                                        (void)clds_sorted_list_node_inc_ref(*old_item);
+
+                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
+                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                        break;
+                                    }
+
+                                }
+
+                                break;
+                            }
+                            else if (compare_result < 0)
+                            {
+                                // need to insert between these 2 nodes
+                                new_item->next = current_item;
+
+                                if (previous_item != NULL)
+                                {
+                                    // have a previous item
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    {
+                                        // let go of previous hazard pointer
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = true;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = false;
+
+                                        *old_item = NULL;
+
+                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    {
+                                        // let go of previous hazard pointer
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = true;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = false;
+
+                                        *old_item = NULL;
+
+                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                        break;
+                                    }
+                                }
+                            }
+                            else // item is less than the current, so move on
+                            {
+                                // we have a stable pointer to the current item, now simply set the previous to be this
+                                if (previous_hp != NULL)
+                                {
+                                    // let go of previous hazard pointer
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                }
+
+                                previous_hp = current_item_hp;
+                                previous_item = current_item;
+                                current_item_address = (volatile CLDS_SORTED_LIST_ITEM**)&current_item->next;
+                            }
+                        }
+                    }
+                }
+            } while (1);
+        } while (restart_needed);
     }
 
     return result;
@@ -1080,7 +1323,6 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_node_create(size_t node_size, SORTED_LIS
 {
     /* Codes_SRS_CLDS_SORTED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
     /* Codes_SRS_CLDS_SORTED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
-
     void* result = malloc(node_size);
     if (result == NULL)
     {

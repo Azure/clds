@@ -290,15 +290,15 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_valu
 
 X**SRS_CLDS_SORTED_LIST_01_081: [** If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_082: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_SORTED_LIST_01_082: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_083: [** If `key` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_SORTED_LIST_01_083: [** If `key` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_084: [** If `new_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_SORTED_LIST_01_084: [** If `new_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_085: [** If `old_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+X**SRS_CLDS_SORTED_LIST_01_085: [** If `old_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_01_086: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
+X**SRS_CLDS_SORTED_LIST_01_086: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_087: [** If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. **]**
 
@@ -310,7 +310,7 @@ X**SRS_CLDS_SORTED_LIST_01_081: [** If `clds_sorted_list` is NULL, `clds_sorted_
 
 **SRS_CLDS_SORTED_LIST_01_091: [** If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. **]**
 
-**SRS_CLDS_SORTED_LIST_01_092: [** If the `sequence_number` argument passed to `clds_sorted_list_remove_key` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. **]**
+**SRS_CLDS_SORTED_LIST_01_092: [** If the `sequence_number` argument passed to `clds_sorted_list_set_value` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. **]**
 
 ### clds_sorted_list_node_create
 
