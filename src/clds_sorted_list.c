@@ -786,7 +786,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                 if (previous_item != NULL)
                                 {
                                     // have a previous item
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)item, (PVOID)current_item) != current_item)
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)item, (PVOID)((uintptr_t)current_item & ~0x1)) != (PVOID)((uintptr_t)current_item & ~0x1))
                                     {
                                         // let go of previous hazard pointer
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -1188,18 +1188,54 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             if (compare_result == 0)
                             {
                                 // first insert, then remove the previous
-                                new_item->next = current_item->next;
+                                new_item->next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                                if ((((uintptr_t)new_item->next) & 0x1) != 0)
+                                {
+                                    if (previous_item != NULL)
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                    }
 
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                    restart_needed = true;
+                                    break;
+                                }
+
+                                if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)new_item->next | 0x1), (PVOID)new_item->next) != (PVOID)new_item->next)
+                                {
+                                    if (previous_item != NULL)
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                    }
+
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                    restart_needed = true;
+                                    break;
+                                }
+
+                                // now its locked, no insert/delete should be happening on current->next
                                 if (previous_item != NULL)
                                 {
                                     // have a previous item
                                     if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
                                     {
-                                        // let go of previous hazard pointer
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                        restart_needed = true;
-                                        break;
+                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)new_item->next & 0x1), (PVOID)((uintptr_t)new_item->next | 0x1)) != (PVOID)((uintptr_t)new_item->next | 0x1))
+                                        {
+                                            LogError("This should not happen");
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = false;
+                                            result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            // let go of previous hazard pointer
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = true;
+                                            break;
+                                        }
                                     }
                                     else
                                     {
@@ -1220,10 +1256,21 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                 {
                                     if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
                                     {
-                                        // let go of previous hazard pointer
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                        restart_needed = true;
-                                        break;
+                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)new_item->next & 0x1), (PVOID)((uintptr_t)new_item->next | 0x1)) != (PVOID)((uintptr_t)new_item->next | 0x1))
+                                        {
+                                            LogError("This should not happen");
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = false;
+                                            result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            // let go of previous hazard pointer
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = true;
+                                            break;
+                                        }
                                     }
                                     else
                                     {
