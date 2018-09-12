@@ -44,6 +44,8 @@ TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RE
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
 
 DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 
@@ -2847,7 +2849,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
 /* clds_sorted_list_node_create */
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_succeeds)
+TEST_FUNCTION(clds_sorted_list_node_create_with_NULL_item_cleanup_callback_succeeds)
 {
     // arrange
     CLDS_SORTED_LIST_ITEM* item;
@@ -2866,7 +2868,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_succeeds)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
-TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_context_succeeds)
+TEST_FUNCTION(clds_sorted_list_node_create_with_NULL_item_cleanup_callback_context_succeeds)
 {
     // arrange
     CLDS_SORTED_LIST_ITEM* item;
@@ -2882,6 +2884,40 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_cleanup_callback_context_su
 
     // cleanup
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item);
+}
+
+/* clds_sorted_list_set_value */
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_081: [ If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_sorted_list_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    item_1_payload->key = 0x42;
+    (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+
+    // act
+    result = clds_sorted_list_set_value(NULL, hazard_pointers_thread, (void*)0x42, item_1, &old_item, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_ERROR, result);
+
+    // cleanup
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item_1);
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 END_TEST_SUITE(clds_sorted_list_unittests)

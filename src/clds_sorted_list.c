@@ -1049,13 +1049,29 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
 
 CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, const void* key, CLDS_SORTED_LIST_ITEM* new_item, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number)
 {
-    (void)clds_sorted_list;
-    (void)clds_hazard_pointers_thread;
-    (void)key;
-    (void)new_item;
-    (void)old_item;
-    (void)sequence_number;
-    return CLDS_SORTED_LIST_SET_VALUE_OK;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+
+    if (
+        /* Codes_SRS_CLDS_SORTED_LIST_01_081: [ If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+        (clds_sorted_list == NULL)
+        )
+    {
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, const void* key=%p, CLDS_SORTED_LIST_ITEM* new_item=%p, CLDS_SORTED_LIST_ITEM** old_item=%p, int64_t* sequence_number=%p",
+            clds_sorted_list, clds_hazard_pointers_thread, key, new_item, old_item, sequence_number);
+        result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+    }
+    else
+    {
+        (void)clds_hazard_pointers_thread;
+        (void)key;
+        (void)new_item;
+        (void)old_item;
+        (void)sequence_number;
+
+        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+    }
+
+    return result;
 }
 
 CLDS_SORTED_LIST_ITEM* clds_sorted_list_node_create(size_t node_size, SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
