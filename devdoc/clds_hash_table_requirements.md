@@ -259,17 +259,9 @@ X**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL
 
 **SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` on the first (topmost) bucket array while passing `key`, `new_item` and `old_item` as arguments.. **]**
 
-**SRS_CLDS_HASH_TABLE_01_087: [** If the bucket for the computed hash does not have a list, `clds_hash_table_set_value` shall create a list of selected bucket. **]**
+**SRS_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` succeeds and returns an item in `old_item`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_090: [** If the top bucket level is the same `clds_hash_table_set_value` shall attempt to insert the value in the top bucket level: **]**
-
-**SRS_CLDS_HASH_TABLE_01_091: [** - If no list exists in the bucket corresponding to the computed hash, a list shall be created. **]**
-
-**SRS_CLDS_HASH_TABLE_01_092: [** - `clds_sorted_list_insert` shall be called to insert the key and value in the list corresponding to the computed hash. **]**
-
-**SRS_CLDS_HASH_TABLE_01_093: [** - If `clds_sorted_list_insert` returns `CLDS_SORTED_LIST_INSERT_ALREADY_EXISTS`, the whole process of replacing the key shall be restarted. **]**
-
-**SRS_CLDS_HASH_TABLE_01_094: [** - If `clds_sorted_list_insert` returns `CLDS_SORTED_LIST_INSERT_OK`, `clds_hash_table_set_value` shall set `old_item` to NULL and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+**SRS_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` succeeds and returns NULL in `old_item`, `clds_hash_table_set_value` shall proceed to delete the `key` from all the bucket arrays except the first one (where the key was set). **]**
 
 **SRS_CLDS_HASH_TABLE_01_095: [** If any error occurs, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
