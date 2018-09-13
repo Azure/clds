@@ -628,8 +628,36 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
     }
     else
     {
+        // compute the hash
+        uint64_t hash = clds_hash_table->compute_hash(key);
 
-        clds_hash_table_insert(clds_hash_table, clds_hazard_pointers_thread, key, new_item, sequence_number);
+        BUCKET_ARRAY* current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
+        {
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                CLDS_SORTED_LIST_HANDLE bucket_list;
+
+                // look for the item in this bucket array
+                // find the bucket
+                uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list != NULL)
+                {
+                }
+                else
+                {
+
+                }
+            }
+
+            current_bucket_array = next_bucket_array;
+        }
+
+        
         *old_item = NULL;
         result = CLDS_HASH_TABLE_SET_VALUE_OK;
     }
@@ -661,7 +689,6 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         /* Codes_SRS_CLDS_HASH_TABLE_01_040: [ `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
         uint64_t hash = clds_hash_table->compute_hash(key);
 
-        // always insert in the first bucket array
         /* Codes_SRS_CLDS_HASH_TABLE_01_041: [ `clds_hash_table_find` shall look up the key in the biggest array of buckets. ]*/
         BUCKET_ARRAY* current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
