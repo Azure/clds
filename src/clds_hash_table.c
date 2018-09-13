@@ -778,6 +778,11 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
             }
             else
             {
+                if (*old_item == NULL)
+                {
+                    (void)InterlockedIncrement(&first_bucket_array->item_count);
+                }
+
                 // now remove any leftovers in the lower layers
                 current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&first_bucket_array->next_bucket, NULL, NULL);
                 while (current_bucket_array != NULL)
@@ -794,6 +799,8 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                             // notify the user that this seq no will be skipped
                             clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, remove_seq_no);
                         }
+
+                        (void)InterlockedDecrement(&current_bucket_array->item_count);
 
                         *old_item = (void*)removed_old_item;
 
