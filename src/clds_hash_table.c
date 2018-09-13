@@ -235,7 +235,6 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             }
             else
             {
-                LONG i;
                 BUCKET_ARRAY* first_bucket_array = current_bucket;
 
                 // insert new bucket
@@ -244,10 +243,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                 (void)InterlockedExchange(&new_bucket_array->item_count, 0);
 
                 // initialize buckets
-                for (i = 0; i < bucket_count; i++)
-                {
-                    (void)InterlockedExchangePointer(&new_bucket_array->hash_table[i], NULL);
-                }
+                (void)memset(new_bucket_array->hash_table, 0, sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count);
 
                 (void)InterlockedExchangePointer((volatile PVOID*)&new_bucket_array->next_bucket, first_bucket_array);
                 if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, new_bucket_array, first_bucket_array) == first_bucket_array)
