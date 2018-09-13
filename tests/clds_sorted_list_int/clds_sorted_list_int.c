@@ -279,6 +279,7 @@ TEST_FUNCTION(clds_sorted_list_contended_delete_test)
     // cleanup
     clds_sorted_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    free((void*)sequence_no_map.sequence_no_map);
     free(items);
 }
 
