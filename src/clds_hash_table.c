@@ -70,6 +70,51 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
     }
 }
 
+static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
+{
+    // always insert in the first bucket array
+    BUCKET_ARRAY* first_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+    LONG bucket_count = InterlockedAdd(&first_bucket_array->bucket_count, 0);
+    while (InterlockedAdd(&first_bucket_array->item_count, 0) >= bucket_count)
+    {
+        // allocate a new bucket array
+        BUCKET_ARRAY* new_bucket_array = (BUCKET_ARRAY*)malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count * 2));
+        if (new_bucket_array == NULL)
+        {
+            // cannot allocate new bucket, will stick to what we have, but do not fail
+            break;
+        }
+        else
+        {
+            // insert new bucket
+            bucket_count = bucket_count * 2;
+            (void)InterlockedExchange(&new_bucket_array->bucket_count, bucket_count);
+            (void)InterlockedExchange(&new_bucket_array->item_count, 0);
+            (void)InterlockedExchange(&new_bucket_array->pending_insert_count, 0);
+
+            // initialize buckets
+            (void)memset(new_bucket_array->hash_table, 0, sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count);
+
+            (void)InterlockedExchangePointer((volatile PVOID*)&new_bucket_array->next_bucket, first_bucket_array);
+            if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, new_bucket_array, first_bucket_array) == first_bucket_array)
+            {
+                first_bucket_array = new_bucket_array;
+                break;
+            }
+            else
+            {
+                // first bucket array changed, drop ours and use the one that was inserted
+                free(new_bucket_array);
+
+                first_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+                bucket_count = InterlockedAdd(&first_bucket_array->bucket_count, 0);
+            }
+        }
+    }
+
+    return first_bucket_array;
+}
+
 CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, volatile int64_t* start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context)
 {
     CLDS_HASH_TABLE_HANDLE clds_hash_table;
@@ -218,55 +263,16 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         CLDS_SORTED_LIST_HANDLE bucket_list = NULL;
         HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, value);
         uint64_t hash;
-        BUCKET_ARRAY* current_bucket;
+        BUCKET_ARRAY* current_bucket_array;
         volatile LONG bucket_count;
         uint64_t bucket_index;
         bool found_in_lower_levels = false;
 
         // find or allocate a new bucket array
-        // always insert in the first bucket array
-        current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
-        bucket_count = InterlockedAdd(&current_bucket->bucket_count, 0);
-        while (InterlockedAdd(&current_bucket->item_count, 0) >= bucket_count)
-        {
-            // allocate a new bucket array
-            BUCKET_ARRAY* new_bucket_array = (BUCKET_ARRAY*)malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count * 2));
-            if (new_bucket_array == NULL)
-            {
-                // cannot allocate new bucket, will stick to what we have, but do not fail
-                break;
-            }
-            else
-            {
-                BUCKET_ARRAY* first_bucket_array = current_bucket;
+        current_bucket_array = get_first_bucket_array(clds_hash_table);
+        bucket_count = current_bucket_array->bucket_count;
 
-                // insert new bucket
-                bucket_count = bucket_count * 2;
-                (void)InterlockedExchange(&new_bucket_array->bucket_count, bucket_count);
-                (void)InterlockedExchange(&new_bucket_array->item_count, 0);
-                (void)InterlockedExchange(&new_bucket_array->pending_insert_count, 0);
-
-                // initialize buckets
-                (void)memset(new_bucket_array->hash_table, 0, sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count);
-
-                (void)InterlockedExchangePointer((volatile PVOID*)&new_bucket_array->next_bucket, first_bucket_array);
-                if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, new_bucket_array, first_bucket_array) == first_bucket_array)
-                {
-                    current_bucket = new_bucket_array;
-                    break;
-                }
-                else
-                {
-                    // first bucket array changed, drop ours and use the one that was inserted
-                    free(new_bucket_array);
-
-                    current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
-                    bucket_count = InterlockedAdd(&current_bucket->bucket_count, 0);
-                }
-            }
-        }
-
-        (void)InterlockedIncrement(&current_bucket->pending_insert_count);
+        (void)InterlockedIncrement(&current_bucket_array->pending_insert_count);
 
         // compute the hash
         /* Codes_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
@@ -323,7 +329,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         }
         else
         {
-            (void)InterlockedIncrement(&current_bucket->item_count);
+            (void)InterlockedIncrement(&current_bucket_array->item_count);
 
             // find the bucket
             bucket_index = hash % bucket_count;
@@ -331,7 +337,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             do
             {
                 // do we have a list here or do we create one?
-                bucket_list = InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], NULL, NULL);
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
                     restart_needed = false;
@@ -350,7 +356,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                     else
                     {
                         // now put the list in the bucket
-                        if (InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                        if (InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
                         {
                             // oops, someone else inserted a new list, just bail on our list and restart
                             clds_sorted_list_destroy(bucket_list);
@@ -395,7 +401,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                 }
                 else
                 {
-                    (void)InterlockedDecrement(&current_bucket->pending_insert_count);
+                    (void)InterlockedDecrement(&current_bucket_array->pending_insert_count);
 
                     /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
                     result = CLDS_HASH_TABLE_INSERT_OK;
@@ -405,7 +411,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             }
         }
 
-        (void)InterlockedDecrement(&current_bucket->pending_insert_count);
+        (void)InterlockedDecrement(&current_bucket_array->pending_insert_count);
     }
 
 all_ok:
@@ -690,7 +696,8 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
 
-        BUCKET_ARRAY* first_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        // find or allocate a new bucket array
+        BUCKET_ARRAY* first_bucket_array = get_first_bucket_array(clds_hash_table);
 
         // increment pending inserts count
         (void)InterlockedIncrement(&first_bucket_array->pending_insert_count);
