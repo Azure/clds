@@ -147,6 +147,12 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_038: [** `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
+Y**SRS_CLDS_HASH_TABLE_01_096: [** `clds_hash_table_insert` shall attempt to find the key `key` in all the arrays of buckets except the top level array of buckets one. **]**
+
+Y**SRS_CLDS_HASH_TABLE_01_097: [** If the key is not found then `clds_hash_table_insert` shall proceed to insert the key/value pair in the top level array of buckets. **]**
+
+Y**SRS_CLDS_HASH_TABLE_01_098: [** If the top level array of buckets has changed while looking up the key, the key lookup shall be restarted. **]**
+
 **SRS_CLDS_HASH_TABLE_01_018: [** `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. **]**
 
 **SRS_CLDS_HASH_TABLE_01_019: [** If no sorted list exists at the determined bucket index then a new list shall be created. **]**

@@ -219,6 +219,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         BUCKET_ARRAY* current_bucket;
         volatile LONG bucket_count;
         uint64_t bucket_index;
+        bool found_in_lower_levels = false;
 
         // find or allocate a new bucket array
         // always insert in the first bucket array
@@ -253,7 +254,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                 }
                 else
                 {
-                    // first bucket changed, drop ours and use the one that was inserted
+                    // first bucket array changed, drop ours and use the one that was inserted
                     free(new_bucket_array);
 
                     current_bucket = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
@@ -262,85 +263,124 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             }
         }
 
-        (void)InterlockedIncrement(&current_bucket->item_count);
-
         // compute the hash
         /* Codes_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
         hash = clds_hash_table->compute_hash(key);
-            
-        // find the bucket
-        bucket_index = hash % bucket_count;
 
-        do
+        found_in_lower_levels = false;
+
+        // check if the key exists in the lover level bucket arrays
+        BUCKET_ARRAY* find_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        if (find_bucket_array != NULL)
         {
-            // do we have a list here or do we create one?
-            bucket_list = InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], NULL, NULL);
-            if (bucket_list != NULL)
+            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+            find_bucket_array = next_bucket_array;
+            while (find_bucket_array != NULL)
             {
-                restart_needed = false;
-            }
-            else
-            {
-                // create a list
-                /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
-                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, clds_hash_table->sequence_number == NULL ? NULL : on_sorted_list_skipped_seq_no, clds_hash_table);
-                if (bucket_list == NULL)
+                next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+
+                bucket_index = hash % find_bucket_array->bucket_count;
+                bucket_list = InterlockedCompareExchangePointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
+
+                if (bucket_list != NULL)
                 {
-                    /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
-                    LogError("Cannot allocate list for hash table bucket");
+                    CLDS_SORTED_LIST_ITEM* sorted_list_item = clds_sorted_list_find_key(bucket_list, clds_hazard_pointers_thread, key);
+                    if (sorted_list_item != NULL)
+                    {
+                        clds_sorted_list_node_release(sorted_list_item);
+
+                        found_in_lower_levels = true;
+                        break;
+                    }
+                }
+
+                find_bucket_array = next_bucket_array;
+            }
+        }
+
+        if (found_in_lower_levels)
+        {
+            LogError("Key already exists in hash table");
+            result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
+        }
+        else
+        {
+            (void)InterlockedIncrement(&current_bucket->item_count);
+
+            // find the bucket
+            bucket_index = hash % bucket_count;
+
+            do
+            {
+                // do we have a list here or do we create one?
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list != NULL)
+                {
                     restart_needed = false;
                 }
                 else
                 {
-                    // now put the list in the bucket
-                    if (InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                    // create a list
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
+                    bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, clds_hash_table->sequence_number == NULL ? NULL : on_sorted_list_skipped_seq_no, clds_hash_table);
+                    if (bucket_list == NULL)
                     {
-                        // oops, someone else inserted a new list, just bail on our list and restart
-                        clds_sorted_list_destroy(bucket_list);
-                        restart_needed = true;
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+                        LogError("Cannot allocate list for hash table bucket");
+                        restart_needed = false;
                     }
                     else
                     {
-                        // set new list
-                        restart_needed = false;
+                        // now put the list in the bucket
+                        if (InterlockedCompareExchangePointer(&current_bucket->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                        {
+                            // oops, someone else inserted a new list, just bail on our list and restart
+                            clds_sorted_list_destroy(bucket_list);
+                            restart_needed = true;
+                        }
+                        else
+                        {
+                            // set new list
+                            restart_needed = false;
+                        }
                     }
                 }
-            }
-        } while (restart_needed);
+            } while (restart_needed);
 
-        if (bucket_list == NULL)
-        {
-            LogError("Cannot acquire bucket list");
-            result = CLDS_HASH_TABLE_INSERT_ERROR;
-        }
-        else
-        {
-            CLDS_SORTED_LIST_INSERT_RESULT list_insert_result;
-
-            /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-            hash_table_item->key = key;
-
-            /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
-            /* Codes_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
-            list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, sequence_number);
-            
-            if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
+            if (bucket_list == NULL)
             {
-                /* Codes_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS`. ]*/
-                LogError("Key already exists in hash table");
-                result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
-            }
-            else if (list_insert_result != CLDS_SORTED_LIST_INSERT_OK)
-            {
-                /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
-                LogError("Cannot insert hash table item into list");
+                LogError("Cannot acquire bucket list");
                 result = CLDS_HASH_TABLE_INSERT_ERROR;
             }
             else
             {
-                /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
-                result = CLDS_HASH_TABLE_INSERT_OK;
-                goto all_ok;
+                CLDS_SORTED_LIST_INSERT_RESULT list_insert_result;
+
+                /* Codes_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
+                hash_table_item->key = key;
+
+                /* Codes_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
+                /* Codes_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
+                list_insert_result = clds_sorted_list_insert(bucket_list, clds_hazard_pointers_thread, (void*)value, sequence_number);
+
+                if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS`. ]*/
+                    LogError("Key already exists in hash table");
+                    result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
+                }
+                else if (list_insert_result != CLDS_SORTED_LIST_INSERT_OK)
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+                    LogError("Cannot insert hash table item into list");
+                    result = CLDS_HASH_TABLE_INSERT_ERROR;
+                }
+                else
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
+                    result = CLDS_HASH_TABLE_INSERT_OK;
+                    goto all_ok;
+                }
             }
         }
     }
