@@ -165,7 +165,7 @@ static void add_sequence_no_to_map(SEQUENCE_NO_MAP* sequence_no_map, int64_t seq
     do
     {
         int64_t current_max_seq_no = InterlockedAdd64(&sequence_no_map->max_seq_no, 0);
-        if (seq_no > current_max_seq_no)
+        if (seq_no == current_max_seq_no + 1)
         {
             if (InterlockedCompareExchange64(&sequence_no_map->max_seq_no, seq_no, current_max_seq_no) == current_max_seq_no)
             {
