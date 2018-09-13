@@ -257,15 +257,9 @@ X**SRS_CLDS_HASH_TABLE_01_083: [** If `old_item` is NULL, `clds_hash_table_set_v
 
 X**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall iterate through the array of buckets and: **]**
+**SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` on the first (topmost) bucket array while passing `key`, `new_item` and `old_item` as arguments.. **]**
 
-**SRS_CLDS_HASH_TABLE_01_086: [** - If the bucket for the computed hash has a list, then `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` while passing `key`, `new_item` and `old_item` as arguments. **]**
-
-**SRS_CLDS_HASH_TABLE_01_087: [** - If the bucket for the computed hash does not have a list, `clds_hash_table_set_value` shall move to the next buckets in the buckets array. **]**
-
-**SRS_CLDS_HASH_TABLE_01_088: [** If the key is not found in any of the buckets, `clds_hash_table_set_value` shall compare the current top bucket level with the one that was used when the search for the `key` started. **]**
-
-**SRS_CLDS_HASH_TABLE_01_089: [** If there is a newer top bucket level (the hash table has been enlarged), the process of finding the `key` in the buckets and replacing it shall be restarted. **]**
+**SRS_CLDS_HASH_TABLE_01_087: [** If the bucket for the computed hash does not have a list, `clds_hash_table_set_value` shall create a list of selected bucket. **]**
 
 **SRS_CLDS_HASH_TABLE_01_090: [** If the top bucket level is the same `clds_hash_table_set_value` shall attempt to insert the value in the top bucket level: **]**
 
