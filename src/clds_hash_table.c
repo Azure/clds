@@ -792,20 +792,22 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
                     bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
                     bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
-
-                    if (clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, &removed_old_item, &remove_seq_no) == CLDS_SORTED_LIST_REMOVE_OK)
+                    if (bucket_list != NULL)
                     {
-                        if (clds_hash_table->skipped_seq_no_cb != NULL)
+                        if (clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, &removed_old_item, &remove_seq_no) == CLDS_SORTED_LIST_REMOVE_OK)
                         {
-                            // notify the user that this seq no will be skipped
-                            clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, remove_seq_no);
+                            if (clds_hash_table->skipped_seq_no_cb != NULL)
+                            {
+                                // notify the user that this seq no will be skipped
+                                clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, remove_seq_no);
+                            }
+
+                            (void)InterlockedDecrement(&current_bucket_array->item_count);
+
+                            *old_item = (void*)removed_old_item;
+
+                            break;
                         }
-
-                        (void)InterlockedDecrement(&current_bucket_array->item_count);
-
-                        *old_item = (void*)removed_old_item;
-
-                        break;
                     }
 
                     current_bucket_array = next_bucket_array;
