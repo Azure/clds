@@ -790,6 +790,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     int64_t remove_seq_no;
                     CLDS_SORTED_LIST_ITEM* removed_old_item;
                     next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+                    bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
                     bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
 
                     if (clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, &removed_old_item, &remove_seq_no) == CLDS_SORTED_LIST_REMOVE_OK)
