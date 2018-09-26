@@ -6,6 +6,5 @@
 int main(void)
 {
     clds_sorted_list_perf_main();
-
     return 0;
 }

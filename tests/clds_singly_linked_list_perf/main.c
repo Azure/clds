@@ -6,6 +6,5 @@
 int main(void)
 {
     clds_singly_linked_list_perf_main();
-
     return 0;
 }

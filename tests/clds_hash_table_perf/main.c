@@ -6,6 +6,5 @@
 int main(void)
 {
     clds_hash_table_perf_main();
-
     return 0;
 }
