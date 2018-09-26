@@ -47,10 +47,15 @@ static uint64_t hp_key_hash(void* key)
     return (uint64_t)key;
 }
 
+static int hp_key_compare(void* key1, void* key2)
+{
+    return (unsigned char*)key1 - (unsigned char*)key2;
+}
+
 static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
-    CLDS_ST_HASH_SET_HANDLE all_hps_set = clds_st_hash_set_create(hp_key_hash, clds_hazard_pointers_thread->clds_hazard_pointers->reclaim_threshold);
+    CLDS_ST_HASH_SET_HANDLE all_hps_set = clds_st_hash_set_create(hp_key_hash, hp_key_compare, clds_hazard_pointers_thread->clds_hazard_pointers->reclaim_threshold);
     if (all_hps_set == NULL)
     {
         // oops, panic now!
@@ -65,9 +70,9 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
             CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)InterlockedCompareExchangePointerAcquire((volatile PVOID*)&current_thread->next, NULL, NULL);
             if (InterlockedAddNoFence(&current_thread->active, 0) == 1)
             {
-                // look at the pointers of this thread, if it gets unregistered in the meanwhile we won't care
+                // look at the pointers of this thread
+                // if it gets unregistered in the meanwhile we won't care
                 // if it gets registered again we also don't care as for sure it does not have our hazard pointer anymore
-
                 CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = (CLDS_HAZARD_POINTER_RECORD_HANDLE)InterlockedCompareExchangePointerAcquire((volatile PVOID*)&current_thread->pointers, NULL, NULL);
                 while (clds_hazard_pointer != NULL)
                 {
@@ -75,7 +80,13 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                     void* node = InterlockedCompareExchangePointerAcquire(&clds_hazard_pointer->node, NULL, NULL);
                     if (node != NULL)
                     {
-                        if (clds_st_hash_set_insert(all_hps_set, node) != 0)
+                        CLDS_ST_HASH_SET_INSERT_RESULT insert_result = clds_st_hash_set_insert(all_hps_set, node);
+                        if ((insert_result == CLDS_ST_HASH_SET_INSERT_OK) ||
+                            (insert_result == CLDS_ST_HASH_SET_INSERT_KEY_ALREADY_EXISTS))
+                        {
+                            // all ok
+                        }
+                        else
                         {
                             LogError("Cannot insert hazard pointer in set");
                             break;
@@ -106,43 +117,40 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
             while (current_reclaim_entry != NULL)
             {
                 // this is the scan for the pointers
-                bool reclaim_node = true;
+                CLDS_ST_HASH_SET_FIND_RESULT find_result = clds_st_hash_set_find(all_hps_set, current_reclaim_entry->node);
 
-                if (clds_st_hash_set_find(all_hps_set, current_reclaim_entry->node, &reclaim_node) != 0)
+                if (find_result == CLDS_ST_HASH_SET_FIND_ERROR)
                 {
                     LogError("Error finding pointer");
                     break;
                 }
-                else
+                else if (find_result == CLDS_ST_HASH_SET_FIND_NOT_FOUND)
                 {
-                    if (!reclaim_node)
+                    // node is safe to be reclaimed
+                    current_reclaim_entry->reclaim(current_reclaim_entry->node);
+
+                    // now remove it from the reclaim list
+                    if (prev_reclaim_entry == NULL)
                     {
-                        // node is safe to be reclaimed
-                        current_reclaim_entry->reclaim(current_reclaim_entry->node);
-
-                        // now remove it from the reclaim list
-                        if (prev_reclaim_entry == NULL)
-                        {
-                            // this is the head of the reclaim list
-                            clds_hazard_pointers_thread->reclaim_list = current_reclaim_entry->next;
-                            free(current_reclaim_entry);
-                            current_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
-                        }
-                        else
-                        {
-                            prev_reclaim_entry->next = current_reclaim_entry->next;
-                            free(current_reclaim_entry);
-                            current_reclaim_entry = prev_reclaim_entry->next;
-                        }
-
-                        clds_hazard_pointers_thread->reclaim_list_entry_count--;
+                        // this is the head of the reclaim list
+                        clds_hazard_pointers_thread->reclaim_list = current_reclaim_entry->next;
+                        free(current_reclaim_entry);
+                        current_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
                     }
                     else
                     {
-                        // not safe, sorry, shall still have it around, move to next reclaim entry
-                        prev_reclaim_entry = current_reclaim_entry;
-                        current_reclaim_entry = current_reclaim_entry->next;
+                        prev_reclaim_entry->next = current_reclaim_entry->next;
+                        free(current_reclaim_entry);
+                        current_reclaim_entry = prev_reclaim_entry->next;
                     }
+
+                    clds_hazard_pointers_thread->reclaim_list_entry_count--;
+                }
+                else
+                {
+                    // not safe, sorry, shall still have it around, move to next reclaim entry
+                    prev_reclaim_entry = current_reclaim_entry;
+                    current_reclaim_entry = current_reclaim_entry->next;
                 }
             }
         }

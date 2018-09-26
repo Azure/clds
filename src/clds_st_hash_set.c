@@ -22,9 +22,11 @@ typedef struct CLDS_ST_HASH_SET_TAG
     HASH_TABLE_ITEM** hash_set;
 } CLDS_ST_HASH_SET;
 
-CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash, size_t initial_bucket_size)
+CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size)
 {
     CLDS_ST_HASH_SET_HANDLE clds_st_hash_set;
+
+    (void)key_compare_func;
 
     if ((compute_hash == NULL) ||
         (initial_bucket_size == 0))
@@ -101,15 +103,15 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
     }
 }
 
-int clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key)
+CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key)
 {
-    int result;
+    CLDS_ST_HASH_SET_INSERT_RESULT result;
 
     if ((clds_st_hash_set == NULL) ||
         (key == NULL))
     {
-        LogError("Invalid arguments: clds_st_hash_set = %p, key = %p", clds_st_hash_set, key);
-        result = __FAILURE__;
+        LogError("Invalid arguments: CLDS_ST_HASH_SET_HANDLE clds_st_hash_set=%p, void* key=%p", clds_st_hash_set, key);
+        result = CLDS_ST_HASH_SET_INSERT_ERROR;
     }
     else
     {
@@ -123,7 +125,7 @@ int clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key)
         if (hash_table_item == NULL)
         {
             LogError("Error allocating memory for hash set item");
-            result = __FAILURE__;
+            result = CLDS_ST_HASH_SET_INSERT_ERROR;
         }
         else
         {
@@ -131,23 +133,22 @@ int clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key)
             hash_table_item->next = clds_st_hash_set->hash_set[bucket_index];
             clds_st_hash_set->hash_set[bucket_index] = hash_table_item;
 
-            result = 0;
+            result = CLDS_ST_HASH_SET_INSERT_OK;
         }
     }
 
     return result;
 }
 
-int clds_st_hash_set_find(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key, bool* key_found)
+CLDS_ST_HASH_SET_FIND_RESULT clds_st_hash_set_find(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key)
 {
-    int result;
+    CLDS_ST_HASH_SET_FIND_RESULT result;
 
     if ((clds_st_hash_set == NULL) ||
-        (key == NULL) ||
-        (key_found == NULL))
+        (key == NULL))
     {
-        LogError("Invalid arguments: clds_st_hash_set = %p, key = %p, key_found = %p", clds_st_hash_set, key, key_found);
-        result = __FAILURE__;
+        LogError("Invalid arguments: CLDS_ST_HASH_SET_HANDLE clds_st_hash_set=%p, void* key=%p", clds_st_hash_set, key);
+        result = CLDS_ST_HASH_SET_FIND_ERROR;
     }
     else
     {
@@ -170,14 +171,12 @@ int clds_st_hash_set_find(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key, b
 
         if (hash_table_item == NULL)
         {
-            *key_found = false;
+            result = CLDS_ST_HASH_SET_FIND_NOT_FOUND;
         }
         else
         {
-            *key_found = true;
+            result = CLDS_ST_HASH_SET_FIND_OK;
         }
-
-        result = 0;
     }
 
     return result;

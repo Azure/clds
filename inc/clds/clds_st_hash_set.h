@@ -10,15 +10,31 @@ extern "C" {
 #include <stdint.h>
 #endif
 
+#include "azure_macro_utils/macro_utils.h"
 #include "azure_c_shared_utility/umock_c_prod.h"
 
 typedef struct CLDS_ST_HASH_SET_TAG* CLDS_ST_HASH_SET_HANDLE;
 typedef uint64_t (*CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC)(void* key);
+typedef int(*CLDS_ST_HASH_SET_KEY_COMPARE_FUNC)(void* key_1, void* key_2);
 
-MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, size_t, initial_bucket_size);
+#define CLDS_ST_HASH_SET_INSERT_RESULT_VALUES \
+    CLDS_ST_HASH_SET_INSERT_OK, \
+    CLDS_ST_HASH_SET_INSERT_ERROR, \
+    CLDS_ST_HASH_SET_INSERT_KEY_ALREADY_EXISTS
+
+DEFINE_ENUM(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_RESULT_VALUES);
+
+#define CLDS_ST_HASH_SET_FIND_RESULT_VALUES \
+    CLDS_ST_HASH_SET_FIND_OK, \
+    CLDS_ST_HASH_SET_FIND_ERROR, \
+    CLDS_ST_HASH_SET_FIND_NOT_FOUND
+
+DEFINE_ENUM(CLDS_ST_HASH_SET_FIND_RESULT, CLDS_ST_HASH_SET_FIND_RESULT_VALUES);
+
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size);
 MOCKABLE_FUNCTION(, void, clds_st_hash_set_destroy, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set);
-MOCKABLE_FUNCTION(, int, clds_st_hash_set_insert, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
-MOCKABLE_FUNCTION(, int, clds_st_hash_set_find, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key, bool*, key_found);
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_INSERT_RESULT, clds_st_hash_set_insert, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_FIND_RESULT, clds_st_hash_set_find, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
 
 #ifdef __cplusplus
 }
