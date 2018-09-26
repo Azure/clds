@@ -83,9 +83,13 @@ set(clds_c_files
     ./src/clds_sorted_list.c
 )
 
+FILE(GLOB clds_md_files "devdoc/*.md")
+SOURCE_GROUP(devdoc FILES ${clds_md_files})
+
 add_library(clds
     ${clds_c_files}
     ${clds_h_files}
+    ${clds_md_files}
     )
 
 target_link_libraries(clds aziotsharedutil)
