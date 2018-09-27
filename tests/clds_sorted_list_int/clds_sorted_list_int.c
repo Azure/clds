@@ -30,7 +30,6 @@ void real_free(void* ptr)
 #include "clds/clds_sorted_list.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
-static TEST_MUTEX_HANDLE g_dllByDll;
 
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
@@ -112,8 +111,6 @@ BEGIN_TEST_SUITE(clds_sorted_list_inttests)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
-    TEST_INITIALIZE_MEMORY_DEBUG(g_dllByDll);
-
     test_serialize_mutex = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 }
@@ -121,7 +118,6 @@ TEST_SUITE_INITIALIZE(suite_init)
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
     TEST_MUTEX_DESTROY(test_serialize_mutex);
-    TEST_DEINITIALIZE_MEMORY_DEBUG(g_dllByDll);
 }
 
 TEST_FUNCTION_INITIALIZE(method_init)
