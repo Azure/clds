@@ -5,6 +5,7 @@ add_subdirectory(clds_hash_table_ut)
 add_subdirectory(clds_hazard_pointers_ut)
 add_subdirectory(clds_singly_linked_list_ut)
 add_subdirectory(clds_sorted_list_ut)
+add_subdirectory(clds_st_hash_set_ut)
 
 #integration tests
 add_subdirectory(clds_sorted_list_int)
