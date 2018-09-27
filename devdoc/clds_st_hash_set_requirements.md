@@ -29,7 +29,7 @@ DEFINE_ENUM(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_RESULT_VALUE
 
 DEFINE_ENUM(CLDS_ST_HASH_SET_FIND_RESULT, CLDS_ST_HASH_SET_FIND_RESULT_VALUES);
 
-MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size);
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, bucket_size);
 MOCKABLE_FUNCTION(, void, clds_st_hash_set_destroy, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set);
 MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_INSERT_RESULT, clds_st_hash_set_insert, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
 MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_FIND_RESULT, clds_st_hash_set_find, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
@@ -38,18 +38,18 @@ MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_FIND_RESULT, clds_st_hash_set_find, CLDS_ST
 ### clds_st_hash_set_create
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size);
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, bucket_size);
 ```
 
 **SRS_CLDS_ST_HASH_SET_01_001: [** `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. **]**
 
-If any error happens, `clds_st_hash_set_create` shall fail and return NULL.
+**SRS_CLDS_ST_HASH_SET_01_002: [** If any error happens, `clds_st_hash_set_create` shall fail and return NULL. **]**
 
-If `compute_hash` is NULL, `clds_st_hash_set_create` shall fail and return NULL.
+**SRS_CLDS_ST_HASH_SET_01_003: [** If `compute_hash` is NULL, `clds_st_hash_set_create` shall fail and return NULL. **]**
 
-If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL.
+**SRS_CLDS_ST_HASH_SET_01_004: [** If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. **]**
 
-If `initial_bucket_size` is 0, `clds_st_hash_set_create` shall fail and return NULL.
+**SRS_CLDS_ST_HASH_SET_01_005: [** If `bucket_size` is 0, `clds_st_hash_set_create` shall fail and return NULL. **]**
 
 ### clds_st_hash_set_destroy
 
@@ -57,9 +57,9 @@ If `initial_bucket_size` is 0, `clds_st_hash_set_create` shall fail and return N
 MOCKABLE_FUNCTION(, void, clds_st_hash_set_destroy, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set);
 ```
 
-`clds_st_hash_set_destroy` shall free all resources associated with the hash set instance.
+**SRS_CLDS_ST_HASH_SET_01_006: [** `clds_st_hash_set_destroy` shall free all resources associated with the hash set instance. **]**
 
-If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return.
+**SRS_CLDS_ST_HASH_SET_01_007: [** If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return. **]**
 
 ### clds_st_hash_set_insert
 
@@ -67,19 +67,19 @@ If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return.
 MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_INSERT_RESULT, clds_st_hash_set_insert, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
 ```
 
-`clds_st_hash_set_insert` shall insert a key in the hash set.
+**SRS_CLDS_ST_HASH_SET_01_008: [** `clds_st_hash_set_insert` shall insert a key in the hash set. **]**
 
-On success `clds_st_hash_set_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`.
+**SRS_CLDS_ST_HASH_SET_01_009: [** On success `clds_st_hash_set_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. **]**
 
-If `clds_st_hash_set` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`.
+**SRS_CLDS_ST_HASH_SET_01_010: [** If `clds_st_hash_set` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
 
-If `key` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`.
+**SRS_CLDS_ST_HASH_SET_01_011: [** If `key` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
 
-`clds_st_hash_set_insert` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`.
+**SRS_CLDS_ST_HASH_SET_01_012: [** `clds_st_hash_set_insert` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`. **]**
 
-`clds_st_hash_set_insert` shall walk through all the items stored in the list at the bucket given by the computed hash.
+**SRS_CLDS_ST_HASH_SET_01_013: [** `clds_st_hash_set_insert` shall walk through all the items stored in the list at the bucket given by the computed hash. **]**
 
-If any of the items stored in the list at the bucket given by the computed hash matches `key`, `clds_st_hash_set_insert` shall return `CLDS_ST_HASH_SET_INSERT_KEY_ALREADY_EXISTS`.
+**SRS_CLDS_ST_HASH_SET_01_014: [** If any of the items stored in the list at the bucket given by the computed hash matches `key`, `clds_st_hash_set_insert` shall return `CLDS_ST_HASH_SET_INSERT_KEY_ALREADY_EXISTS`. **]**
 
 ### clds_st_hash_set_find
 
@@ -87,16 +87,16 @@ If any of the items stored in the list at the bucket given by the computed hash 
 MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_FIND_RESULT, clds_st_hash_set_find, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
 ```
 
-`clds_st_hash_set_find` shall inform the user if the given `key` is in the hash set or not.
+**SRS_CLDS_ST_HASH_SET_01_015: [** `clds_st_hash_set_find` shall inform the user if the given `key` is in the hash set or not. **]**
 
-If `clds_st_hash_set_find` is NULL, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_ERROR`.
+**SRS_CLDS_ST_HASH_SET_01_016: [** If `clds_st_hash_set_find` is NULL, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_ERROR`. **]**
 
-If `key` is NULL, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_ERROR`.
+**SRS_CLDS_ST_HASH_SET_01_017: [** If `key` is NULL, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_ERROR`. **]**
 
-`clds_st_hash_set_find` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`
+**SRS_CLDS_ST_HASH_SET_01_018: [** `clds_st_hash_set_find` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create` **]**
 .
-`clds_st_hash_set_find` shall walk through all the items stored in the list at the bucket given by the computed hash.
+**SRS_CLDS_ST_HASH_SET_01_019: [** `clds_st_hash_set_find` shall walk through all the items stored in the list at the bucket given by the computed hash. **]**
 
-If `key` exists in the hash set, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_OK`.
+**SRS_CLDS_ST_HASH_SET_01_020: [** If `key` exists in the hash set, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_OK`. **]**
 
-If `key` does not exist in the hash set, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_NOT_FOUND`.
+**SRS_CLDS_ST_HASH_SET_01_021: [** If `key` does not exist in the hash set, `clds_st_hash_set_find` shall return `CLDS_ST_HASH_SET_FIND_NOT_FOUND`. **]**

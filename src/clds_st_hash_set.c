@@ -22,14 +22,14 @@ typedef struct CLDS_ST_HASH_SET_TAG
     HASH_TABLE_ITEM** hash_set;
 } CLDS_ST_HASH_SET;
 
-CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size)
+CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func, size_t bucket_size)
 {
     CLDS_ST_HASH_SET_HANDLE clds_st_hash_set;
 
     (void)key_compare_func;
 
     if ((compute_hash == NULL) ||
-        (initial_bucket_size == 0))
+        (bucket_size == 0))
     {
         LogError("Zero initial bucket size");
     }
@@ -42,7 +42,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
         }
         else
         {
-            clds_st_hash_set->hash_set = malloc(sizeof(void*) * initial_bucket_size);
+            clds_st_hash_set->hash_set = malloc(sizeof(void*) * bucket_size);
             if (clds_st_hash_set->hash_set == NULL)
             {
                 LogError("Cannot allocate memory for hash set array");
@@ -55,9 +55,9 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
                 clds_st_hash_set->compute_hash = compute_hash;
 
                 // set the initial bucket count
-                clds_st_hash_set->bucket_count = initial_bucket_size;
+                clds_st_hash_set->bucket_count = bucket_size;
 
-                for (i = 0; i < initial_bucket_size; i++)
+                for (i = 0; i < bucket_size; i++)
                 {
                     clds_st_hash_set->hash_set[i] = NULL;
                 }
