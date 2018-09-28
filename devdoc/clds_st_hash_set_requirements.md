@@ -29,7 +29,7 @@ DEFINE_ENUM(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_RESULT_VALUE
 
 DEFINE_ENUM(CLDS_ST_HASH_SET_FIND_RESULT, CLDS_ST_HASH_SET_FIND_RESULT_VALUES);
 
-MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, bucket_size);
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash_func, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, bucket_size);
 MOCKABLE_FUNCTION(, void, clds_st_hash_set_destroy, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set);
 MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_INSERT_RESULT, clds_st_hash_set_insert, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
 MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_FIND_RESULT, clds_st_hash_set_find, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set, void*, key);
@@ -38,14 +38,16 @@ MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_FIND_RESULT, clds_st_hash_set_find, CLDS_ST
 ### clds_st_hash_set_create
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, bucket_size);
+MOCKABLE_FUNCTION(, CLDS_ST_HASH_SET_HANDLE, clds_st_hash_set_create, CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, compute_hash_func, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, key_compare_func, size_t, bucket_size);
 ```
 
 **SRS_CLDS_ST_HASH_SET_01_001: [** `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. **]**
 
+**SRS_CLDS_ST_HASH_SET_01_022: [** `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. **]**
+
 **SRS_CLDS_ST_HASH_SET_01_002: [** If any error happens, `clds_st_hash_set_create` shall fail and return NULL. **]**
 
-**SRS_CLDS_ST_HASH_SET_01_003: [** If `compute_hash` is NULL, `clds_st_hash_set_create` shall fail and return NULL. **]**
+**SRS_CLDS_ST_HASH_SET_01_003: [** If `compute_hash_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. **]**
 
 **SRS_CLDS_ST_HASH_SET_01_004: [** If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. **]**
 

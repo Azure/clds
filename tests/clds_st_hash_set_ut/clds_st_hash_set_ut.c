@@ -45,6 +45,15 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
     ASSERT_FAIL(temp_str);
 }
 
+MOCK_FUNCTION_WITH_CODE(, uint64_t, test_compute_hash, void*, key)
+    (void)key;
+MOCK_FUNCTION_END(0)
+
+MOCK_FUNCTION_WITH_CODE(, int, test_key_compare, void*, key1, void*, key2)
+    (void)key1;
+    (void)key2;
+MOCK_FUNCTION_END(0)
+
 BEGIN_TEST_SUITE(clds_st_hash_set_unittests)
 
 TEST_SUITE_INITIALIZE(suite_init)
@@ -93,5 +102,158 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 }
 
 /* clds_hash_table_create */
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_001: [ `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_022: [ `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. ]*/
+TEST_FUNCTION(clds_st_hash_set_create_succeeds)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(st_hash_set);
+
+    // cleanup
+    clds_st_hash_set_destroy(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_001: [ `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_022: [ `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. ]*/
+TEST_FUNCTION(clds_st_hash_set_create_with_bucket_size_1_succeeds)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NOT_NULL(st_hash_set);
+
+    // cleanup
+    clds_st_hash_set_destroy(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_003: [ If `compute_hash_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_st_hash_set_create_with_NULL_compute_hash_func_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+    umock_c_reset_all_calls();
+
+    // act
+    st_hash_set = clds_st_hash_set_create(NULL, test_key_compare, 1024);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_004: [ If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_st_hash_set_create_with_NULL_key_compare_func_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+
+    // act
+    st_hash_set = clds_st_hash_set_create(NULL, test_key_compare, 1024);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_005: [ If `bucket_size` is 0, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(clds_st_hash_set_create_with_0_bucket_size_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+    umock_c_reset_all_calls();
+
+    // act
+    st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 0);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(when_allocating_memory_for_the_hash_set_fails_clds_st_hash_set_create_also_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG))
+        .SetReturn(NULL);
+
+    // act
+    st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+TEST_FUNCTION(when_allocating_memory_for_the_bucket_array_fails_clds_st_hash_set_create_also_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set;
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG))
+        .SetReturn(NULL);
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+
+    // act
+    st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(st_hash_set);
+}
+
+/* clds_st_hash_set_destroy */
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_006: [ `clds_st_hash_set_destroy` shall free all resources associated with the hash set instance. ]*/
+TEST_FUNCTION(clds_st_hash_set_destroy_frees_the_memory)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+
+    // act
+    clds_st_hash_set_destroy(st_hash_set);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_007: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return. ]*/
+TEST_FUNCTION(clds_st_hash_set_destroy_with_NULL_handle_returns)
+{
+    // arrange
+
+    // act
+    clds_st_hash_set_destroy(NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
 
 END_TEST_SUITE(clds_st_hash_set_unittests)

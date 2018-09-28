@@ -17,24 +17,31 @@ typedef struct HASH_TABLE_ITEM_TAG
 
 typedef struct CLDS_ST_HASH_SET_TAG
 {
+    CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash_func;
+    CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func;
     size_t bucket_count;
-    CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash;
     HASH_TABLE_ITEM** hash_set;
 } CLDS_ST_HASH_SET;
 
-CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func, size_t bucket_size)
+CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash_func, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func, size_t bucket_size)
 {
     CLDS_ST_HASH_SET_HANDLE clds_st_hash_set;
 
-    (void)key_compare_func;
-
-    if ((compute_hash == NULL) ||
-        (bucket_size == 0))
+    if (
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_003: [ If `compute_hash_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+        (compute_hash_func == NULL) ||
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_004: [ If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+        (key_compare_func == NULL) ||
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_005: [ If `bucket_size` is 0, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+        (bucket_size == 0)
+        )
     {
-        LogError("Zero initial bucket size");
+        LogError("Invalid arguments: CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash=%p, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func=%p, size_t bucket_size=%zu",
+            compute_hash_func, key_compare_func, bucket_size);
     }
     else
     {
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_001: [ `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
         clds_st_hash_set = (CLDS_ST_HASH_SET_HANDLE)malloc(sizeof(CLDS_ST_HASH_SET));
         if (clds_st_hash_set == NULL)
         {
@@ -42,6 +49,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
         }
         else
         {
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_022: [ `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. ]*/
             clds_st_hash_set->hash_set = malloc(sizeof(void*) * bucket_size);
             if (clds_st_hash_set->hash_set == NULL)
             {
@@ -51,8 +59,8 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
             {
                 size_t i;
 
-                // all OK
-                clds_st_hash_set->compute_hash = compute_hash;
+                clds_st_hash_set->compute_hash_func = compute_hash_func;
+                clds_st_hash_set->key_compare_func = key_compare_func;
 
                 // set the initial bucket count
                 clds_st_hash_set->bucket_count = bucket_size;
@@ -80,7 +88,8 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
     if (clds_st_hash_set == NULL)
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_007: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return. ]*/
-        LogError("NULL clds_st_hash_set");
+        LogError("Invalid arguments: clds_st_hash_set=%p",
+            clds_st_hash_set);
     }
     else
     {
@@ -98,6 +107,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
             }
         }
 
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_006: [ `clds_st_hash_set_destroy` shall free all resources associated with the hash set instance. ]*/
         free(clds_st_hash_set->hash_set);
         free(clds_st_hash_set);
     }
@@ -116,7 +126,7 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
     else
     {
         // compute the hash
-        uint64_t hash = clds_st_hash_set->compute_hash(key);
+        uint64_t hash = clds_st_hash_set->compute_hash_func(key);
             
         // find the bucket
         uint64_t bucket_index = hash % clds_st_hash_set->bucket_count;
@@ -153,7 +163,7 @@ CLDS_ST_HASH_SET_FIND_RESULT clds_st_hash_set_find(CLDS_ST_HASH_SET_HANDLE clds_
     else
     {
         // compute the hash
-        uint64_t hash = clds_st_hash_set->compute_hash(key);
+        uint64_t hash = clds_st_hash_set->compute_hash_func(key);
 
         // find the bucket
         uint64_t bucket_index = hash % clds_st_hash_set->bucket_count;
