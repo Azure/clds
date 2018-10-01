@@ -256,4 +256,63 @@ TEST_FUNCTION(clds_st_hash_set_destroy_with_NULL_handle_returns)
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
+/* clds_st_hash_set_insert */
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_008: [ `clds_st_hash_set_insert` shall insert a key in the hash set. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_009: [ On success `clds_st_hash_set_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_012: [ `clds_st_hash_set_insert` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`. ]*/
+TEST_FUNCTION(clds_st_hash_set_insert_succeeds)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
+    CLDS_ST_HASH_SET_INSERT_RESULT result;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x42));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    // act
+    result = clds_st_hash_set_insert(st_hash_set, (void*)0x42);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_OK, result);
+
+    // cleanup
+    clds_st_hash_set_destroy(st_hash_set);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_010: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+TEST_FUNCTION(clds_st_hash_set_insert_with_NULL_st_hash_set_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_INSERT_RESULT result;
+
+    // act
+    result = clds_st_hash_set_insert(NULL, (void*)0x42);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_ERROR, result);
+}
+
+/* Tests_SRS_CLDS_ST_HASH_SET_01_011: [ If `key` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+TEST_FUNCTION(clds_st_hash_set_insert_with_NULL_key_fails)
+{
+    // arrange
+    CLDS_ST_HASH_SET_HANDLE st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
+    CLDS_ST_HASH_SET_INSERT_RESULT result;
+    umock_c_reset_all_calls();
+
+    // act
+    result = clds_st_hash_set_insert(st_hash_set, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_ERROR, result);
+
+    // cleanup
+    clds_st_hash_set_destroy(st_hash_set);
+}
+
 END_TEST_SUITE(clds_st_hash_set_unittests)

@@ -117,7 +117,10 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
 {
     CLDS_ST_HASH_SET_INSERT_RESULT result;
 
-    if ((clds_st_hash_set == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_010: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+        (clds_st_hash_set == NULL) ||
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_011: [ If `key` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
         (key == NULL))
     {
         LogError("Invalid arguments: CLDS_ST_HASH_SET_HANDLE clds_st_hash_set=%p, void* key=%p", clds_st_hash_set, key);
@@ -125,7 +128,7 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
     }
     else
     {
-        // compute the hash
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_012: [ `clds_st_hash_set_insert` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`. ]*/
         uint64_t hash = clds_st_hash_set->compute_hash_func(key);
             
         // find the bucket
@@ -139,10 +142,12 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
         }
         else
         {
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_008: [ `clds_st_hash_set_insert` shall insert a key in the hash set. ]*/
             hash_table_item->key = key;
             hash_table_item->next = clds_st_hash_set->hash_set[bucket_index];
             clds_st_hash_set->hash_set[bucket_index] = hash_table_item;
 
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_009: [ On success `clds_st_hash_set_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
             result = CLDS_ST_HASH_SET_INSERT_OK;
         }
     }
