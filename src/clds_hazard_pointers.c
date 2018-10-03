@@ -49,7 +49,22 @@ static uint64_t hp_key_hash(void* key)
 
 static int hp_key_compare(void* key1, void* key2)
 {
-    return (unsigned char*)key1 - (unsigned char*)key2;
+    int result;
+
+    if (key1 < key2)
+    {
+        result = -1;
+    }
+    else if (key1 > key2)
+    {
+        result = 1;
+    }
+    else
+    {
+        result = 0;
+    }
+
+    return result;
 }
 
 static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread)
