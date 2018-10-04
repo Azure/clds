@@ -452,7 +452,8 @@ int clds_hazard_pointers_set_reclaim_threshold(CLDS_HAZARD_POINTERS_HANDLE clds_
     if ((clds_hazard_pointers == NULL) ||
         (reclaim_threshold == 0))
     {
-        LogError("Invalid arguments: clds_hazard_pointers = %p, reclaim_threshold = %zu");
+        LogError("Invalid arguments: clds_hazard_pointers = %p, reclaim_threshold = %zu",
+            clds_hazard_pointers, reclaim_threshold);
         result = __FAILURE__;
     }
     else
