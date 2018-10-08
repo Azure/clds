@@ -202,9 +202,9 @@ TEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_alrea
 
     // insert 2 keys: 0x42 and 0x43
     insert_result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x42, item_1, &insert_seq_no);
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, insert_result, "item_1 insert failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, insert_result, "item_1 insert failed");
     insert_result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x43, item_2, &insert_seq_no);
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, insert_result, "item_2 insert failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, insert_result, "item_2 insert failed");
 
     // delete key 0x43 (0x42 is still in there in the lowest layer of buckets)
     delete_result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x43, &delete_seq_no);
@@ -215,7 +215,7 @@ TEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_alrea
     insert_result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x42, item_1, &insert_seq_no);
 
     // assert
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS, insert_result, "item_1 insert second time should fail");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS, insert_result, "item_1 insert second time should fail");
 
     // cleanup
     clds_hash_table_destroy(hash_table);
@@ -238,7 +238,7 @@ TEST_FUNCTION(clds_hash_table_set_value_succeeds)
     set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item, &old_item, &set_value_seq_no);
 
     // assert
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
 
     // cleanup
     clds_hash_table_destroy(hash_table);
@@ -265,9 +265,9 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
 
     // insert 2 items and force a new level
     insert_result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x42, item_1, &insert_seq_no);
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, insert_result, "item_1 insert failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, insert_result, "item_1 insert failed");
     insert_result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x43, item_2, &insert_seq_no);
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, insert_result, "item_2 insert failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, insert_result, "item_2 insert failed");
 
     // delete key 0x43 (0x42 is still in there in the lowest layer of buckets)
     delete_result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x43, &delete_seq_no);
@@ -277,8 +277,8 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
     set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item_3, &old_item, &set_value_seq_no);
 
     // assert
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
-    ASSERT_ARE_EQUAL_WITH_MSG(void_ptr, item_1, old_item, "Bad old item returned");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
+    ASSERT_ARE_EQUAL(void_ptr, item_1, old_item, "Bad old item returned");
 
     // cleanup
     clds_hash_table_destroy(hash_table);
@@ -300,13 +300,13 @@ TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
     int64_t delete_seq_no;
 
     set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item, &old_item, &set_value_seq_no);
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
 
     // act
     delete_result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x42, &delete_seq_no);
 
     // assert
-    ASSERT_ARE_EQUAL_WITH_MSG(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result, "item delete failed");
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result, "item delete failed");
 
     // cleanup
     clds_hash_table_destroy(hash_table);

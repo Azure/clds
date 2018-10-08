@@ -105,10 +105,10 @@ TEST_SUITE_INITIALIZE(suite_init)
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 
     result = umock_c_init(on_umock_c_error);
-    ASSERT_ARE_EQUAL_WITH_MSG(int, 0, result, "umock_c_init failed");
+    ASSERT_ARE_EQUAL(int, 0, result, "umock_c_init failed");
 
     result = umocktypes_stdint_register_types();
-    ASSERT_ARE_EQUAL_WITH_MSG(int, 0, result, "umocktypes_stdint_register_types failed");
+    ASSERT_ARE_EQUAL(int, 0, result, "umocktypes_stdint_register_types failed");
 
     REGISTER_CLDS_ST_HASH_SET_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
