@@ -170,9 +170,9 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* clds_hash_table_create */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_027: [ The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ start_sequence_number shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
@@ -196,9 +196,9 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_027: [ The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ start_sequence_number shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_skipped_seq_no_cb)
 {
     // arrange
@@ -222,9 +222,9 @@ TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_skipped_seq_no_cb)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_027: [ The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ start_sequence_number shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_sequence_number_and_skipped_seq_no_cb)
 {
     // arrange
@@ -247,7 +247,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_sequence_number_and_skip
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_058: [ start_sequence_number shall be allowed to be NULL, in which case no sequence number computations shall be performed. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_NULL_sequence_number_and_non_NULL_skipped_seq_no_cb_fails)
 {
     // arrange
@@ -266,7 +266,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_sequence_number_and_non_NULL_skip
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, clds_hash_table_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_allocating_memory_for_the_hash_table_fails_clds_hash_table_create_fails)
 {
     // arrange
@@ -288,7 +288,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_fails_clds_hash_table_cr
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, `clds_hash_table_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, clds_hash_table_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_allocating_memory_for_the_hash_table_array_fails_clds_hash_table_create_fails)
 {
     // arrange
@@ -312,7 +312,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_array_fails_clds_hash_ta
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_003: [ If `compute_hash` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_003: [ If compute_hash is NULL, clds_hash_table_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_NULL_compute_hash_function_fails)
 {
     // arrange
@@ -331,7 +331,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_compute_hash_function_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_045: [ If `key_compare_func` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_045: [ If key_compare_func is NULL, clds_hash_table_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_function_fails)
 {
     // arrange
@@ -350,7 +350,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_key_compare_function_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_004: [ If `initial_bucket_size` is 0, `clds_hash_table_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_004: [ If initial_bucket_size is 0, clds_hash_table_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_initial_bucket_size_zero_fails)
 {
     // arrange
@@ -369,7 +369,7 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_bucket_size_zero_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_005: [ If `clds_hazard_pointers` is NULL, `clds_hash_table_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_005: [ If clds_hazard_pointers is NULL, clds_hash_table_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
 {
     // arrange
@@ -382,7 +382,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
     ASSERT_IS_NULL(hash_table);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 TEST_FUNCTION(two_hash_tables_can_be_created_with_the_same_hazard_pointer_instance)
 {
     // arrange
@@ -413,7 +413,7 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_the_same_hazard_pointer_instan
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 TEST_FUNCTION(two_hash_tables_can_be_created_with_different_hazard_pointer_instances)
 {
     // arrange
@@ -446,7 +446,7 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_different_hazard_pointer_insta
     clds_hazard_pointers_destroy(hazard_pointers_2);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ `clds_hash_table_create` shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
 {
     // arrange
@@ -469,7 +469,7 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_057: [ `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_057: [ start_sequence_number shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_non_NULL_start_sequence_number_succeeds)
 {
     // arrange
@@ -495,7 +495,7 @@ TEST_FUNCTION(clds_hash_table_create_with_non_NULL_start_sequence_number_succeed
 
 /* clds_hash_table_destroy */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_006: [ `clds_hash_table_destroy` shall free all resources associated with the hash table instance. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_006: [ clds_hash_table_destroy shall free all resources associated with the hash table instance. ]*/
 TEST_FUNCTION(clds_hash_table_destroy_frees_the_hash_table_resources)
 {
     // arrange
@@ -517,7 +517,7 @@ TEST_FUNCTION(clds_hash_table_destroy_frees_the_hash_table_resources)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_007: [ If `clds_hash_table` is NULL, `clds_hash_table_destroy` shall return. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_007: [ If clds_hash_table is NULL, clds_hash_table_destroy shall return. ]*/
 TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 {
     // arrange
@@ -531,15 +531,15 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 
 /* clds_hash_table_insert */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ clds_hash_table_insert shall insert a key/value pair in the hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_071: [ When a new list is created, the start sequence number passed to `clds_hash_tabel_create` shall be passed as the `start_sequence_number` argument. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling clds_sorted_list_node_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling clds_sorted_list_insert. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_038: [ clds_hash_table_insert shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_071: [ When a new list is created, the start sequence number passed to clds_hash_tabel_create shall be passed as the start_sequence_number argument. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing sequence_number to clds_sorted_list_insert. ]*/
 TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
 {
     // arrange
@@ -570,7 +570,7 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_071: [ When a new list is created, the start sequence number passed to `clds_hash_tabel_create` shall be passed as the `start_sequence_number` argument. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_071: [ When a new list is created, the start sequence number passed to clds_hash_tabel_create shall be passed as the start_sequence_number argument. ]*/
 TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair_with_non_NULL_start_sequence_no)
 {
     // arrange
@@ -602,7 +602,7 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair_with_non_NULL_st
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_010: [ If `clds_hash_table` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_010: [ If clds_hash_table is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_NULL_hash_table_fails)
 {
     // arrange
@@ -624,7 +624,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_hash_table_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_012: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_012: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -648,7 +648,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_clds_hazard_pointers_thread_fails
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_011: [ If `key` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_011: [ If key is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_NULL_key_fails)
 {
     // arrange
@@ -673,7 +673,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_fails)
 {
     // arrange
@@ -702,7 +702,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_insert_fails)
 {
     // arrange
@@ -732,12 +732,12 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ clds_hash_table_insert shall insert a key/value pair in the hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling clds_sorted_list_node_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling clds_sorted_list_insert. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_038: [ clds_hash_table_insert shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_create_another_list)
 {
     // arrange
@@ -773,12 +773,12 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ `clds_hash_table_insert` shall insert a key/value pair in the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling `clds_sorted_list_node_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling `clds_sorted_list_insert`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_038: [ `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ clds_hash_table_insert shall insert a key/value pair in the hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling clds_sorted_list_node_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_021: [ The new sorted list node shall be inserted in the sorted list at the identified bucket by calling clds_sorted_list_insert. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_038: [ clds_hash_table_insert shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_another_list)
 {
     // arrange
@@ -850,7 +850,7 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_the_same_key_2_times_returns_KEY_ALREADY_EXISTS)
 {
     // arrange
@@ -884,7 +884,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_the_same_key_2_times_returns_KEY_ALREA
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_059: [ For each insert the order of the operation shall be computed by passing sequence_number to clds_sorted_list_insert. ]*/
 TEST_FUNCTION(clds_hash_table_insert_passes_the_sequence_number_to_the_sorted_list_insert)
 {
     // arrange
@@ -918,7 +918,7 @@ TEST_FUNCTION(clds_hash_table_insert_passes_the_sequence_number_to_the_sorted_li
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_062: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_062: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_insert_with_non_NULL_sequence_no_but_NULL_start_sequence_no_fails)
 {
     // arrange
@@ -946,10 +946,10 @@ TEST_FUNCTION(clds_hash_table_insert_with_non_NULL_sequence_no_but_NULL_start_se
 
 /* clds_hash_table_delete */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_013: [ `clds_hash_table_delete` shall delete a key from the hash table. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_014: [ On success `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_039: [ `clds_hash_table_delete` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_063: [ For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_key`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_013: [ clds_hash_table_delete shall delete a key from the hash table. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_014: [ On success clds_hash_table_delete shall return CLDS_HASH_TABLE_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_039: [ clds_hash_table_delete shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_063: [ For each delete the order of the operation shall be computed by passing sequence_number to clds_sorted_list_delete_key. ]*/
 TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
 {
     // arrange
@@ -981,7 +981,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_015: [ If `clds_hash_table` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_015: [ If clds_hash_table is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_delete_with_NULL_hash_table_fails)
 {
     // arrange
@@ -1001,7 +1001,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_NULL_hash_table_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_017: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_017: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_delete_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1026,7 +1026,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_NULL_clds_hazard_pointers_thread_fails
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_016: [ If `key` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_016: [ If key is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_delete_with_NULL_key_fails)
 {
     // arrange
@@ -1051,7 +1051,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_delete shall return CLDS_HASH_TABLE_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_hash_table_delete_with_a_key_that_is_not_in_the_hash_table_fails)
 {
     // arrange
@@ -1076,7 +1076,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_a_key_that_is_not_in_the_hash_table_fa
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_delete shall return CLDS_HASH_TABLE_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_hash_table_delete_with_a_key_that_is_already_deleted_fails)
 {
     // arrange
@@ -1104,7 +1104,7 @@ TEST_FUNCTION(clds_hash_table_delete_with_a_key_that_is_already_deleted_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_024: [ If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_024: [ If a bucket is identified and the delete of the item from the underlying list fails, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
 TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_delete_fails)
 {
     // arrange
@@ -1211,7 +1211,7 @@ TEST_FUNCTION(delete_looks_in_3_buckets)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_delete shall return CLDS_HASH_TABLE_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
 {
     // arrange
@@ -1246,7 +1246,7 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_063: [ For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_key`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_063: [ For each delete the order of the operation shall be computed by passing sequence_number to clds_sorted_list_delete_key. ]*/
 TEST_FUNCTION(clds_hash_table_delete_deletes_the_key_and_stamps_the_sequence_no)
 {
     // arrange
@@ -1281,7 +1281,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key_and_stamps_the_sequence_no)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_066: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_066: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_delete_with_non_NULL_sequence_no_but_NULL_start_sequence_number_fails)
 {
     // arrange
@@ -1309,10 +1309,10 @@ TEST_FUNCTION(clds_hash_table_delete_with_non_NULL_sequence_no_but_NULL_start_se
 
 /* clds_hash_table_remove */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_047: [ `clds_hash_table_remove` shall remove a key from the hash table and return a pointer to the item to the user. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_049: [ On success `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_OK`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_048: [ `clds_hash_table_remove` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_remove_key`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_047: [ clds_hash_table_remove shall remove a key from the hash table and return a pointer to the item to the user. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_049: [ On success clds_hash_table_remove shall return CLDS_HASH_TABLE_REMOVE_OK. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_048: [ clds_hash_table_remove shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove_key. ]*/
 TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
 {
     // arrange
@@ -1346,7 +1346,7 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_remove_key`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove_key. ]*/
 TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list_with_non_NULL_sequence_no)
 {
     // arrange
@@ -1383,7 +1383,7 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list_with_non_NULL
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_050: [ If `clds_hash_table` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_050: [ If clds_hash_table is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_NULL_hash_table_fails)
 {
     // arrange
@@ -1404,7 +1404,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_hash_table_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_052: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_052: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1430,7 +1430,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_clds_hazard_pointers_thread_fails
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_051: [ If `key` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_051: [ If key is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_NULL_key_fails)
 {
     // arrange
@@ -1456,7 +1456,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_056: [ If `item` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_056: [ If item is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_NULL_item_fails)
 {
     // arrange
@@ -1481,7 +1481,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_NULL_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_remove shall return CLDS_HASH_TABLE_REMOVE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_a_key_that_is_not_in_the_hash_table_fails)
 {
     // arrange
@@ -1507,7 +1507,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_a_key_that_is_not_in_the_hash_table_fa
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_remove shall return CLDS_HASH_TABLE_REMOVE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_a_key_that_is_already_deleted_fails)
 {
     // arrange
@@ -1536,7 +1536,7 @@ TEST_FUNCTION(clds_hash_table_remove_with_a_key_that_is_already_deleted_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_054: [ If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_054: [ If a bucket is identified and the delete of the item from the underlying list fails, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
 TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_remove_fails)
 {
     // arrange
@@ -1648,7 +1648,7 @@ TEST_FUNCTION(remove_looks_in_3_buckets)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_remove shall return CLDS_HASH_TABLE_REMOVE_NOT_FOUND. ]*/
 TEST_FUNCTION(when_item_is_not_found_in_any_bucket_remove_returns_NOT_FOUND)
 {
     // arrange
@@ -1684,7 +1684,7 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_remove_returns_NOT_FOUND)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_070: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_070: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_remove_with_non_NULL_sequence_no_and_NULL_start_sequence_no_fails)
 {
     // arrange
@@ -1713,10 +1713,10 @@ TEST_FUNCTION(clds_hash_table_remove_with_non_NULL_sequence_no_and_NULL_start_se
 
 /* clds_hash_table_find */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_040: [ `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_041: [ `clds_hash_table_find` shall look up the key in the biggest array of buckets. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling `clds_sorted_list_find`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_034: [ clds_hash_table_find shall find the key identified by key in the hash table and on success return the item corresponding to it. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_040: [ clds_hash_table_find shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_041: [ clds_hash_table_find shall look up the key in the biggest array of buckets. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling clds_sorted_list_find. ]*/
 TEST_FUNCTION(clds_hash_table_find_succeeds)
 {
     // arrange
@@ -1749,8 +1749,8 @@ TEST_FUNCTION(clds_hash_table_find_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_040: [ `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_034: [ clds_hash_table_find shall find the key identified by key in the hash table and on success return the item corresponding to it. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_040: [ clds_hash_table_find shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
 TEST_FUNCTION(clds_hash_table_find_2nd_item_out_of_3_succeeds)
 {
     // arrange
@@ -1787,8 +1787,8 @@ TEST_FUNCTION(clds_hash_table_find_2nd_item_out_of_3_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_034: [ `clds_hash_table_find` shall find the key identified by `key` in the hash table and on success return the item corresponding to it. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_040: [ `clds_hash_table_find` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_034: [ clds_hash_table_find shall find the key identified by key in the hash table and on success return the item corresponding to it. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_040: [ clds_hash_table_find shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
 TEST_FUNCTION(clds_hash_table_find_3rd_item_out_of_3_succeeds)
 {
     // arrange
@@ -1825,7 +1825,7 @@ TEST_FUNCTION(clds_hash_table_find_3rd_item_out_of_3_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_035: [ If `clds_hash_table` is NULL, `clds_hash_table_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_035: [ If clds_hash_table is NULL, clds_hash_table_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_find_with_NULL_hash_table_fails)
 {
     // arrange
@@ -1845,7 +1845,7 @@ TEST_FUNCTION(clds_hash_table_find_with_NULL_hash_table_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_036: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_036: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_find_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1870,7 +1870,7 @@ TEST_FUNCTION(clds_hash_table_find_with_NULL_clds_hazard_pointers_thread_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_037: [ If `key` is NULL, `clds_hash_table_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_037: [ If key is NULL, clds_hash_table_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_find_with_NULL_key_fails)
 {
     // arrange
@@ -1933,7 +1933,7 @@ TEST_FUNCTION(clds_hash_table_find_looks_up_in_the_2nd_array_of_buckets)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_043: [ If the key is not found at all, `clds_hash_table_find` shall return NULL. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_043: [ If the key is not found at all, clds_hash_table_find shall return NULL. ]*/
 TEST_FUNCTION(when_key_is_not_found_in_any_bucket_levels_clds_hash_table_find_yields_NULL)
 {
     // arrange
@@ -1972,7 +1972,7 @@ TEST_FUNCTION(when_key_is_not_found_in_any_bucket_levels_clds_hash_table_find_yi
 
 /* clds_hash_table_set_value */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_079: [ If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_079: [ If clds_hash_table is NULL, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_NULL_hash_table_fails)
 {
     // arrange
@@ -1996,7 +1996,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_hash_table_fails)
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_080: [ If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_080: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -2022,7 +2022,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_clds_hazard_pointers_thread_fa
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_081: [ If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_081: [ If key is NULL, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_NULL_key_fails)
 {
     // arrange
@@ -2049,7 +2049,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_key_fails)
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_082: [ If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_082: [ If new_item is NULL, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_NULL_new_item_fails)
 {
     // arrange
@@ -2074,7 +2074,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_new_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_083: [ If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_083: [ If old_item is NULL, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_NULL_old_item_fails)
 {
     // arrange
@@ -2100,7 +2100,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_old_item_fails)
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_084: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_084: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_non_NULL_sequence_number_when_a_starting_sequence_number_was_not_specified)
 {
     // arrange

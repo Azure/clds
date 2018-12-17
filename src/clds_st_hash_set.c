@@ -28,11 +28,11 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
     CLDS_ST_HASH_SET_HANDLE clds_st_hash_set;
 
     if (
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_003: [ If `compute_hash_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_003: [ If compute_hash_func is NULL, clds_st_hash_set_create shall fail and return NULL. ]*/
         (compute_hash_func == NULL) ||
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_004: [ If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_004: [ If key_compare_func is NULL, clds_st_hash_set_create shall fail and return NULL. ]*/
         (key_compare_func == NULL) ||
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_005: [ If `bucket_size` is 0, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_005: [ If bucket_size is 0, clds_st_hash_set_create shall fail and return NULL. ]*/
         (bucket_size == 0)
         )
     {
@@ -41,7 +41,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
     }
     else
     {
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_001: [ `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_001: [ clds_st_hash_set_create shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
         clds_st_hash_set = (CLDS_ST_HASH_SET_HANDLE)malloc(sizeof(CLDS_ST_HASH_SET));
         if (clds_st_hash_set == NULL)
         {
@@ -49,7 +49,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
         }
         else
         {
-            /* Codes_SRS_CLDS_ST_HASH_SET_01_022: [ `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. ]*/
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_022: [ clds_st_hash_set_create shall allocate memory for the array of buckets used to store the hash set data. ]*/
             clds_st_hash_set->hash_set = malloc(sizeof(void*) * bucket_size);
             if (clds_st_hash_set->hash_set == NULL)
             {
@@ -87,7 +87,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
 {
     if (clds_st_hash_set == NULL)
     {
-        /* Codes_SRS_CLDS_HASH_TABLE_01_007: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_007: [ If clds_st_hash_set is NULL, clds_st_hash_set_destroy shall return. ]*/
         LogError("Invalid arguments: clds_st_hash_set=%p",
             clds_st_hash_set);
     }
@@ -95,7 +95,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
     {
         size_t i;
 
-        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ `clds_st_hash_set_destroy` shall free all resources associated with the hash table instance. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ clds_st_hash_set_destroy shall free all resources associated with the hash table instance. ]*/
         for (i = 0; i < clds_st_hash_set->bucket_count; i++)
         {
             HASH_TABLE_ITEM* hash_table_item = clds_st_hash_set->hash_set[i];
@@ -107,7 +107,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
             }
         }
 
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_006: [ `clds_st_hash_set_destroy` shall free all resources associated with the hash set instance. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_006: [ clds_st_hash_set_destroy shall free all resources associated with the hash set instance. ]*/
         free(clds_st_hash_set->hash_set);
         free(clds_st_hash_set);
     }
@@ -118,9 +118,9 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
     CLDS_ST_HASH_SET_INSERT_RESULT result;
 
     if (
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_010: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_010: [ If clds_st_hash_set is NULL, clds_st_hash_set_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
         (clds_st_hash_set == NULL) ||
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_011: [ If `key` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_011: [ If key is NULL, clds_st_hash_set_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
         (key == NULL))
     {
         LogError("Invalid arguments: CLDS_ST_HASH_SET_HANDLE clds_st_hash_set=%p, void* key=%p", clds_st_hash_set, key);
@@ -128,7 +128,7 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
     }
     else
     {
-        /* Codes_SRS_CLDS_ST_HASH_SET_01_012: [ `clds_st_hash_set_insert` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_012: [ clds_st_hash_set_insert shall hash the key by calling the compute_hash function passed to clds_st_hash_set_create. ]*/
         uint64_t hash = clds_st_hash_set->compute_hash_func(key);
             
         // find the bucket
@@ -142,12 +142,12 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
         }
         else
         {
-            /* Codes_SRS_CLDS_ST_HASH_SET_01_008: [ `clds_st_hash_set_insert` shall insert a key in the hash set. ]*/
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_008: [ clds_st_hash_set_insert shall insert a key in the hash set. ]*/
             hash_table_item->key = key;
             hash_table_item->next = clds_st_hash_set->hash_set[bucket_index];
             clds_st_hash_set->hash_set[bucket_index] = hash_table_item;
 
-            /* Codes_SRS_CLDS_ST_HASH_SET_01_009: [ On success `clds_st_hash_set_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_009: [ On success clds_st_hash_set_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
             result = CLDS_ST_HASH_SET_INSERT_OK;
         }
     }

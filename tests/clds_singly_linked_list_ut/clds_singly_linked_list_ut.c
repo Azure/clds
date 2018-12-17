@@ -133,7 +133,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* clds_singly_linked_list_create */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_001: [ `clds_singly_linked_list_create` shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_001: [ clds_singly_linked_list_create shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. ]*/
 TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
@@ -155,7 +155,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_002: [ If any error happens, `clds_singly_linked_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_002: [ If any error happens, clds_singly_linked_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_allocating_memory_fails_clds_hash_table_create_fails)
 {
     // arrange
@@ -177,7 +177,7 @@ TEST_FUNCTION(when_allocating_memory_fails_clds_hash_table_create_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_singly_linked_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_003: [ If clds_hazard_pointers is NULL, clds_singly_linked_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
 {
     // arrange
@@ -193,7 +193,7 @@ TEST_FUNCTION(clds_hash_table_create_with_NULL_clds_hazard_pointers_fails)
 
 /* clds_singly_linked_list_destroy */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_004: [ `clds_singly_linked_list_destroy` shall free all resources associated with the singly linked list instance. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_004: [ clds_singly_linked_list_destroy shall free all resources associated with the singly linked list instance. ]*/
 TEST_FUNCTION(clds_singly_linked_list_destroy_frees_the_allocated_list_resources)
 {
     // arrange
@@ -214,7 +214,7 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_frees_the_allocated_list_resources
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_005: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_destroy` shall return. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_005: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_destroy shall return. ]*/
 TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_handle_returns)
 {
     // arrange
@@ -227,7 +227,7 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_handle_returns)
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_node_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback item_cleanup_callback passed to clds_singly_linked_list_node_create shall be called, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_destroy_with_1_item_in_the_list_frees_the_item_and_triggers_user_cleanup_callback)
 {
     // arrange
@@ -254,7 +254,7 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_1_item_in_the_list_frees_the_
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_singly_linked_list_node_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_040: [ For each item that is freed, the callback item_cleanup_callback passed to clds_singly_linked_list_node_create shall be called, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_destroy_with_2_items_in_the_list_frees_the_item_and_triggers_user_cleanup_callback)
 {
     // arrange
@@ -287,7 +287,7 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_2_items_in_the_list_frees_the
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_041: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the freed items. ]*/
 TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_item_cleanup_callback_does_not_trigger_any_callback_for_the_freed_items)
 {
     // arrange
@@ -314,8 +314,8 @@ TEST_FUNCTION(clds_singly_linked_list_destroy_with_NULL_item_cleanup_callback_do
 
 /* clds_singly_linked_list_insert */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ `clds_singly_linked_list_insert` inserts an item in the list. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success `clds_singly_linked_list_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ clds_singly_linked_list_insert inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success clds_singly_linked_list_insert shall return 0. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_succeeds)
 {
     // arrange
@@ -339,7 +339,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_singly_linked_list_fails)
 {
     // arrange
@@ -360,7 +360,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_singly_linked_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_012: [ If `item` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_012: [ If item is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_fails)
 {
     // arrange
@@ -383,7 +383,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_013: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_insert` shall fail and return a non-zero value. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_013: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_hazard_pointers_thread_handle_fails)
 {
     // arrange
@@ -406,8 +406,8 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_hazard_pointers_thread_ha
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ `clds_singly_linked_list_insert` inserts an item in the list. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success `clds_singly_linked_list_insert` shall return 0. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ clds_singly_linked_list_insert inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_010: [ On success clds_singly_linked_list_insert shall return 0. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_2_items_succeeds)
 {
     // arrange
@@ -437,10 +437,10 @@ TEST_FUNCTION(clds_singly_linked_list_insert_2_items_succeeds)
 
 /* clds_singly_linked_list_delete */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item)
 {
     // arrange
@@ -474,10 +474,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds)
 {
     // arrange
@@ -513,10 +513,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succeeds)
 {
     // arrange
@@ -552,10 +552,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succe
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds)
 {
     // arrange
@@ -593,10 +593,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item_NULL_cleanup_callback)
 {
     // arrange
@@ -629,10 +629,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_deletes_the_item_NULL_cleanup_callb
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds_NULL_cleanup_callback)
 {
     // arrange
@@ -667,10 +667,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_item_succeeds_NULL_clea
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succeeds_NULL_cleanup_callback)
 {
     // arrange
@@ -705,10 +705,10 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_oldest_out_of_2_items_succe
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ `clds_singly_linked_list_delete` deletes an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, `clds_singly_linked_list_delete` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_014: [ clds_singly_linked_list_delete deletes an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds_NULL_cleanup_callback)
 {
     // arrange
@@ -745,7 +745,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_for_the_2nd_out_of_3_items_succeeds
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_015: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_015: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_list_fails)
 {
     // arrange
@@ -769,7 +769,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_016: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_016: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -793,7 +793,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_clds_hazard_pointers_thre
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_017: [ If `item` is NULL, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_017: [ If item is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_item_fails)
 {
     // arrange
@@ -818,7 +818,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_with_NULL_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_on_an_empty_lists_returns_NOT_FOUND)
 {
     // arrange
@@ -841,7 +841,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_on_an_empty_lists_returns_NOT_FOUND
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_when_the_item_is_not_in_the_list_returns_NOT_FOUND)
 {
     // arrange
@@ -869,7 +869,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_when_the_item_is_not_in_the_list_re
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, `clds_singly_linked_list_delete` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_twice_on_the_same_item_returns_NOT_FOUND)
 {
     // arrange
@@ -896,9 +896,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_twice_on_the_same_item_returns_NOT_
 
 /* clds_singly_linked_list_delete_if */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ clds_singly_linked_list_delete_if deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, clds_singly_linked_list_delete_if shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds)
 {
     // arrange
@@ -932,9 +932,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ clds_singly_linked_list_delete_if deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, clds_singly_linked_list_delete_if shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds_with_NULL_item_cleanup_callback)
 {
     // arrange
@@ -967,7 +967,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_succeeds_with_NULL_item_cleanup_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_020: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_020: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_clds_singly_linked_list_fails)
 {
     // arrange
@@ -992,7 +992,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_clds_singly_linked_lis
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_021: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_021: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1017,7 +1017,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_hazard_pointers_thread
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_022: [ If `item_compare_callback` is NULL, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_022: [ If item_compare_callback is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_item_compare_callback_fails)
 {
     // arrange
@@ -1042,7 +1042,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_item_compare_callback_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_023: [ `item_compare_callback_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_023: [ item_compare_callback_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_context_succeeds)
 {
     // arrange
@@ -1076,9 +1076,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_with_NULL_context_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ clds_singly_linked_list_delete_if deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, clds_singly_linked_list_delete_if shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_second_item)
 {
     // arrange
@@ -1114,9 +1114,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_second_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ clds_singly_linked_list_delete_if deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, clds_singly_linked_list_delete_if shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_oldest_out_of_2_items)
 {
     // arrange
@@ -1152,9 +1152,9 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_oldest_out_of_2_item
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ `clds_singly_linked_list_delete_if` deletes an item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, `clds_singly_linked_list_delete_if` shall return `CLDS_SINGLY_LINKED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_singly_linked_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_019: [ clds_singly_linked_list_delete_if deletes an item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, clds_singly_linked_list_delete_if shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_singly_linked_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_2nd_out_of_3_items)
 {
     // arrange
@@ -1192,7 +1192,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_deletes_the_2nd_out_of_3_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_on_an_empty_list_yields_NOT_FOUND)
 {
     // arrange
@@ -1222,7 +1222,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_on_an_empty_list_yields_NOT_FOUN
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, `clds_singly_linked_list_delete_if` shall fail and return `CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_singly_linked_list_delete_if_after_the_item_was_deleted_yields_NOT_FOUND)
 {
     // arrange
@@ -1256,8 +1256,8 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_after_the_item_was_deleted_yield
 
 /* clds_singly_linked_list_find */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ clds_singly_linked_list_find shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success clds_singly_linked_list_find shall return a non-NULL pointer to the found linked list item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_succeeds_in_finding_an_item)
 {
     // arrange
@@ -1288,8 +1288,8 @@ TEST_FUNCTION(clds_singly_linked_list_find_succeeds_in_finding_an_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ clds_singly_linked_list_find shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success clds_singly_linked_list_find shall return a non-NULL pointer to the found linked list item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_finds_the_2nd_out_of_3_added_items)
 {
     // arrange
@@ -1324,8 +1324,8 @@ TEST_FUNCTION(clds_singly_linked_list_find_finds_the_2nd_out_of_3_added_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ `clds_singly_linked_list_find` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success `clds_singly_linked_list_find` shall return a non-NULL pointer to the found linked list item. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ clds_singly_linked_list_find shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success clds_singly_linked_list_find shall return a non-NULL pointer to the found linked list item. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_finds_the_last_added_item)
 {
     // arrange
@@ -1360,7 +1360,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_finds_the_last_added_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_028: [ If `clds_singly_linked_list` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_028: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_clds_singly_linked_list_fails)
 {
     // arrange
@@ -1385,7 +1385,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_clds_singly_linked_list_fai
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_030: [ If `clds_hazard_pointers_thread` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_030: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1410,7 +1410,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_hazard_pointers_thread_fail
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_031: [ If `item_compare_callback` is NULL, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_031: [ If item_compare_callback is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_fails)
 {
     // arrange
@@ -1435,7 +1435,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_fails
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_032: [ `item_compare_callback_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_032: [ item_compare_callback_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_context_succeeds_in_finding_an_item)
 {
     // arrange
@@ -1466,7 +1466,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_conte
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_on_an_empty_list_returns_NULL)
 {
     // arrange
@@ -1496,7 +1496,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_on_an_empty_list_returns_NULL)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_after_the_item_was_deleted_returns_NULL)
 {
     // arrange
@@ -1528,7 +1528,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_after_the_item_was_deleted_returns_NU
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_singly_linked_list_find` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_when_the_item_is_not_in_the_list_returns_NULL)
 {
     // arrange
@@ -1562,7 +1562,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_when_the_item_is_not_in_the_list_retu
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_034: [ `clds_singly_linked_list_find` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_034: [ clds_singly_linked_list_find shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
 TEST_FUNCTION(clds_singly_linked_list_find_result_has_the_ref_count_incremented)
 {
     // arrange
@@ -1598,7 +1598,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_result_has_the_ref_count_incremented)
 
 /* clds_singly_linked_list_node_create */
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_036: [ item_cleanup_callback shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_succeeds)
 {
     // arrange
@@ -1615,7 +1615,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_suc
     CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
-/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_037: [ item_cleanup_callback_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_context_succeeds)
 {
     // arrange

@@ -103,8 +103,8 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* clds_hash_table_create */
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_001: [ `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
-/* Tests_SRS_CLDS_ST_HASH_SET_01_022: [ `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_001: [ clds_st_hash_set_create shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_022: [ clds_st_hash_set_create shall allocate memory for the array of buckets used to store the hash set data. ]*/
 TEST_FUNCTION(clds_st_hash_set_create_succeeds)
 {
     // arrange
@@ -124,8 +124,8 @@ TEST_FUNCTION(clds_st_hash_set_create_succeeds)
     clds_st_hash_set_destroy(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_001: [ `clds_st_hash_set_create` shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
-/* Tests_SRS_CLDS_ST_HASH_SET_01_022: [ `clds_st_hash_set_create` shall allocate memory for the array of buckets used to store the hash set data. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_001: [ clds_st_hash_set_create shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_022: [ clds_st_hash_set_create shall allocate memory for the array of buckets used to store the hash set data. ]*/
 TEST_FUNCTION(clds_st_hash_set_create_with_bucket_size_1_succeeds)
 {
     // arrange
@@ -145,7 +145,7 @@ TEST_FUNCTION(clds_st_hash_set_create_with_bucket_size_1_succeeds)
     clds_st_hash_set_destroy(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_003: [ If `compute_hash_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_003: [ If compute_hash_func is NULL, clds_st_hash_set_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_st_hash_set_create_with_NULL_compute_hash_func_fails)
 {
     // arrange
@@ -160,7 +160,7 @@ TEST_FUNCTION(clds_st_hash_set_create_with_NULL_compute_hash_func_fails)
     ASSERT_IS_NULL(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_004: [ If `key_compare_func` is NULL, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_004: [ If key_compare_func is NULL, clds_st_hash_set_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_st_hash_set_create_with_NULL_key_compare_func_fails)
 {
     // arrange
@@ -174,7 +174,7 @@ TEST_FUNCTION(clds_st_hash_set_create_with_NULL_key_compare_func_fails)
     ASSERT_IS_NULL(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_005: [ If `bucket_size` is 0, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_005: [ If bucket_size is 0, clds_st_hash_set_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_st_hash_set_create_with_0_bucket_size_fails)
 {
     // arrange
@@ -189,7 +189,7 @@ TEST_FUNCTION(clds_st_hash_set_create_with_0_bucket_size_fails)
     ASSERT_IS_NULL(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, clds_st_hash_set_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_allocating_memory_for_the_hash_set_fails_clds_st_hash_set_create_also_fails)
 {
     // arrange
@@ -206,7 +206,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_set_fails_clds_st_hash_set_cre
     ASSERT_IS_NULL(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, `clds_st_hash_set_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, clds_st_hash_set_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_allocating_memory_for_the_bucket_array_fails_clds_st_hash_set_create_also_fails)
 {
     // arrange
@@ -227,7 +227,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_bucket_array_fails_clds_st_hash_set
 
 /* clds_st_hash_set_destroy */
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_006: [ `clds_st_hash_set_destroy` shall free all resources associated with the hash set instance. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_006: [ clds_st_hash_set_destroy shall free all resources associated with the hash set instance. ]*/
 TEST_FUNCTION(clds_st_hash_set_destroy_frees_the_memory)
 {
     // arrange
@@ -244,7 +244,7 @@ TEST_FUNCTION(clds_st_hash_set_destroy_frees_the_memory)
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_007: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_destroy` shall return. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_007: [ If clds_st_hash_set is NULL, clds_st_hash_set_destroy shall return. ]*/
 TEST_FUNCTION(clds_st_hash_set_destroy_with_NULL_handle_returns)
 {
     // arrange
@@ -258,9 +258,9 @@ TEST_FUNCTION(clds_st_hash_set_destroy_with_NULL_handle_returns)
 
 /* clds_st_hash_set_insert */
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_008: [ `clds_st_hash_set_insert` shall insert a key in the hash set. ]*/
-/* Tests_SRS_CLDS_ST_HASH_SET_01_009: [ On success `clds_st_hash_set_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_ST_HASH_SET_01_012: [ `clds_st_hash_set_insert` shall hash the key by calling the `compute_hash` function passed to `clds_st_hash_set_create`. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_008: [ clds_st_hash_set_insert shall insert a key in the hash set. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_009: [ On success clds_st_hash_set_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_012: [ clds_st_hash_set_insert shall hash the key by calling the compute_hash function passed to clds_st_hash_set_create. ]*/
 TEST_FUNCTION(clds_st_hash_set_insert_succeeds)
 {
     // arrange
@@ -282,7 +282,7 @@ TEST_FUNCTION(clds_st_hash_set_insert_succeeds)
     clds_st_hash_set_destroy(st_hash_set);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_010: [ If `clds_st_hash_set` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_010: [ If clds_st_hash_set is NULL, clds_st_hash_set_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_st_hash_set_insert_with_NULL_st_hash_set_fails)
 {
     // arrange
@@ -296,7 +296,7 @@ TEST_FUNCTION(clds_st_hash_set_insert_with_NULL_st_hash_set_fails)
     ASSERT_ARE_EQUAL(CLDS_ST_HASH_SET_INSERT_RESULT, CLDS_ST_HASH_SET_INSERT_ERROR, result);
 }
 
-/* Tests_SRS_CLDS_ST_HASH_SET_01_011: [ If `key` is NULL, `clds_st_hash_set_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_ST_HASH_SET_01_011: [ If key is NULL, clds_st_hash_set_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_st_hash_set_insert_with_NULL_key_fails)
 {
     // arrange

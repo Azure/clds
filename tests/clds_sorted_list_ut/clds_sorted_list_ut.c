@@ -152,8 +152,8 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* clds_sorted_list_create */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ clds_sorted_list_create shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ start_sequence_number shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
 TEST_FUNCTION(clds_sorted_list_create_succeeds)
 {
     // arrange
@@ -176,10 +176,10 @@ TEST_FUNCTION(clds_sorted_list_create_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_077: [ `skipped_seq_no_cb_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ clds_sorted_list_create shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ start_sequence_number shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ skipped_seq_no_cb shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_077: [ skipped_seq_no_cb_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_skipped_seq_no_cb_and_context)
 {
     // arrange
@@ -202,11 +202,11 @@ TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_skipped_seq_no_cb_and_c
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ `clds_sorted_list_create` shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ `start_sequence_number` shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ `skipped_seq_no_cb` shall be allowed to be NULL. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_077: [ `skipped_seq_no_cb_context` shall be allowed to be NULL. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_078: [ If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_001: [ clds_sorted_list_create shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_059: [ start_sequence_number shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_076: [ skipped_seq_no_cb shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_077: [ skipped_seq_no_cb_context shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_078: [ If start_sequence_number is NULL, then skipped_seq_no_cb must also be NULL, otherwise clds_sorted_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_start_sequence_no)
 {
     // arrange
@@ -228,7 +228,7 @@ TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_start_sequence_no)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_078: [ If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_078: [ If start_sequence_number is NULL, then skipped_seq_no_cb must also be NULL, otherwise clds_sorted_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_NULL_sequence_no_and_non_NULL_skipped_seq_no_cb_fails)
 {
     // arrange
@@ -247,7 +247,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_NULL_sequence_no_and_non_NULL_skipped
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_002: [ If any error happens, `clds_sorted_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_002: [ If any error happens, clds_sorted_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_allocating_memory_fails_clds_sorted_list_create_fails)
 {
     // arrange
@@ -269,7 +269,7 @@ TEST_FUNCTION(when_allocating_memory_fails_clds_sorted_list_create_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_003: [ If `clds_hazard_pointers` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_003: [ If clds_hazard_pointers is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_NULL_clds_hazard_pointers_fails)
 {
     // arrange
@@ -283,7 +283,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_NULL_clds_hazard_pointers_fails)
     ASSERT_IS_NULL(list);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_045: [ If `get_item_key_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_045: [ If get_item_key_cb is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_NULL_get_item_key_cb_fails)
 {
     // arrange
@@ -302,7 +302,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_NULL_get_item_key_cb_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_049: [ `get_item_key_cb_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_049: [ get_item_key_cb_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_NULL_get_item_key_cb_context_succeeds)
 {
     // arrange
@@ -324,7 +324,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_NULL_get_item_key_cb_context_succeeds
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If `key_compare_cb` is NULL, `clds_sorted_list_create` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_046: [ If key_compare_cb is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_NULL_key_compare_cb_fails)
 {
     // arrange
@@ -343,7 +343,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_NULL_key_compare_cb_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_050: [ `key_compare_cb_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_050: [ key_compare_cb_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_NULL_key_compare_cb_context_context_succeeds)
 {
     // arrange
@@ -365,7 +365,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_NULL_key_compare_cb_context_context_s
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_058: [ `start_sequence_number` shall be used by the sorted list to compute the sequence number of each operation. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_058: [ start_sequence_number shall be used by the sorted list to compute the sequence number of each operation. ]*/
 TEST_FUNCTION(clds_sorted_list_create_with_non_NULL_sequence_number_succeeds)
 {
     // arrange
@@ -390,7 +390,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_non_NULL_sequence_number_succeeds)
 
 /* clds_sorted_list_destroy */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_004: [ `clds_sorted_list_destroy` shall free all resources associated with the sorted list instance. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_004: [ clds_sorted_list_destroy shall free all resources associated with the sorted list instance. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources)
 {
     // arrange
@@ -411,7 +411,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_004: [ `clds_sorted_list_destroy` shall free all resources associated with the sorted list instance. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_004: [ clds_sorted_list_destroy shall free all resources associated with the sorted list instance. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources_for_a_list_with_sequence_no)
 {
     // arrange
@@ -433,7 +433,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources_for_a_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_005: [ If `clds_sorted_list` is NULL, `clds_sorted_list_destroy` shall return. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_005: [ If clds_sorted_list is NULL, clds_sorted_list_destroy shall return. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_handle_returns)
 {
     // arrange
@@ -446,7 +446,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_handle_returns)
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_sorted_list_node_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback item_cleanup_callback passed to clds_sorted_list_node_create shall be called, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_with_1_item_in_the_list_frees_the_item_and_triggers_user_cleanup_callback)
 {
     // arrange
@@ -475,7 +475,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_1_item_in_the_list_frees_the_item_an
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback `item_cleanup_callback` passed to `clds_sorted_list_node_create` shall be called, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback item_cleanup_callback passed to clds_sorted_list_node_create shall be called, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_with_2_items_in_the_list_frees_the_item_and_triggers_user_cleanup_callback)
 {
     // arrange
@@ -512,7 +512,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_2_items_in_the_list_frees_the_item_a
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_041: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the freed items. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_041: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the freed items. ]*/
 TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_item_cleanup_callback_does_not_trigger_any_callback_for_the_freed_items)
 {
     // arrange
@@ -541,9 +541,9 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_item_cleanup_callback_does_not_
 
 /* clds_sorted_list_insert */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ `clds_sorted_list_insert` inserts an item in the list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_069: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ clds_sorted_list_insert inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_069: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_succeeds)
 {
     // arrange
@@ -569,7 +569,7 @@ TEST_FUNCTION(clds_sorted_list_insert_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_011: [ If `clds_sorted_list` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_011: [ If clds_sorted_list is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_with_NULL_singly_linked_list_fails)
 {
     // arrange
@@ -593,7 +593,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_singly_linked_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_012: [ If `item` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_012: [ If item is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_fails)
 {
     // arrange
@@ -616,7 +616,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_013: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_013: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_with_NULL_hazard_pointers_thread_handle_fails)
 {
     // arrange
@@ -642,9 +642,9 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_hazard_pointers_thread_handle_fa
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ `clds_sorted_list_insert` inserts an item in the list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ clds_sorted_list_insert inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_047: [ clds_sorted_list_insert shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_2_items_in_order_succeeds)
 {
     // arrange
@@ -679,9 +679,9 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_in_order_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ `clds_sorted_list_insert` inserts an item in the list. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_047: [ `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ clds_sorted_list_insert inserts an item in the list. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_047: [ clds_sorted_list_insert shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_2_items_in_reverse_order_succeeds)
 {
     // arrange
@@ -716,7 +716,7 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_in_reverse_order_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_048: [ If the item with the given key already exists in the list, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_048: [ If the item with the given key already exists in the list, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_fails)
 {
     // arrange
@@ -750,7 +750,7 @@ TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to `clds_sorted_list_create`, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_indicates_the_seq_no_as_skipped)
 {
     // arrange
@@ -787,7 +787,7 @@ TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_indicates_th
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_060: [ For each insert the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_060: [ For each insert the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_provides_sequence_numbers)
 {
     // arrange
@@ -827,7 +827,7 @@ TEST_FUNCTION(clds_sorted_list_insert_provides_sequence_numbers)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_061: [ If the `sequence_number` argument passed to `clds_sorted_list_insert` is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_061: [ If the sequence_number argument passed to clds_sorted_list_insert is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_with_NULL_sequence_number_still_computes_sequence_number)
 {
     // arrange
@@ -865,7 +865,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_sequence_number_still_computes_s
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_062: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_062: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_with_non_NULL_sequence_number_but_no_start_sequence_fails)
 {
     // arrange
@@ -895,11 +895,11 @@ TEST_FUNCTION(clds_sorted_list_insert_with_non_NULL_sequence_number_but_no_start
 
 /* clds_sorted_list_delete_item */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_070: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_070: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_item_deletes_the_item)
 {
     // arrange
@@ -935,10 +935,10 @@ TEST_FUNCTION(clds_sorted_list_delete_item_deletes_the_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_item_succeeds)
 {
     // arrange
@@ -979,10 +979,10 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_item_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_for_the_oldest_out_of_2_items_succeeds)
 {
     // arrange
@@ -1023,10 +1023,10 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_oldest_out_of_2_items_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_out_of_3_items_succeeds)
 {
     // arrange
@@ -1070,10 +1070,10 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_out_of_3_items_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_deletes_the_item_NULL_cleanup_callback)
 {
     // arrange
@@ -1108,10 +1108,10 @@ TEST_FUNCTION(clds_sorted_list_delete_deletes_the_item_NULL_cleanup_callback)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_item_succeeds_NULL_cleanup_callback)
 {
     // arrange
@@ -1150,10 +1150,10 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_item_succeeds_NULL_cleanup_cal
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_for_the_oldest_out_of_2_items_succeeds_NULL_cleanup_callback)
 {
     // arrange
@@ -1192,10 +1192,10 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_oldest_out_of_2_items_succeeds_NUL
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ `clds_sorted_list_delete_item` shall delete an item from the list by its pointer. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, `clds_sorted_list_delete_item` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling `clds_hazard_pointers_reclaim`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_026: [ On success, clds_sorted_list_delete_item shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_out_of_3_items_succeeds_NULL_cleanup_callback)
 {
     // arrange
@@ -1238,7 +1238,7 @@ TEST_FUNCTION(clds_sorted_list_delete_for_the_2nd_out_of_3_items_succeeds_NULL_c
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_015: [ If `clds_sorted_list` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_015: [ If clds_sorted_list is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_with_NULL_list_fails)
 {
     // arrange
@@ -1264,7 +1264,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_NULL_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_016: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_016: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1290,7 +1290,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_NULL_clds_hazard_pointers_thread_fail
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_017: [ If `item` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_017: [ If item is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_with_NULL_item_fails)
 {
     // arrange
@@ -1317,7 +1317,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_NULL_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_on_an_empty_lists_returns_NOT_FOUND)
 {
     // arrange
@@ -1341,7 +1341,7 @@ TEST_FUNCTION(clds_sorted_list_delete_on_an_empty_lists_returns_NOT_FOUND)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_when_the_item_is_not_in_the_list_returns_NOT_FOUND)
 {
     // arrange
@@ -1374,7 +1374,7 @@ TEST_FUNCTION(clds_sorted_list_delete_when_the_item_is_not_in_the_list_returns_N
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_018: [ If the item does not exist in the list, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_twice_on_the_same_item_returns_NOT_FOUND)
 {
     // arrange
@@ -1403,7 +1403,7 @@ TEST_FUNCTION(clds_sorted_list_delete_twice_on_the_same_item_returns_NOT_FOUND)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_063: [ For each delete the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_stamps_the_order)
 {
     // arrange
@@ -1454,7 +1454,7 @@ TEST_FUNCTION(clds_sorted_list_delete_stamps_the_order)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_064: [ If the `sequence_number` argument passed to `clds_sorted_list_delete` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_064: [ If the sequence_number argument passed to clds_sorted_list_delete is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_with_no_start_seq_no_stamps_the_order)
 {
     // arrange
@@ -1503,7 +1503,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_no_start_seq_no_stamps_the_order)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_065: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_065: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_delete shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_with_non_NULL_sequence_no_and_no_start_sequence_no_fails)
 {
     // arrange
@@ -1533,10 +1533,10 @@ TEST_FUNCTION(clds_sorted_list_delete_with_non_NULL_sequence_no_and_no_start_seq
 
 /* clds_sorted_list_delete_key */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_071: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ clds_sorted_list_delete_key shall delete an item by its key. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, clds_sorted_list_delete_key shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_071: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
 {
     // arrange
@@ -1572,9 +1572,9 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If `item_cleanup_callback` is NULL, no user callback shall be triggered for the reclaimed item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ clds_sorted_list_delete_key shall delete an item by its key. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, clds_sorted_list_delete_key shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_succeeds_with_NULL_item_cleanup_callback)
 {
     // arrange
@@ -1609,7 +1609,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_succeeds_with_NULL_item_cleanup_callba
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_020: [ If `clds_sorted_list` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_020: [ If clds_sorted_list is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_clds_sorted_list_fails)
 {
     // arrange
@@ -1636,7 +1636,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_clds_sorted_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_021: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_021: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_hazard_pointers_thread_fails)
 {
     // arrange
@@ -1663,7 +1663,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_hazard_pointers_thread_fails
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_022: [ If `key` is NULL, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_022: [ If key is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_key_fails)
 {
     // arrange
@@ -1690,9 +1690,9 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ clds_sorted_list_delete_key shall delete an item by its key. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, clds_sorted_list_delete_key shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
 {
     // arrange
@@ -1732,9 +1732,9 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_second_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ clds_sorted_list_delete_key shall delete an item by its key. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, clds_sorted_list_delete_key shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
 {
     // arrange
@@ -1774,9 +1774,9 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_oldest_out_of_2_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ `clds_sorted_list_delete_key` shall delete an item by its key. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, `clds_sorted_list_delete_key` shall return `CLDS_SORTED_LIST_DELETE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_019: [ clds_sorted_list_delete_key shall delete an item by its key. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_025: [ On success, clds_sorted_list_delete_key shall return CLDS_SORTED_LIST_DELETE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_2nd_out_of_3_items)
 {
     // arrange
@@ -1820,7 +1820,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_deletes_the_2nd_out_of_3_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_024: [ If the key is not found, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_024: [ If the key is not found, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_on_an_empty_list_yields_NOT_FOUND)
 {
     // arrange
@@ -1849,7 +1849,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_on_an_empty_list_yields_NOT_FOUND)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_024: [ If the key is not found, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_024: [ If the key is not found, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_FOUND)
 {
     // arrange
@@ -1883,7 +1883,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_after_the_item_was_deleted_yields_NOT_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_066: [ For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_066: [ For each delete key the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_stamps_the_sequence_no)
 {
     // arrange
@@ -1936,7 +1936,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_stamps_the_sequence_no)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_067: [ If the `sequence_number` argument passed to `clds_sorted_list_delete_key` is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_067: [ If the sequence_number argument passed to clds_sorted_list_delete_key is NULL, the computed sequence number for the delete shall still be computed but it shall not be provided to the user. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_sequence_no_and_non_NULL_start_Sequence_no_still_computes_the_sequence_numbers)
 {
     // arrange
@@ -1987,7 +1987,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_sequence_no_and_non_NULL_sta
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_068: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_068: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_delete_key_with_non_NULL_sequence_no_and_no_start_sequence_no_fails)
 {
     // arrange
@@ -2017,10 +2017,10 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_non_NULL_sequence_no_and_no_start
 
 /* clds_sorted_list_remove_key */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_073: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ clds_sorted_list_remove_key shall delete an item by its key and return the pointer to the deleted item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, clds_sorted_list_remove_key shall return CLDS_SORTED_LIST_REMOVE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the item argument. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_073: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_succeeds)
 {
     // arrange
@@ -2056,9 +2056,9 @@ TEST_FUNCTION(clds_sorted_list_remove_key_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ clds_sorted_list_remove_key shall delete an item by its key and return the pointer to the deleted item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, clds_sorted_list_remove_key shall return CLDS_SORTED_LIST_REMOVE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the item argument. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_succeeds_with_NULL_item_cleanup_callback)
 {
     // arrange
@@ -2094,7 +2094,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_succeeds_with_NULL_item_cleanup_callba
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_053: [ If `clds_sorted_list` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_053: [ If clds_sorted_list is NULL, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_clds_sorted_list_fails)
 {
     // arrange
@@ -2122,7 +2122,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_clds_sorted_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_055: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_055: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_hazard_pointers_thread_fails)
 {
     // arrange
@@ -2150,7 +2150,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_hazard_pointers_thread_fails
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_056: [ If `key` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_056: [ If key is NULL, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_key_fails)
 {
     // arrange
@@ -2178,10 +2178,10 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ clds_sorted_list_remove_key shall delete an item by its key and return the pointer to the deleted item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, clds_sorted_list_remove_key shall return CLDS_SORTED_LIST_REMOVE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the item argument. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_second_item)
 {
     // arrange
@@ -2221,10 +2221,10 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_second_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ clds_sorted_list_remove_key shall delete an item by its key and return the pointer to the deleted item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, clds_sorted_list_remove_key shall return CLDS_SORTED_LIST_REMOVE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the item argument. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_oldest_out_of_2_items)
 {
     // arrange
@@ -2264,10 +2264,10 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_oldest_out_of_2_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ `clds_sorted_list_remove_key` shall delete an item by its key and return the pointer to the deleted item. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, `clds_sorted_list_remove_key` shall return `CLDS_SORTED_LIST_REMOVE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the `item` argument. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to `clds_hazard_pointers_reclaim` shall call the user callback `item_cleanup_callback` that was passed to `clds_sorted_list_node_create`, while passing `item_cleanup_callback_context` and the freed item as arguments. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_051: [ clds_sorted_list_remove_key shall delete an item by its key and return the pointer to the deleted item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_052: [ On success, clds_sorted_list_remove_key shall return CLDS_SORTED_LIST_REMOVE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_054: [ On success, the found item shall be returned in the item argument. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_043: [ The reclaim function passed to clds_hazard_pointers_reclaim shall call the user callback item_cleanup_callback that was passed to clds_sorted_list_node_create, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_2nd_out_of_3_items)
 {
     // arrange
@@ -2311,7 +2311,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_2nd_out_of_3_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_057: [ If the key is not found, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_057: [ If the key is not found, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_on_an_empty_list_yields_NOT_FOUND)
 {
     // arrange
@@ -2341,7 +2341,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_on_an_empty_list_yields_NOT_FOUND)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_057: [ If the key is not found, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_NOT_FOUND`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_057: [ If the key is not found, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_NOT_FOUND. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_after_the_item_was_deleted_yields_NOT_FOUND)
 {
     // arrange
@@ -2376,7 +2376,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_after_the_item_was_deleted_yields_NOT_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_072: [ For each remove key the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_stamps_the_sequence_numbers)
 {
     // arrange
@@ -2428,7 +2428,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_stamps_the_sequence_numbers)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_074: [ If the `sequence_number` argument passed to `clds_sorted_list_remove_key` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_074: [ If the sequence_number argument passed to clds_sorted_list_remove_key is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_sequence_number_and_non_NULL_start_sequence_number_still_computes_the_sequence_numbers)
 {
     // arrange
@@ -2478,7 +2478,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_sequence_number_and_non_NULL
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_075: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_075: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_remove_key_with_non_NULL_sequence_number_and_NULL_start_sequence_number_fails)
 {
     // arrange
@@ -2509,8 +2509,8 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_non_NULL_sequence_number_and_NULL
 
 /* clds_sorted_list_find_key */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ clds_sorted_list_find_key shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success clds_sorted_list_find_key shall return a non-NULL pointer to the found linked list item. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_succeeds_in_finding_an_item)
 {
     // arrange
@@ -2544,8 +2544,8 @@ TEST_FUNCTION(clds_sorted_list_find_key_succeeds_in_finding_an_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ clds_sorted_list_find_key shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success clds_sorted_list_find_key shall return a non-NULL pointer to the found linked list item. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_finds_the_2nd_out_of_3_added_items)
 {
     // arrange
@@ -2587,8 +2587,8 @@ TEST_FUNCTION(clds_sorted_list_find_key_finds_the_2nd_out_of_3_added_items)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ `clds_sorted_list_find_key` shall find in the list the first item that matches the criteria given by a user compare function. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success `clds_sorted_list_find_key` shall return a non-NULL pointer to the found linked list item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_027: [ clds_sorted_list_find_key shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_029: [ On success clds_sorted_list_find_key shall return a non-NULL pointer to the found linked list item. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_finds_the_last_added_item)
 {
     // arrange
@@ -2630,7 +2630,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_finds_the_last_added_item)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_028: [ If `clds_sorted_list` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_028: [ If clds_sorted_list is NULL, clds_sorted_list_find_key shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_clds_sorted_list_fails)
 {
     // arrange
@@ -2657,7 +2657,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_clds_sorted_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_030: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_030: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_find_key shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_hazard_pointers_thread_fails)
 {
     // arrange
@@ -2684,7 +2684,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_hazard_pointers_thread_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_031: [ If `key` is NULL, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_031: [ If key is NULL, clds_sorted_list_find_key shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_key_fails)
 {
     // arrange
@@ -2711,7 +2711,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_sorted_list_find_key shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_on_an_empty_list_returns_NULL)
 {
     // arrange
@@ -2740,7 +2740,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_on_an_empty_list_returns_NULL)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_sorted_list_find_key shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_after_the_item_was_deleted_returns_NULL)
 {
     // arrange
@@ -2774,7 +2774,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_after_the_item_was_deleted_returns_NULL)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, `clds_sorted_list_find_key` shall fail and return NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_sorted_list_find_key shall fail and return NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_when_the_item_is_not_in_the_list_returns_NULL)
 {
     // arrange
@@ -2815,7 +2815,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_when_the_item_is_not_in_the_list_returns
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_034: [ `clds_sorted_list_find_key` shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_034: [ clds_sorted_list_find_key shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
 TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
 {
     // arrange
@@ -2854,7 +2854,7 @@ TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
 
 /* clds_sorted_list_node_create */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_036: [ `item_cleanup_callback` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_036: [ item_cleanup_callback shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_node_create_with_NULL_item_cleanup_callback_succeeds)
 {
     // arrange
@@ -2873,7 +2873,7 @@ TEST_FUNCTION(clds_sorted_list_node_create_with_NULL_item_cleanup_callback_succe
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_037: [ `item_cleanup_callback_context` shall be allowed to be NULL. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_037: [ item_cleanup_callback_context shall be allowed to be NULL. ]*/
 TEST_FUNCTION(clds_sorted_list_node_create_with_NULL_item_cleanup_callback_context_succeeds)
 {
     // arrange
@@ -2894,7 +2894,7 @@ TEST_FUNCTION(clds_sorted_list_node_create_with_NULL_item_cleanup_callback_conte
 
 /* clds_sorted_list_set_value */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_081: [ If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_081: [ If clds_sorted_list is NULL, clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_sorted_list_fails)
 {
     // arrange
@@ -2919,7 +2919,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_sorted_list_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_082: [ If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_082: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_hazard_pointers_thread_fails)
 {
     // arrange
@@ -2946,7 +2946,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_hazard_pointers_thread_f
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_083: [ If `key` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_083: [ If key is NULL, clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_key_fails)
 {
     // arrange
@@ -2974,7 +2974,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_key_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_084: [ If `new_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_084: [ If new_item is NULL, clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_new_item_fails)
 {
     // arrange
@@ -2998,7 +2998,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_new_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_085: [ If `old_item` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_085: [ If old_item is NULL, clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_old_item_fails)
 {
     // arrange
@@ -3025,7 +3025,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_old_item_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_086: [ If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_086: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_when_no_start_sequence_number_was_specified_fails)
 {
     // arrange
@@ -3053,10 +3053,10 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_when_no_start
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_087: [ If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list, new_item shall be inserted at the key position. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts_the_item)
 {
     // arrange
@@ -3090,10 +3090,10 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the `key` entry exists in the list, its value shall be replaced with `new_item`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the key entry exists in the list, its value shall be replaced with new_item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
 {
     // arrange
@@ -3140,10 +3140,10 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the `key` entry exists in the list, its value shall be replaced with `new_item`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in `old_item`. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_088: [ If the key entry exists in the list, its value shall be replaced with new_item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd_item_in_the_list_succeeds)
 {
     // arrange
@@ -3194,7 +3194,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_091: [ If no start sequence number was provided in `clds_sorted_list_create` and `sequence_number` is NULL, no sequence number computations shall be done. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_091: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd_item_in_the_list_succeeds_no_seq_computation)
 {
     // arrange
@@ -3242,7 +3242,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_092: [ If the `sequence_number` argument passed to `clds_sorted_list_set_value` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_092: [ If the sequence_number argument passed to clds_sorted_list_set_value is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_still_increments_the_seq_no)
 {
     // arrange
