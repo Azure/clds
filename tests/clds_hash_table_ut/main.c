@@ -8,7 +8,7 @@ int main(void)
     RUN_TEST_SUITE(clds_hash_table_unittests, failedTestCount);
 
 #ifdef VLD_OPT_REPORT_TO_STDOUT
-    failedTestCount = (failedTestCount>0)?failedTestCount:-(int)VLDGetLeaksCount() > 0 ? 1 : 0;
+    failedTestCount = (failedTestCount>0)?failedTestCount:-(int)VLDGetLeaksCount();
 #endif
 
     return failedTestCount;
