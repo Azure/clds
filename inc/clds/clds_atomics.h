@@ -1,4 +1,4 @@
-// Licensed under the MIT license.See LICENSE file in the project root for full license information.
+// Copyright (C) Microsoft Corporation. All rights reserved.
 
 #ifndef CLDS_ATOMICS_H
 #define CLDS_ATOMICS_H
@@ -6,15 +6,17 @@
 #include "umock_c_prod.h"
 #include "azure_macro_utils/macro_utils.h"
 
+// This header has the purpose of switcing between C11 atomics and Windows atomic functions (InterlockedXXX)
+// This is due to the fact that to date the MS compiler does not support atomics
+
 #ifdef __cplusplus
 extern "C" {
+#else
+#include <stdbool.h>
 #endif
 
-// This header has the purpose of switcing between C11 atomics and Windows atomic functions (InterlockedXXX)
-// This is due to the fact that to date the MS compiler does not support C11 atomics (yet)
-
 #ifdef __STDC_VERSION__
-    // we have some STDC_VERSION, check if it is C11
+// we have some STDC_VERSION, check if it is C11
 #if (__STDC_VERSION__ == 201112L)
 #ifdef __STDC_NO_ATOMICS__
 #define USE_C_ATOMICS 0
@@ -32,7 +34,7 @@ extern "C" {
 #include <stdatomic.h>
 
 #define clds_atomic_fetch_add_long(object, operand) \
-    atomic_fetch_add_long((object), (operand))
+    atomic_fetch_add((object), (operand))
 #define clds_atomic_store_long(object, desired) \
     atomic_store((object), (desired))
 #define clds_atomic_load_long(object) \
@@ -64,7 +66,7 @@ typedef PVOID clds_atomic_intptr_t;
 
 /* nice, we're on the C compiler that is 20 years behind, so we have to emulate whatever we can from the atomics
  behind our macros */
-static LONG clds_atomic_fetch_add_long(LONG volatile *object, LONG operand)
+static clds_atomic_long clds_atomic_fetch_add_long(clds_atomic_long volatile *object, clds_atomic_long operand)
 {
     return InterlockedAdd(object, operand) - operand;
 }
@@ -74,9 +76,16 @@ static LONG clds_atomic_fetch_add_long(LONG volatile *object, LONG operand)
 #define clds_atomic_load_long(object) \
     InterlockedAdd(object, 0)
 
-static bool clds_atomic_compare_exchange_strong_long(volatile LONG* object, LONG expected, LONG desired)
+static bool clds_atomic_compare_exchange_strong_long(volatile clds_atomic_long* object, clds_atomic_long* expected, clds_atomic_long desired)
 {
-    return InterlockedCompareExchange(object, desired, expected) == expected;
+    clds_atomic_long expected_value = *expected;
+    clds_atomic_long result_value = InterlockedCompareExchange(object, desired, expected_value);
+    bool result = (result_value == expected_value);
+    if (!result)
+    {
+        *expected = result_value;
+    }
+    return result;
 }
 
 /* int_ptr_t */
@@ -93,7 +102,7 @@ static bool clds_atomic_compare_exchange_strong_intptr_t(volatile clds_atomic_in
     bool result = (result_value == expected_value);
     if (!result)
     {
-        *expected = expected_value;
+        *expected = result_value;
     }
     return result;
 }
