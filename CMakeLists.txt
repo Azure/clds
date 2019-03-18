@@ -15,9 +15,9 @@ if(WIN32)
     add_definitions(/W2)
 endif(WIN32)
 
-if(NOT TARGET SMHasherSupport)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
+if ((NOT TARGET SMHasherSupport) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src/CMakeLists.txt))
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
+    include_directories(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
 endif()
 
 if(WIN32)
