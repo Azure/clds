@@ -40,7 +40,7 @@ typedef struct CLDS_SORTED_LIST_ITEM_TAG
 
 // these are macros that help declaring a type that can be stored in the sorted list
 #define DECLARE_SORTED_LIST_NODE_TYPE(record_type) \
-typedef struct C3(SORTED_LIST_NODE_,record_type,_TAG) \
+typedef struct MU_C3(SORTED_LIST_NODE_,record_type,_TAG) \
 { \
     CLDS_SORTED_LIST_ITEM item; \
     record_type record; \

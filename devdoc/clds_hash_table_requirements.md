@@ -35,7 +35,7 @@ typedef struct SORTED_LIST_NODE_HASH_TABLE_ITEM_TAG CLDS_HASH_TABLE_ITEM;
 
 // these are macros that help declaring a type that can be stored in the hash table
 #define DECLARE_HASH_TABLE_NODE_TYPE(record_type) \
-typedef struct C3(HASH_TABLE_NODE_,record_type,_TAG) \
+typedef struct MU_C3(HASH_TABLE_NODE_,record_type,_TAG) \
 { \
     CLDS_HASH_TABLE_ITEM list_item; \
     record_type record; \

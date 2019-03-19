@@ -36,7 +36,7 @@ typedef struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG
 
 // these are macros that help declaring a type that can be stored in the singly linked list
 #define DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(record_type) \
-typedef struct C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
+typedef struct MU_C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
 { \
     CLDS_SINGLY_LINKED_LIST_ITEM item; \
     record_type record; \
