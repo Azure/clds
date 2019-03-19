@@ -51,7 +51,7 @@ extern "C" {
 #define clds_atomic_compare_exchange_strong_intptr_t(object, expected, desired) \
     atomic_compare_exchange_strong((object), (expected), (desired))
 
-#define CLDS_ATOMIC(atomic_type) C2(atomic_,atomic_type)
+#define CLDS_ATOMIC(atomic_type) MU_C2(atomic_,atomic_type)
 
 #else
 
@@ -107,7 +107,7 @@ static bool clds_atomic_compare_exchange_strong_intptr_t(volatile clds_atomic_in
     return result;
 }
 
-#define CLDS_ATOMIC(atomic_type) C2(clds_atomic_,atomic_type)
+#define CLDS_ATOMIC(atomic_type) MU_C2(clds_atomic_,atomic_type)
 
 #else /* _MSC_VER */
 #error no atomics support, sorry, get a better compiler

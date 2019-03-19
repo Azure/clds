@@ -40,14 +40,14 @@ typedef struct CLDS_SORTED_LIST_ITEM_TAG
 
 // these are macros that help declaring a type that can be stored in the sorted list
 #define DECLARE_SORTED_LIST_NODE_TYPE(record_type) \
-typedef struct C3(SORTED_LIST_NODE_,record_type,_TAG) \
+typedef struct MU_C3(SORTED_LIST_NODE_,record_type,_TAG) \
 { \
     CLDS_SORTED_LIST_ITEM item; \
     record_type record; \
-} C2(SORTED_LIST_NODE_,record_type); \
+} MU_C2(SORTED_LIST_NODE_,record_type); \
 
 #define CLDS_SORTED_LIST_NODE_CREATE(record_type, item_cleanup_callback, item_cleanup_callback_context) \
-clds_sorted_list_node_create(sizeof(C2(SORTED_LIST_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
+clds_sorted_list_node_create(sizeof(MU_C2(SORTED_LIST_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
 
 #define CLDS_SORTED_LIST_NODE_INC_REF(record_type, ptr) \
 clds_sorted_list_node_inc_ref(ptr)
@@ -56,34 +56,34 @@ clds_sorted_list_node_inc_ref(ptr)
 clds_sorted_list_node_release(ptr)
 
 #define CLDS_SORTED_LIST_GET_VALUE(record_type, ptr) \
-((record_type*)((unsigned char*)ptr + offsetof(C2(SORTED_LIST_NODE_,record_type), record)))
+((record_type*)((unsigned char*)ptr + offsetof(MU_C2(SORTED_LIST_NODE_,record_type), record)))
 
 #define CLDS_SORTED_LIST_INSERT_RESULT_VALUES \
     CLDS_SORTED_LIST_INSERT_OK, \
     CLDS_SORTED_LIST_INSERT_ERROR, \
     CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS
 
-DEFINE_ENUM(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
 
 #define CLDS_SORTED_LIST_DELETE_RESULT_VALUES \
     CLDS_SORTED_LIST_DELETE_OK, \
     CLDS_SORTED_LIST_DELETE_ERROR, \
     CLDS_SORTED_LIST_DELETE_NOT_FOUND
 
-DEFINE_ENUM(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
 
 #define CLDS_SORTED_LIST_REMOVE_RESULT_VALUES \
     CLDS_SORTED_LIST_REMOVE_OK, \
     CLDS_SORTED_LIST_REMOVE_ERROR, \
     CLDS_SORTED_LIST_REMOVE_NOT_FOUND
 
-DEFINE_ENUM(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
 
 #define CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES \
     CLDS_SORTED_LIST_SET_VALUE_OK, \
     CLDS_SORTED_LIST_SET_VALUE_ERROR
 
-DEFINE_ENUM(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
 
 // sorted list API
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context);

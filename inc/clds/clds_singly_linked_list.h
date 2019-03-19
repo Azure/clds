@@ -37,14 +37,14 @@ typedef struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG
 
 // these are macros that help declaring a type that can be stored in the singly linked list
 #define DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(record_type) \
-typedef struct C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
+typedef struct MU_C3(SINGLY_LINKED_LIST_NODE_,record_type,_TAG) \
 { \
     CLDS_SINGLY_LINKED_LIST_ITEM item; \
     record_type record; \
-} C2(SINGLY_LINKED_LIST_NODE_,record_type); \
+} MU_C2(SINGLY_LINKED_LIST_NODE_,record_type); \
 
 #define CLDS_SINGLY_LINKED_LIST_NODE_CREATE(record_type, item_cleanup_callback, item_cleanup_callback_context) \
-clds_singly_linked_list_node_create(sizeof(C2(SINGLY_LINKED_LIST_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
+clds_singly_linked_list_node_create(sizeof(MU_C2(SINGLY_LINKED_LIST_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
 
 #define CLDS_SINGLY_LINKED_LIST_NODE_INC_REF(record_type, ptr) \
 clds_singly_linked_list_node_inc_ref(ptr)
@@ -53,14 +53,14 @@ clds_singly_linked_list_node_inc_ref(ptr)
 clds_singly_linked_list_node_release(ptr)
 
 #define CLDS_SINGLY_LINKED_LIST_GET_VALUE(record_type, ptr) \
-((record_type*)((unsigned char*)ptr + offsetof(C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))
+((record_type*)((unsigned char*)ptr + offsetof(MU_C2(SINGLY_LINKED_LIST_NODE_,record_type), record)))
 
 #define CLDS_SINGLY_LINKED_LIST_DELETE_RESULT_VALUES \
     CLDS_SINGLY_LINKED_LIST_DELETE_OK, \
     CLDS_SINGLY_LINKED_LIST_DELETE_ERROR, \
     CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND
 
-DEFINE_ENUM(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_RESULT_VALUES);
 
 // singly linked list API
 MOCKABLE_FUNCTION(, CLDS_SINGLY_LINKED_LIST_HANDLE, clds_singly_linked_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);

@@ -99,7 +99,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
 
                     LogError("Cannot acquire hazard pointer");
                     restart_needed = false;
-                    result = __FAILURE__;
+                    result = MU_FAILURE;
                     break;
                 }
                 else
@@ -307,7 +307,7 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, item = %p, clds_hazard_pointers_thread = %p",
             clds_singly_linked_list, item, clds_hazard_pointers_thread);
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
@@ -534,7 +534,7 @@ int clds_singly_linked_list_node_inc_ref(CLDS_SINGLY_LINKED_LIST_ITEM* item)
     if (item == NULL)
     {
         LogError("NULL item");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {

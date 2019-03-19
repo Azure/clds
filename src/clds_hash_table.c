@@ -923,14 +923,14 @@ int clds_hash_table_node_inc_ref(CLDS_HASH_TABLE_ITEM* item)
     if (item == NULL)
     {
         LogError("NULL item");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
         if (clds_sorted_list_node_inc_ref((void*)item) != 0)
         {
             LogError("clds_sorted_list_node_inc_ref failed");
-            result = __FAILURE__;
+            result = MU_FAILURE;
         }
         else
         {

@@ -42,7 +42,7 @@ static int insert_thread(void* arg)
     if (tick_counter == NULL)
     {
         LogError("Cannot create tick counter");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
@@ -51,7 +51,7 @@ static int insert_thread(void* arg)
         if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
         {
             LogError("Cannot get start time");
-            result = __FAILURE__;
+            result = MU_FAILURE;
         }
         else
         {
@@ -69,7 +69,7 @@ static int insert_thread(void* arg)
             if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
             {
                 LogError("Cannot get end time");
-                result = __FAILURE__;
+                result = MU_FAILURE;
             }
             else
             {
@@ -95,7 +95,7 @@ static int delete_thread(void* arg)
     if (tick_counter == NULL)
     {
         LogError("Cannot create tick counter");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
@@ -104,7 +104,7 @@ static int delete_thread(void* arg)
         if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
         {
             LogError("Cannot get start time");
-            result = __FAILURE__;
+            result = MU_FAILURE;
         }
         else
         {
@@ -122,7 +122,7 @@ static int delete_thread(void* arg)
             if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
             {
                 LogError("Cannot get end time");
-                result = __FAILURE__;
+                result = MU_FAILURE;
             }
             else
             {
@@ -148,7 +148,7 @@ static int find_thread(void* arg)
     if (tick_counter == NULL)
     {
         LogError("Cannot create tick counter");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
@@ -157,7 +157,7 @@ static int find_thread(void* arg)
         if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
         {
             LogError("Cannot get start time");
-            result = __FAILURE__;
+            result = MU_FAILURE;
         }
         else
         {
@@ -180,7 +180,7 @@ static int find_thread(void* arg)
             if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
             {
                 LogError("Cannot get end time");
-                result = __FAILURE__;
+                result = MU_FAILURE;
             }
             else
             {

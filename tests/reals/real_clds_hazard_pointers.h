@@ -9,7 +9,7 @@
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);
 
 #define REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS() \
-    FOR_EACH_1(R2, \
+    MU_FOR_EACH_1(R2, \
         clds_hazard_pointers_create, \
         clds_hazard_pointers_destroy, \
         clds_hazard_pointers_register_thread, \

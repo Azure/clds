@@ -85,12 +85,12 @@ int lock_free_set_insert(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
         /* Codes_SRS_LOCK_FREE_SET_01_011: [ If lock_free_set or item is NULL, lock_free_set_insert shall fail and return a non-zero value. ]*/
         LogError("Bad arguments: lock_free_set = %p, item = %p",
             lock_free_set, item);
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
         bool restart_needed;
-        result = __FAILURE__;
+        result = MU_FAILURE;
 
         /* Codes_SRS_LOCK_FREE_SET_01_013: [ lock_free_set_insert and lock_free_set_remove shall be safe to be called from multiple threads. ]*/
 
@@ -170,7 +170,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
         /* Codes_SRS_LOCK_FREE_SET_01_017: [ If lock_free_set or item is NULL, lock_free_set_remove shall fail and return a non-zero value. ]*/
         LogError("Bad arguments: lock_free_set = %p, item = %p",
             lock_free_set, item);
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
@@ -179,7 +179,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
         /* Codes_SRS_LOCK_FREE_SET_01_013: [ lock_free_set_insert and lock_free_set_remove shall be safe to be called from multiple threads. ]*/
 
         // Code Analysis is rather upset if we do not do that, but for no reason :-(
-        result = __FAILURE__;
+        result = MU_FAILURE;
 
         /* Codes_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
 
@@ -226,7 +226,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                 {
                                     LogError("Unexpected change of locked item->previous");
-                                    result = __FAILURE__;
+                                    result = MU_FAILURE;
                                     restart_needed = false;
                                 }
                                 else
@@ -279,7 +279,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                 {
                                     LogError("Unexpected change of locked item->previous");
-                                    result = __FAILURE__;
+                                    result = MU_FAILURE;
                                     restart_needed = false;
                                 }
                                 else
@@ -303,7 +303,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
                                     {
                                         LogError("Unexpected change of locked item->next");
-                                        result = __FAILURE__;
+                                        result = MU_FAILURE;
                                         restart_needed = false;
                                     }
                                     else
@@ -312,7 +312,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                         if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                         {
                                             LogError("Unexpected change of locked item->previous");
-                                            result = __FAILURE__;
+                                            result = MU_FAILURE;
                                             restart_needed = false;
                                         }
                                         else
@@ -397,7 +397,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                 {
                                     LogError("Unexpected change of locked item->previous");
-                                    result = __FAILURE__;
+                                    result = MU_FAILURE;
                                     restart_needed = false;
                                 }
                                 else
@@ -428,7 +428,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                         // this is an error, someone modified the previous link and they should not
                                         LogError("item->previous modified unexpectedly");
                                         restart_needed = false;
-                                        result = __FAILURE__;
+                                        result = MU_FAILURE;
                                     }
                                     else
                                     {
@@ -467,7 +467,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     // this is an error, someone modified the previous link and they should not
                                     LogError("item->previous modified unexpectedly");
                                     restart_needed = false;
-                                    result = __FAILURE__;
+                                    result = MU_FAILURE;
                                 }
                                 else
                                 {
@@ -487,7 +487,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                     {
                                         LogError("Unexpected change of locked item->previous");
-                                        result = __FAILURE__;
+                                        result = MU_FAILURE;
                                         restart_needed = false;
                                     }
                                     else
@@ -497,7 +497,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                         if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
                                         {
                                             LogError("Unexpected change of locked item->next");
-                                            result = __FAILURE__;
+                                            result = MU_FAILURE;
                                             restart_needed = false;
                                         }
                                         else
@@ -529,7 +529,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                         if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                         {
                                             LogError("Unexpected change of locked item->previous");
-                                            result = __FAILURE__;
+                                            result = MU_FAILURE;
                                             restart_needed = false;
                                         }
                                         else
@@ -539,7 +539,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                             if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
                                             {
                                                 LogError("Unexpected change of locked item->next");
-                                                result = __FAILURE__;
+                                                result = MU_FAILURE;
                                                 restart_needed = false;
                                             }
                                             else
@@ -558,7 +558,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                             if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                             {
                                                 LogError("Unexpected change of locked item->previous");
-                                                result = __FAILURE__;
+                                                result = MU_FAILURE;
                                                 restart_needed = false;
                                             }
                                             else
@@ -568,7 +568,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
                                                 {
                                                     LogError("Unexpected change of locked item->next");
-                                                    result = __FAILURE__;
+                                                    result = MU_FAILURE;
                                                     restart_needed = false;
                                                 }
                                                 else
@@ -591,7 +591,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
                                                 {
                                                     LogError("Unexpected change of locked item->previous");
-                                                    result = __FAILURE__;
+                                                    result = MU_FAILURE;
                                                     restart_needed = false;
                                                 }
                                                 else
@@ -601,7 +601,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                     if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
                                                     {
                                                         LogError("Unexpected change of locked item->next");
-                                                        result = __FAILURE__;
+                                                        result = MU_FAILURE;
                                                         restart_needed = false;
                                                     }
                                                     else
@@ -703,7 +703,7 @@ int lock_free_set_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, NODE
     {
         /* Codes_SRS_LOCK_FREE_SET_01_021: [ If lock_free_set is NULL, lock_free_set_purge_not_thread_safe shall fail and return a non-zero value. ]*/
         LogError("NULL lock_free_set");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {

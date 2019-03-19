@@ -37,14 +37,14 @@ typedef struct SORTED_LIST_NODE_HASH_TABLE_ITEM_TAG CLDS_HASH_TABLE_ITEM;
 
 // these are macros that help declaring a type that can be stored in the hash table
 #define DECLARE_HASH_TABLE_NODE_TYPE(record_type) \
-typedef struct C3(HASH_TABLE_NODE_,record_type,_TAG) \
+typedef struct MU_C3(HASH_TABLE_NODE_,record_type,_TAG) \
 { \
     CLDS_HASH_TABLE_ITEM list_item; \
     record_type record; \
-} C2(HASH_TABLE_NODE_,record_type); \
+} MU_C2(HASH_TABLE_NODE_,record_type); \
 
 #define CLDS_HASH_TABLE_NODE_CREATE(record_type, item_cleanup_callback, item_cleanup_callback_context) \
-clds_hash_table_node_create(sizeof(C2(HASH_TABLE_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
+clds_hash_table_node_create(sizeof(MU_C2(HASH_TABLE_NODE_,record_type)), item_cleanup_callback, item_cleanup_callback_context)
 
 #define CLDS_HASH_TABLE_NODE_INC_REF(record_type, ptr) \
 clds_hash_table_node_inc_ref(ptr)
@@ -53,34 +53,34 @@ clds_hash_table_node_inc_ref(ptr)
 clds_hash_table_node_release(ptr)
 
 #define CLDS_HASH_TABLE_GET_VALUE(record_type, ptr) \
-((record_type*)((unsigned char*)ptr + offsetof(C2(HASH_TABLE_NODE_,record_type), record)))
+((record_type*)((unsigned char*)ptr + offsetof(MU_C2(HASH_TABLE_NODE_,record_type), record)))
 
 #define CLDS_HASH_TABLE_INSERT_RESULT_VALUES \
     CLDS_HASH_TABLE_INSERT_OK, \
     CLDS_HASH_TABLE_INSERT_ERROR, \
     CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS
 
-DEFINE_ENUM(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
 
 #define CLDS_HASH_TABLE_DELETE_RESULT_VALUES \
     CLDS_HASH_TABLE_DELETE_OK, \
     CLDS_HASH_TABLE_DELETE_ERROR, \
     CLDS_HASH_TABLE_DELETE_NOT_FOUND
 
-DEFINE_ENUM(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
 
 #define CLDS_HASH_TABLE_REMOVE_RESULT_VALUES \
     CLDS_HASH_TABLE_REMOVE_OK, \
     CLDS_HASH_TABLE_REMOVE_ERROR, \
     CLDS_HASH_TABLE_REMOVE_NOT_FOUND
 
-DEFINE_ENUM(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
 
 #define CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES \
     CLDS_HASH_TABLE_SET_VALUE_OK, \
     CLDS_HASH_TABLE_SET_VALUE_ERROR
 
-DEFINE_ENUM(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
+MU_DEFINE_ENUM(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile int64_t*, start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);

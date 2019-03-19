@@ -9,7 +9,7 @@
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);
 
 #define REGISTER_CLDS_SORTED_LIST_GLOBAL_MOCK_HOOKS() \
-    FOR_EACH_1(R2, \
+    MU_FOR_EACH_1(R2, \
         clds_sorted_list_create, \
         clds_sorted_list_destroy, \
         clds_sorted_list_insert, \

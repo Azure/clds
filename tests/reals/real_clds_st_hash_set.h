@@ -9,7 +9,7 @@
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);
 
 #define REGISTER_CLDS_ST_HASH_SET_GLOBAL_MOCK_HOOKS() \
-    FOR_EACH_1(R2, \
+    MU_FOR_EACH_1(R2, \
         clds_st_hash_set_create, \
         clds_st_hash_set_destroy, \
         clds_st_hash_set_insert, \

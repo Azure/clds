@@ -1413,7 +1413,7 @@ int clds_sorted_list_node_inc_ref(CLDS_SORTED_LIST_ITEM* item)
     if (item == NULL)
     {
         LogError("NULL item");
-        result = __FAILURE__;
+        result = MU_FAILURE;
     }
     else
     {
