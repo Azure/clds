@@ -281,7 +281,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         found_in_lower_levels = false;
 
         // check if the key exists in the lover level bucket arrays
-        BUCKET_ARRAY* find_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        BUCKET_ARRAY* find_bucket_array = current_bucket_array;
         if (find_bucket_array != NULL)
         {
             BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
