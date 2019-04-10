@@ -282,44 +282,41 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
         // check if the key exists in the lover level bucket arrays
         BUCKET_ARRAY* find_bucket_array = current_bucket_array;
-        if (find_bucket_array != NULL)
-        {
-            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+        BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
 
-            if (next_bucket_array != NULL)
+        if (next_bucket_array != NULL)
+        {
+            // wait for all outstanding inserts in the lower levels to complete
+            do
             {
-                // wait for all outstanding inserts in the lower levels to complete
-                do
+                if (InterlockedAdd(&next_bucket_array->pending_insert_count, 0) == 0)
                 {
-                    if (InterlockedAdd(&next_bucket_array->pending_insert_count, 0) == 0)
-                    {
-                        break;
-                    }
-                } while (1);
+                    break;
+                }
+            } while (1);
+        }
+
+        find_bucket_array = next_bucket_array;
+        while (find_bucket_array != NULL)
+        {
+            next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+
+            bucket_index = hash % find_bucket_array->bucket_count;
+            bucket_list = InterlockedCompareExchangePointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
+
+            if (bucket_list != NULL)
+            {
+                CLDS_SORTED_LIST_ITEM* sorted_list_item = clds_sorted_list_find_key(bucket_list, clds_hazard_pointers_thread, key);
+                if (sorted_list_item != NULL)
+                {
+                    clds_sorted_list_node_release(sorted_list_item);
+
+                    found_in_lower_levels = true;
+                    break;
+                }
             }
 
             find_bucket_array = next_bucket_array;
-            while (find_bucket_array != NULL)
-            {
-                next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
-
-                bucket_index = hash % find_bucket_array->bucket_count;
-                bucket_list = InterlockedCompareExchangePointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
-
-                if (bucket_list != NULL)
-                {
-                    CLDS_SORTED_LIST_ITEM* sorted_list_item = clds_sorted_list_find_key(bucket_list, clds_hazard_pointers_thread, key);
-                    if (sorted_list_item != NULL)
-                    {
-                        clds_sorted_list_node_release(sorted_list_item);
-
-                        found_in_lower_levels = true;
-                        break;
-                    }
-                }
-
-                find_bucket_array = next_bucket_array;
-            }
         }
 
         if (found_in_lower_levels)
