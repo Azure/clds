@@ -107,6 +107,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_THREAD_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_HANDLE, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(CLDS_ST_HASH_SET_KEY_COMPARE_FUNC, void*);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -358,6 +359,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_singly_linked_list_fails)
 
     // cleanup
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_012: [ If item is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
@@ -404,6 +406,7 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_hazard_pointers_thread_ha
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_009: [ clds_singly_linked_list_insert inserts an item in the list. ]*/
@@ -839,6 +842,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_on_an_empty_lists_returns_NOT_FOUND
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
@@ -867,6 +871,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_when_the_item_is_not_in_the_list_re
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item_2);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_018: [ If the item does not exist in the list, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
@@ -1220,6 +1225,7 @@ TEST_FUNCTION(clds_singly_linked_list_delete_if_on_an_empty_list_yields_NOT_FOUN
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_024: [ If no item matches the criteria, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_NOT_FOUND. ]*/
@@ -1286,6 +1292,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_succeeds_in_finding_an_item)
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, result);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ clds_singly_linked_list_find shall find in the list the first item that matches the criteria given by a user compare function. ]*/
@@ -1322,6 +1329,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_finds_the_2nd_out_of_3_added_items)
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item_2);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_027: [ clds_singly_linked_list_find shall find in the list the first item that matches the criteria given by a user compare function. ]*/
@@ -1358,6 +1366,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_finds_the_last_added_item)
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, result);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_028: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
@@ -1464,6 +1473,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_with_NULL_item_compare_callback_conte
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, result);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
@@ -1494,6 +1504,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_on_an_empty_list_returns_NULL)
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
@@ -1560,6 +1571,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_when_the_item_is_not_in_the_list_retu
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
 /* Tests_SRS_CLDS_SINGLY_LINKED_LIST_01_034: [ clds_singly_linked_list_find shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
@@ -1594,6 +1606,7 @@ TEST_FUNCTION(clds_singly_linked_list_find_result_has_the_ref_count_incremented)
     // cleanup
     clds_singly_linked_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
 /* clds_singly_linked_list_node_create */
@@ -1603,6 +1616,8 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_suc
 {
     // arrange
     CLDS_SINGLY_LINKED_LIST_ITEM* item;
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
     item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, NULL, (void*)0x4242);
@@ -1620,6 +1635,8 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_con
 {
     // arrange
     CLDS_SINGLY_LINKED_LIST_ITEM* item;
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
 
     // act
     item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, NULL);

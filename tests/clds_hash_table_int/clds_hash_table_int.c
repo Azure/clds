@@ -283,6 +283,7 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
     // cleanup
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 }
 
 TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
