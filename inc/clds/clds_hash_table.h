@@ -4,7 +4,7 @@
 #define CLDS_HASH_TABLE_H
 
 #include "windows.h"
-#include "azure_c_shared_utility/umock_c_prod.h"
+#include "umock_c/umock_c_prod.h"
 #include "clds_hazard_pointers.h"
 #include "clds_sorted_list.h"
 

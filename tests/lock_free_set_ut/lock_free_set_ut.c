@@ -19,8 +19,8 @@ void real_free(void* ptr)
     free(ptr);
 }
 
-#include "umock_c.h"
-#include "umocktypes_bool.h"
+#include "umock_c/umock_c.h"
+#include "umock_c/umocktypes_bool.h"
 #include "clds/lock_free_set.h"
 
 #define ENABLE_MOCKS

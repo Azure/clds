@@ -3,7 +3,7 @@
 #ifndef CLDS_ATOMICS_H
 #define CLDS_ATOMICS_H
 
-#include "umock_c_prod.h"
+#include "umock_c/umock_c_prod.h"
 #include "azure_macro_utils/macro_utils.h"
 
 // This header has the purpose of switcing between C11 atomics and Windows atomic functions (InterlockedXXX)

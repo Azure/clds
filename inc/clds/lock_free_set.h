@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#include "azure_c_shared_utility/umock_c_prod.h"
+#include "umock_c/umock_c_prod.h"
 #include "clds/clds_atomics.h"
 
 typedef struct LOCK_FREE_SET_TAG* LOCK_FREE_SET_HANDLE;

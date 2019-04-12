@@ -20,8 +20,8 @@ void real_free(void* ptr)
     free(ptr);
 }
 
-#include "umock_c.h"
-#include "umocktypes_stdint.h"
+#include "umock_c/umock_c.h"
+#include "umock_c/umocktypes_stdint.h"
 
 #include "azure_c_shared_utility/gballoc.h"
 #include "azure_c_shared_utility/threadapi.h"
