@@ -1,0 +1,85 @@
+name: $(BuildID)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+resources:
+- repo: self
+phases:
+
+- phase: inttests
+  displayName: 'Build and run tests'
+  queue:
+    name: Hosted VS2017
+    demands:
+    - Cmd
+    - msbuild
+    - visualstudio
+
+  steps:
+  - checkout: self
+    clean: false
+
+  - task: BatchScript@1
+    displayName: 'Git submodule update'
+    inputs:
+      filename: 'C:\Program Files\Git\bin\git.exe'
+      arguments: 'submodule update --init --force'
+
+  - task: BatchScript@1
+    displayName: 'Git submodule clean'
+    inputs:
+      filename: 'C:\Program Files\Git\bin\git.exe'
+      arguments: 'submodule foreach --recursive git clean -xdf'
+
+  - task: BatchScript@1
+    displayName: 'Git clean'
+    inputs:
+      filename: 'C:\Program Files\Git\bin\git.exe'
+      arguments: 'clean -xdf'
+
+  - powershell: |
+     $url = "https://github.com/KindDragon/vld/releases/download/v2.5.1/vld-2.5.1-setup.exe"
+     $outpath = "$(System.ArtifactsDirectory)/vld-2.5.1-setup.exe"
+   
+     $wc = New-Object System.Net.WebClient
+     $wc.DownloadFile($url, $outpath)
+    displayName: 'Download VLD'
+
+  - task: BatchScript@1
+    displayName: 'Install VLD'
+    inputs:
+      filename: '$(System.ArtifactsDirectory)/vld-2.5.1-setup.exe'
+      arguments: '/suppressmsgboxes /verysilent /norestart'
+      modifyEnvironment: true
+
+  - task: BatchScript@1
+    displayName: 'Set VLD path'
+    inputs:
+      filename: 'set_vld_vars.bat'
+      modifyEnvironment: true
+
+  - task: BatchScript@1
+    displayName: 'Setup VS Vars'
+    inputs:
+      filename: '"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat"'
+      modifyEnvironment: true
+
+  - task: CMake@1
+    displayName: 'CMake .. -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Duse_cppunittest:bool=OFF -Drun_e2e_tests:bool=OFF -G "Visual Studio 15 2017 Win64"'
+    inputs:
+      workingDirectory: 'build_x64'
+      cmakeArgs: '.. -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Duse_cppunittest:bool=OFF -Drun_e2e_tests:bool=OFF -G "Visual Studio 15 2017 Win64"'
+
+  - task: VSBuild@1
+    displayName: 'Build solution build_x64\*.sln'
+    inputs:
+      solution: 'build_x64\*.sln'
+      msbuildArgs: '/p:ForceImportBeforeCppTargets=$(Build.SourcesDirectory)/vld.props'
+      platform: x64
+      configuration: Debug
+      maximumCpuCount: true
+
+  - task: CmdLine@1
+    displayName: 'Run ctest'
+    inputs:
+      filename: ctest
+      arguments: '-C "Debug" -V --output-on-failure'
+      workingFolder: 'build_x64'
+
