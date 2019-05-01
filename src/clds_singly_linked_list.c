@@ -57,11 +57,11 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
 {
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
 
-    // check that the node is really in the list and obtain
     bool restart_needed;
 
     do
     {
+        // check that the node is really in the list and obtain
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
         volatile CLDS_SINGLY_LINKED_LIST_ITEM* previous_item = NULL;
         volatile CLDS_SINGLY_LINKED_LIST_ITEM** current_item_address = &clds_singly_linked_list->head;
@@ -298,12 +298,14 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
 
     (void)clds_hazard_pointers_thread;
 
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
-    if ((clds_singly_linked_list == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_011: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
+        (clds_singly_linked_list == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_012: [ If item is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
         (item == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_013: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_insert shall fail and return a non-zero value. ]*/
-        (clds_hazard_pointers_thread == NULL))
+        (clds_hazard_pointers_thread == NULL)
+        )
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, item = %p, clds_hazard_pointers_thread = %p",
             clds_singly_linked_list, item, clds_hazard_pointers_thread);
@@ -340,12 +342,14 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete(CLDS_SINGLY
 {
     CLDS_SINGLY_LINKED_LIST_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_015: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
-    if ((clds_singly_linked_list == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_015: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
+        (clds_singly_linked_list == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_016: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_017: [ If item is NULL, clds_singly_linked_list_delete shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
-        (item == NULL))
+        (item == NULL)
+        )
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item = %p",
             clds_singly_linked_list, clds_hazard_pointers_thread, item);
@@ -366,12 +370,14 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete_if(CLDS_SIN
 
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_023: [ item_compare_callback_context shall be allowed to be NULL. ]*/
 
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_020: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
-    if ((clds_singly_linked_list == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_020: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
+        (clds_singly_linked_list == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_021: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_022: [ If item_compare_callback is NULL, clds_singly_linked_list_delete_if shall fail and return CLDS_SINGLY_LINKED_LIST_DELETE_ERROR. ]*/
-        (item_compare_callback == NULL))
+        (item_compare_callback == NULL)
+        )
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item_compare_callback = %p",
             clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback);
@@ -390,12 +396,16 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
 {
     CLDS_SINGLY_LINKED_LIST_ITEM* result;
 
-    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_028: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
-    if ((clds_singly_linked_list == NULL) ||
+    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_032: [ item_compare_callback_context shall be allowed to be NULL. ]*/
+
+    if (
+        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_028: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
+        (clds_singly_linked_list == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_030: [ If clds_hazard_pointers_thread is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_031: [ If item_compare_callback is NULL, clds_singly_linked_list_find shall fail and return NULL. ]*/
-        (item_compare_callback == NULL))
+        (item_compare_callback == NULL)
+        )
     {
         LogError("Invalid arguments: clds_singly_linked_list = %p, item_compare_callback = %p",
             clds_singly_linked_list, item_compare_callback);
@@ -427,6 +437,8 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                     }
 
                     restart_needed = false;
+
+                    /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
                     result = NULL;
                     break;
                 }
@@ -444,6 +456,8 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
 
                         LogError("Cannot acquire hazard pointer");
                         restart_needed = false;
+
+                        /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_033: [ If no item satisfying the user compare function is found in the list, clds_singly_linked_list_find shall fail and return NULL. ]*/
                         result = NULL;
                         break;
                     }
@@ -474,6 +488,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                                 }
 
                                 // found it
+                                /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_034: [ clds_singly_linked_list_find shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
                                 (void)InterlockedIncrement(&current_item->ref_count);
                                 clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
