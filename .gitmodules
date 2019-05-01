@@ -16,3 +16,6 @@
 [submodule "deps/smhasher"]
 	path = deps/smhasher
 	url = https://github.com/hcoona/smhasher.git
+[submodule "deps/azure-c-build-tools"]
+	path = deps/azure-c-build-tools
+	url = https://github.com/Azure/azure-c-build-tools.git
