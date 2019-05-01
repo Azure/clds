@@ -45,6 +45,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
         clds_st_hash_set = (CLDS_ST_HASH_SET_HANDLE)malloc(sizeof(CLDS_ST_HASH_SET));
         if (clds_st_hash_set == NULL)
         {
+            /* Codes_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, clds_st_hash_set_create shall fail and return NULL. ]*/
             LogError("Cannot allocate memory for hash table");
         }
         else
@@ -53,6 +54,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
             clds_st_hash_set->hash_set = malloc(sizeof(void*) * bucket_size);
             if (clds_st_hash_set->hash_set == NULL)
             {
+                /* Codes_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, clds_st_hash_set_create shall fail and return NULL. ]*/
                 LogError("Cannot allocate memory for hash set array");
             }
             else
@@ -87,7 +89,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
 {
     if (clds_st_hash_set == NULL)
     {
-        /* Codes_SRS_CLDS_HASH_TABLE_01_007: [ If clds_st_hash_set is NULL, clds_st_hash_set_destroy shall return. ]*/
+        /* Codes_SRS_CLDS_ST_HASH_SET_01_007: [ If clds_st_hash_set is NULL, clds_st_hash_set_destroy shall return. ]*/
         LogError("Invalid arguments: clds_st_hash_set=%p",
             clds_st_hash_set);
     }
