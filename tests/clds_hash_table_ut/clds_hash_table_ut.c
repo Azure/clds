@@ -532,7 +532,6 @@ TEST_FUNCTION(clds_hash_table_destroy_with_NULL_hash_table_returns)
 
 /* clds_hash_table_insert */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ clds_hash_table_insert shall insert a key/value pair in the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_019: [ If no sorted list exists at the determined bucket index then a new list shall be created. ]*/
@@ -733,7 +732,6 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ clds_hash_table_insert shall insert a key/value pair in the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling clds_sorted_list_node_create. ]*/
@@ -774,7 +772,6 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_008: [ clds_hash_table_insert shall insert a key/value pair in the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_020: [ A new sorted list item shall be created by calling clds_sorted_list_node_create. ]*/
@@ -947,7 +944,6 @@ TEST_FUNCTION(clds_hash_table_insert_with_non_NULL_sequence_no_but_NULL_start_se
 
 /* clds_hash_table_delete */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_013: [ clds_hash_table_delete shall delete a key from the hash table. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_014: [ On success clds_hash_table_delete shall return CLDS_HASH_TABLE_DELETE_OK. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_039: [ clds_hash_table_delete shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_063: [ For each delete the order of the operation shall be computed by passing sequence_number to clds_sorted_list_delete_key. ]*/

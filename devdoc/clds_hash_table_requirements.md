@@ -135,7 +135,7 @@ MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
 ```
 
-**SRS_CLDS_HASH_TABLE_01_008: [** `clds_hash_table_insert` shall insert a key/value pair in the hash table. **]**
+`clds_hash_table_insert` inserts a key/value pair in the hash table.
 
 **SRS_CLDS_HASH_TABLE_01_009: [** On success `clds_hash_table_insert` shall return `CLDS_HASH_TABLE_INSERT_OK`. **]**
 
@@ -169,9 +169,9 @@ Y**SRS_CLDS_HASH_TABLE_01_098: [** If the top level array of buckets has changed
 
 **SRS_CLDS_HASH_TABLE_01_030: [** If the number of items in the list reaches the number of buckets, the number of buckets shall be doubled. **]**
 
-**SRS_CLDS_HASH_TABLE_01_031: [** When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets. **]**
+Y**SRS_CLDS_HASH_TABLE_01_031: [** When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets. **]**
 
-**SRS_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
+Y**SRS_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
 
 **SRS_CLDS_HASH_TABLE_01_059: [** For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. **]**
 
@@ -183,7 +183,7 @@ Y**SRS_CLDS_HASH_TABLE_01_098: [** If the top level array of buckets has changed
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 ```
 
-**SRS_CLDS_HASH_TABLE_01_013: [** `clds_hash_table_delete` shall delete a key from the hash table. **]**
+`clds_hash_table_delete` deletes a key from the hash table.
 
 **SRS_CLDS_HASH_TABLE_01_039: [** `clds_hash_table_delete` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
