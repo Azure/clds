@@ -28,11 +28,11 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_release, CLDS_HAZARD_POINTER_RECO
 MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers_create, RECLAIM_FUNC, reclaim_func);
 ```
 
-**SRS_CLDS_HAZARD_POINTERS_01_001: [** `clds_hazard_pointers_create` shall create a new hazard pointers instance and on success return a non-NULL handle to it. **]**
+**S_R_S_CLDS_HAZARD_POINTERS_01_001: [** `clds_hazard_pointers_create` shall create a new hazard pointers instance and on success return a non-NULL handle to it. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_01_002: [** If any error happens, `clds_hazard_pointers_create` shall fail and return NULL. **]**
+**S_R_S_CLDS_HAZARD_POINTERS_01_002: [** If any error happens, `clds_hazard_pointers_create` shall fail and return NULL. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_01_003: [** `reclaim_func` shall be saved for later use when reclaiming nodes. **]**
+**S_R_S_CLDS_HAZARD_POINTERS_01_003: [** `reclaim_func` shall be saved for later use when reclaiming nodes. **]**
 
 ### clds_hazard_pointers_destroy
 
@@ -40,6 +40,6 @@ MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers_create, RE
 MOCKABLE_FUNCTION(, void, clds_hazard_pointers_destroy, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers);
 ```
 
-**SRS_CLDS_HAZARD_POINTERS_01_004: [** `clds_hazard_pointers_destroy` shall free all resources associated with the hazard pointers instance. **]**
+**S_R_S_CLDS_HAZARD_POINTERS_01_004: [** `clds_hazard_pointers_destroy` shall free all resources associated with the hazard pointers instance. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_01_005: [** If `clds_hazard_pointers` is NULL, `clds_hazard_pointers_destroy` shall return. **]**
+**S_R_S_CLDS_HAZARD_POINTERS_01_005: [** If `clds_hazard_pointers` is NULL, `clds_hazard_pointers_destroy` shall return. **]**

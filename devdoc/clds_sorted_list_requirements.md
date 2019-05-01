@@ -154,7 +154,7 @@ MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, cld
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item, int64_t*, sequence_number);
 ```
 
-**SRS_CLDS_SORTED_LIST_01_009: [** `clds_sorted_list_insert` inserts an item in the list. **]**
+`clds_sorted_list_insert` inserts an item in the list.
 
 **SRS_CLDS_SORTED_LIST_01_010: [** On success `clds_sorted_list_insert` shall return `CLDS_SORTED_LIST_INSERT_OK`. **]**
 

@@ -542,7 +542,6 @@ TEST_FUNCTION(clds_sorted_list_destroy_with_NULL_item_cleanup_callback_does_not_
 
 /* clds_sorted_list_insert */
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ clds_sorted_list_insert inserts an item in the list. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_069: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_succeeds)
@@ -643,7 +642,6 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_hazard_pointers_thread_handle_fa
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ clds_sorted_list_insert inserts an item in the list. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_047: [ clds_sorted_list_insert shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_2_items_in_order_succeeds)
@@ -680,7 +678,6 @@ TEST_FUNCTION(clds_sorted_list_insert_2_items_in_order_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_009: [ clds_sorted_list_insert inserts an item in the list. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_047: [ clds_sorted_list_insert shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_2_items_in_reverse_order_succeeds)
