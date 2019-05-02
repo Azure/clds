@@ -10,7 +10,7 @@
 #include "clds/clds_atomics.h"
 #include "clds/clds_st_hash_set.h"
 
-#define DEFAULT_RECLAIM_THRESHOLD 16
+#define DEFAULT_RECLAIM_THRESHOLD 1
 
 typedef struct CLDS_HAZARD_POINTER_RECORD_TAG
 {
