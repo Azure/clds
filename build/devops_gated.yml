@@ -270,3 +270,66 @@ phases:
       modifyEnvironment: false
       workingFolder: '$(Build.SourcesDirectory)'
       
+- phase: windowsperf
+  displayName: 'Build Windows Perf tests (RelWithDebInfo x64)'
+  queue:
+    name: Hosted VS2017
+    demands:
+    - Cmd
+    - msbuild
+    - visualstudio
+
+  steps:
+  - task: BatchScript@1
+    displayName: 'Git submodule update'
+    inputs:
+      filename: 'C:\Program Files\Git\bin\git.exe'
+      arguments: 'submodule update --init --force'
+
+  - task: BatchScript@1
+    displayName: 'Git submodule clean'
+    inputs:
+      filename: 'C:\Program Files\Git\bin\git.exe'
+      arguments: 'submodule foreach --recursive git clean -xdf'
+
+  - task: BatchScript@1
+    displayName: 'Git clean'
+    inputs:
+      filename: 'C:\Program Files\Git\bin\git.exe'
+      arguments: 'clean -xdf'
+
+  - task: BatchScript@1
+    displayName: 'Setup VS Vars'
+    inputs:
+      filename: '"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat"'
+      modifyEnvironment: true
+
+  - task: CMake@1
+    displayName: CMake
+    inputs:
+      workingDirectory: 'build_x64'
+      cmakeArgs: '.. -Drun_int_tests:bool=ON -G "Visual Studio 15 2017 Win64"'
+
+  - task: VSBuild@1
+    displayName: 'Build solution build_x64\*.sln'
+    inputs:
+      solution: 'build_x64\*.sln'
+      platform: x64
+      configuration: RelWithDebInfo
+      maximumCpuCount: true
+
+  - script: |
+     echo Running Hash table perf test
+     $(Build.Repository.LocalPath)/build_x64/tests/clds_hash_table_perf/RelWithDebInfo/clds_hash_table_perf.exe
+     
+     echo Running Singly linked list perf test
+     $(Build.Repository.LocalPath)/build_x64/tests/clds_singly_linked_list_perf/RelWithDebInfo/clds_singly_linked_list_perf.exe
+     
+     echo Running Sorted list perf test
+     $(Build.Repository.LocalPath)/build_x64/tests/clds_sorted_list_perf/RelWithDebInfo/clds_sorted_list_perf.exe
+
+     echo Running Lock free set perf test
+     $(Build.Repository.LocalPath)/build_x64/tests/lock_free_set_perf/RelWithDebInfo/lock_free_set_perf.exe
+     
+    workingDirectory: 'build_x64'
+    displayName: 'Run perf tests'
