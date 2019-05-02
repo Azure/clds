@@ -2,9 +2,6 @@
 
 #define GBALLOC_H
 
-#define clds_st_hash_set_create real_clds_st_hash_set_create
-#define clds_st_hash_set_destroy real_clds_st_hash_set_destroy
-#define clds_st_hash_set_insert real_clds_st_hash_set_insert
-#define clds_st_hash_set_find real_clds_st_hash_set_find
+#include "real_clds_st_hash_set_renames.h"
 
 #include "../src/clds_st_hash_set.c"

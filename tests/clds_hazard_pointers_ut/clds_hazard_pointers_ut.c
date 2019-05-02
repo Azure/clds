@@ -185,6 +185,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    (void)clds_hazard_pointers_set_reclaim_threshold(clds_hazard_pointers, 1);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
@@ -192,6 +193,12 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
 
     // act
     clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1, test_reclaim_func);
@@ -208,11 +215,18 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_r
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    (void)clds_hazard_pointers_set_reclaim_threshold(clds_hazard_pointers, 1);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     void* pointer_1 = (void*)0x4242;
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(test_reclaim_func(pointer_1));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
 
     // act
     clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1, test_reclaim_func);

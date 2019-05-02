@@ -965,6 +965,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
@@ -1153,6 +1154,7 @@ TEST_FUNCTION(delete_looks_in_2_buckets)
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
@@ -1197,6 +1199,7 @@ TEST_FUNCTION(delete_looks_in_3_buckets)
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
@@ -1266,6 +1269,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key_and_stamps_the_sequence_no)
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
     STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, &delete_seq_no));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, &delete_seq_no);

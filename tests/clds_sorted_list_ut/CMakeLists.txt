@@ -15,7 +15,9 @@ set(${theseTestsName}_c_files
 
 set(${theseTestsName}_h_files
 ../reals/real_clds_st_hash_set.h
+../reals/real_clds_st_hash_set_renames.h
 ../reals/real_clds_hazard_pointers.h
+../reals/real_clds_hazard_pointers_renames.h
 )
 
 build_c_test_artifacts(${theseTestsName} ON "tests/clds_tests")
