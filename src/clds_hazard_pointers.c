@@ -181,7 +181,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
     clds_hazard_pointers = (CLDS_HAZARD_POINTERS_HANDLE)malloc(sizeof(CLDS_HAZARD_POINTERS));
     if (clds_hazard_pointers == NULL)
     {
-        LogError("Cannot allocate memory for hazard pointers");
+        LogError("malloc failed");
     }
     else
     {
@@ -196,7 +196,7 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
 {
     if (clds_hazard_pointers == NULL)
     {
-        LogError("NULL clds_hazard_pointers");
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p", clds_hazard_pointers);
     }
     else
     {
@@ -241,7 +241,7 @@ CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZ
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)malloc(sizeof(CLDS_HAZARD_POINTERS_THREAD));
     if (clds_hazard_pointers_thread == NULL)
     {
-        LogError("Failed allocating memory for hazard pointer thread");
+        LogError("malloc failed");
     }
     else
     {
@@ -276,7 +276,7 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
 {
     if (clds_hazard_pointers_thread == NULL)
     {
-        LogError("NULL clds_hazard_pointers_thread");
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p", clds_hazard_pointers_thread);
     }
     else
     {
@@ -293,7 +293,8 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
 
     if (clds_hazard_pointers_thread == NULL)
     {
-        LogError("NULL clds_hazard_pointers_thread");
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* node=%p",
+            clds_hazard_pointers_thread, node);
         result = NULL;
     }
     else
@@ -374,7 +375,8 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
 {
     if (clds_hazard_pointer_record == NULL)
     {
-        LogError("NULL hazard pointer");
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer_record=%p",
+            clds_hazard_pointers_thread, clds_hazard_pointer_record);
     }
     else
     {
@@ -415,10 +417,13 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
 
 void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node, RECLAIM_FUNC reclaim_func)
 {
-    if ((clds_hazard_pointers_thread == NULL) ||
-        (node == NULL))
+    if (
+        (clds_hazard_pointers_thread == NULL) ||
+        (node == NULL)
+        )
     {
-        LogError("NULL node");
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* node=%p, RECLAIM_FUNC reclaim_func=%p",
+            clds_hazard_pointers_thread, node, reclaim_func);
     }
     else
     {
@@ -449,8 +454,10 @@ int clds_hazard_pointers_set_reclaim_threshold(CLDS_HAZARD_POINTERS_HANDLE clds_
 {
     int result;
 
-    if ((clds_hazard_pointers == NULL) ||
-        (reclaim_threshold == 0))
+    if (
+        (clds_hazard_pointers == NULL) ||
+        (reclaim_threshold == 0)
+        )
     {
         LogError("Invalid arguments: clds_hazard_pointers = %p, reclaim_threshold = %zu",
             clds_hazard_pointers, reclaim_threshold);

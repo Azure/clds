@@ -240,7 +240,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
     /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_003: [ If clds_hazard_pointers is NULL, clds_singly_linked_list_create shall fail and return NULL. ]*/
     if (clds_hazard_pointers == NULL)
     {
-        LogError("NULL clds_hazard_pointers");
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p", clds_hazard_pointers);
         clds_singly_linked_list = NULL;
     }
     else
@@ -269,7 +269,7 @@ void clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_
     if (clds_singly_linked_list == NULL)
     {
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_005: [ If clds_singly_linked_list is NULL, clds_singly_linked_list_destroy shall return. ]*/
-        LogError("NULL clds_singly_linked_list");
+        LogError("Invalid arguments: CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list=%p", clds_singly_linked_list);
     }
     else
     {
@@ -307,8 +307,8 @@ int clds_singly_linked_list_insert(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_li
         (clds_hazard_pointers_thread == NULL)
         )
     {
-        LogError("Invalid arguments: clds_singly_linked_list = %p, item = %p, clds_hazard_pointers_thread = %p",
-            clds_singly_linked_list, item, clds_hazard_pointers_thread);
+        LogError("Invalid arguments: CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_SINGLY_LINKED_LIST_ITEM* item=%p",
+            clds_singly_linked_list, clds_hazard_pointers_thread, item);
         result = MU_FAILURE;
     }
     else
@@ -351,7 +351,7 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete(CLDS_SINGLY
         (item == NULL)
         )
     {
-        LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item = %p",
+        LogError("Invalid arguments: CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_SINGLY_LINKED_LIST_ITEM* item=%p",
             clds_singly_linked_list, clds_hazard_pointers_thread, item);
         result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
     }
@@ -379,8 +379,8 @@ CLDS_SINGLY_LINKED_LIST_DELETE_RESULT clds_singly_linked_list_delete_if(CLDS_SIN
         (item_compare_callback == NULL)
         )
     {
-        LogError("Invalid arguments: clds_singly_linked_list = %p, clds_hazard_pointers_thread = %p, item_compare_callback = %p",
-            clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback);
+        LogError("Invalid arguments: CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback=%p, void* item_compare_callback_context=%p",
+            clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback, item_compare_callback_context);
         result = CLDS_SINGLY_LINKED_LIST_DELETE_ERROR;
     }
     else
@@ -407,8 +407,8 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
         (item_compare_callback == NULL)
         )
     {
-        LogError("Invalid arguments: clds_singly_linked_list = %p, item_compare_callback = %p",
-            clds_singly_linked_list, item_compare_callback);
+        LogError("Invalid arguments: CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, SINGLY_LINKED_LIST_ITEM_COMPARE_CB item_compare_callback=%p, void* item_compare_callback_context=%p",
+            clds_singly_linked_list, clds_hazard_pointers_thread, item_compare_callback, item_compare_callback_context);
         result = NULL;
     }
     else
@@ -528,7 +528,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
     void* result = malloc(node_size);
     if (result == NULL)
     {
-        LogError("Failed allocating memory");
+        LogError("malloc failed");
     }
     else
     {
@@ -548,7 +548,7 @@ int clds_singly_linked_list_node_inc_ref(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 
     if (item == NULL)
     {
-        LogError("NULL item");
+        LogError("INvalid arguments: CLDS_SINGLY_LINKED_LIST_ITEM* item=%p", item);
         result = MU_FAILURE;
     }
     else
@@ -564,7 +564,7 @@ void clds_singly_linked_list_node_release(CLDS_SINGLY_LINKED_LIST_ITEM* item)
 {
     if (item == NULL)
     {
-        LogError("NULL item");
+        LogError("INvalid arguments: CLDS_SINGLY_LINKED_LIST_ITEM* item=%p", item);
     }
     else
     {

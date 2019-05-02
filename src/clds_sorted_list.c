@@ -557,16 +557,18 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_059: [ start_sequence_number shall be allowed to be NULL, in which case no order shall be provided for the operations. ]*/
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_003: [ If clds_hazard_pointers is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
-    if ((clds_hazard_pointers == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SORTED_LIST_01_003: [ If clds_hazard_pointers is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
+        (clds_hazard_pointers == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_045: [ If get_item_key_cb is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
         (get_item_key_cb == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_046: [ If key_compare_cb is NULL, clds_sorted_list_create shall fail and return NULL. ]*/
         (key_compare_cb == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_078: [ If start_sequence_number is NULL, then skipped_seq_no_cb must also be NULL, otherwise clds_sorted_list_create shall fail and return NULL. ]*/
-        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL)))
+        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL))
+        )
     {
-        LogError("Invalid arguments: clds_hazard_pointers = %p, get_item_key_cb = %p, get_item_key_cb_context = %p, key_compare_cb = %p, key_compare_cb_context = %p, start_sequence_number = %p, skipped_seq_no_cb = %p, skipped_seq_no_cb_context = %p",
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb=%p, void* get_item_key_cb_context=%p, SORTED_LIST_KEY_COMPARE_CB key_compare_cb=%p, void* key_compare_cb_context=%p, volatile int64_t* start_sequence_number=%p, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb=%p, void* skipped_seq_no_cb_context=%p",
             clds_hazard_pointers, get_item_key_cb, get_item_key_cb_context, key_compare_cb, key_compare_cb_context, start_sequence_number, skipped_seq_no_cb, skipped_seq_no_cb_context);
         clds_sorted_list = NULL;
     }
@@ -577,7 +579,7 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
         if (clds_sorted_list == NULL)
         {
             /* Codes_SRS_CLDS_SORTED_LIST_01_002: [ If any error happens, clds_sorted_list_create shall fail and return NULL. ]*/
-            LogError("Cannot allocate memory for the singly linked list");
+            LogError("malloc failed");
         }
         else
         {
@@ -605,7 +607,7 @@ void clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
     if (clds_sorted_list == NULL)
     {
         /* Codes_SRS_CLDS_SORTED_LIST_01_005: [ If clds_sorted_list is NULL, clds_sorted_list_destroy shall return. ]*/
-        LogError("NULL clds_sorted_list");
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p", clds_sorted_list);
     }
     else
     {
@@ -632,14 +634,16 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
 {
     CLDS_SORTED_LIST_INSERT_RESULT result;
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_011: [ If clds_sorted_list is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
-    if ((clds_sorted_list == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SORTED_LIST_01_011: [ If clds_sorted_list is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
+        (clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_012: [ If item is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
         (item == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_013: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_062: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL))
+        )
     {
         LogError("Invalid arguments: clds_sorted_list = %p, item = %p, clds_hazard_pointers_thread = %p, sequence_number = %p",
             clds_sorted_list, item, clds_hazard_pointers_thread, sequence_number);
@@ -862,16 +866,18 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HAN
 {
     CLDS_SORTED_LIST_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_015: [ If clds_sorted_list is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
-    if ((clds_sorted_list == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SORTED_LIST_01_015: [ If clds_sorted_list is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
+        (clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_016: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_017: [ If item is NULL, clds_sorted_list_delete_item shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
         (item == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_065: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_delete shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, item = %p, sequence_number = %p",
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_SORTED_LIST_ITEM* item=%p, int64_t* sequence_number=%p",
             clds_sorted_list, clds_hazard_pointers_thread, item, sequence_number);
         result = CLDS_SORTED_LIST_DELETE_ERROR;
     }
@@ -888,16 +894,18 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
 {
     CLDS_SORTED_LIST_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_020: [ If clds_sorted_list is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
-    if ((clds_sorted_list == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_SORTED_LIST_01_020: [ If clds_sorted_list is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
+        (clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_021: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_022: [ If key is NULL, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
         (key == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_068: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_delete_key shall fail and return CLDS_SORTED_LIST_DELETE_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, key = %p, sequence_number = %p",
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, int64_t* sequence_number=%p",
             clds_sorted_list, clds_hazard_pointers_thread, key, sequence_number);
         result = CLDS_SORTED_LIST_DELETE_ERROR;
     }
@@ -915,16 +923,18 @@ CLDS_SORTED_LIST_REMOVE_RESULT clds_sorted_list_remove_key(CLDS_SORTED_LIST_HAND
     CLDS_SORTED_LIST_REMOVE_RESULT result;
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_053: [ If clds_sorted_list is NULL, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
-    if ((clds_sorted_list == NULL) ||
+    if (
+        (clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_055: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_056: [ If key is NULL, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
         (key == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_075: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_sorted_list_create, clds_sorted_list_remove_key shall fail and return CLDS_SORTED_LIST_REMOVE_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, clds_hazard_pointers_thread = %p, key = %p, sequence_number = %p",
-            clds_sorted_list, clds_hazard_pointers_thread, key, sequence_number);
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_SORTED_LIST_ITEM** item=%p, int64_t* sequence_number=%p",
+            clds_sorted_list, clds_hazard_pointers_thread, key, item, sequence_number);
         result = CLDS_SORTED_LIST_REMOVE_ERROR;
     }
     else
@@ -941,14 +951,16 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
     CLDS_SORTED_LIST_ITEM* result;
 
     /* Codes_SRS_CLDS_SORTED_LIST_01_028: [ If clds_sorted_list is NULL, clds_sorted_list_find shall fail and return NULL. ]*/
-    if ((clds_sorted_list == NULL) ||
+    if (
+        (clds_sorted_list == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_030: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_find shall fail and return NULL. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_SORTED_LIST_01_031: [ If key is NULL, clds_sorted_list_find shall fail and return NULL. ]*/
-        (key == NULL))
+        (key == NULL)
+        )
     {
-        LogError("Invalid arguments: clds_sorted_list = %p, key = %p",
-            clds_sorted_list, key);
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p",
+            clds_sorted_list, clds_hazard_pointers_thread, key);
         result = NULL;
     }
     else
@@ -1402,7 +1414,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_node_create(size_t node_size, SORTED_LIS
     void* result = malloc(node_size);
     if (result == NULL)
     {
-        LogError("Failed allocating memory");
+        LogError("malloc failed");
     }
     else
     {
@@ -1422,7 +1434,7 @@ int clds_sorted_list_node_inc_ref(CLDS_SORTED_LIST_ITEM* item)
 
     if (item == NULL)
     {
-        LogError("NULL item");
+        LogError("Invalid arguments: CLDS_SORTED_LIST_ITEM* item=%p", item);
         result = MU_FAILURE;
     }
     else
@@ -1438,7 +1450,7 @@ void clds_sorted_list_node_release(CLDS_SORTED_LIST_ITEM* item)
 {
     if (item == NULL)
     {
-        LogError("NULL item");
+        LogError("Invalid arguments: CLDS_SORTED_LIST_ITEM* item=%p", item);
     }
     else
     {

@@ -5,7 +5,7 @@
 #endif
 
 #include <stdlib.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include "windows.h"
 #include "azure_c_shared_utility/gballoc.h"
@@ -61,7 +61,8 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
 {
     if (context == NULL)
     {
-        LogError("NULL context");
+        LogError("Invalid arguments: void* context=%p, int64_t skipped_sequence_no=%" PRId64,
+            context, skipped_sequence_no);
     }
     else
     {
@@ -124,8 +125,9 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
     /* Codes_S_R_S_CLDS_HASH_TABLE_01_072: [ skipped_seq_no_cb shall be allowed to be NULL. ]*/
     /* Codes_S_R_S_CLDS_HASH_TABLE_01_073: [ skipped_seq_no_cb_context shall be allowed to be NULL. ]*/
 
-    /* Codes_SRS_CLDS_HASH_TABLE_01_003: [ If compute_hash is NULL, clds_hash_table_create shall fail and return NULL. ]*/
-    if ((compute_hash == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_HASH_TABLE_01_003: [ If compute_hash is NULL, clds_hash_table_create shall fail and return NULL. ]*/
+        (compute_hash == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_045: [ If key_compare_func is NULL, clds_hash_table_create shall fail and return NULL. ]*/
         (key_compare_func == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_004: [ If initial_bucket_size is 0, clds_hash_table_create shall fail and return NULL. ]*/
@@ -133,11 +135,12 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
         /* Codes_SRS_CLDS_HASH_TABLE_01_005: [ If clds_hazard_pointers is NULL, clds_hash_table_create shall fail and return NULL. ]*/
         (clds_hazard_pointers == NULL) ||
         /* Codes_S_R_S_CLDS_HASH_TABLE_01_074: [ If start_sequence_number is NULL, then skipped_seq_no_cb must also be NULL, otherwise clds_sorted_list_create shall fail and return NULL. ]*/
-        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL)))
+        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL))
+        )
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, clds_hash_table_create shall fail and return NULL. ]*/
-        LogError("Invalid arguments: compute_hash = %p, key_compare_func = %p, initial_bucket_size = %zu, clds_hazard_pointers = %p, start_sequence_number = %p",
-            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, start_sequence_number);
+        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, size_t initial_bucket_size=%zu, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, volatile int64_t* start_sequence_number=%p, HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb=%p, void* skipped_seq_no_cb_context=%p",
+            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, start_sequence_number, skipped_seq_no_cb, skipped_seq_no_cb_context);
     }
     else
     {
@@ -210,7 +213,7 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     if (clds_hash_table == NULL)
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_007: [ If clds_hash_table is NULL, clds_hash_table_destroy shall return. ]*/
-        LogError("NULL clds_hash_table");
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p", clds_hash_table);
     }
     else
     {
@@ -246,17 +249,19 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 {
     CLDS_HASH_TABLE_INSERT_RESULT result;
 
-    /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If clds_hash_table is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
-    if ((clds_hash_table == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_HASH_TABLE_01_010: [ If clds_hash_table is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
+        (clds_hash_table == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_011: [ If key is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
         (key == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_012: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_062: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, sequence_number = %p",
-            clds_hash_table, key, sequence_number);
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t* sequence_number=%p",
+            clds_hash_table, clds_hazard_pointers_thread, key, value, sequence_number);
         result = CLDS_HASH_TABLE_INSERT_ERROR;
     }
     else
@@ -419,7 +424,7 @@ all_ok:
     return result;
 }
 
-bool find_by_key_value(void* item_compare_context, CLDS_SORTED_LIST_ITEM* item)
+static bool find_by_key_value(void* item_compare_context, CLDS_SORTED_LIST_ITEM* item)
 {
     bool result;
     FIND_BY_KEY_VALUE_CONTEXT* find_by_key_value_context = (FIND_BY_KEY_VALUE_CONTEXT*)item_compare_context;
@@ -442,16 +447,18 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_HASH_TABLE_01_015: [ If clds_hash_table is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
-    if ((clds_hash_table == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_HASH_TABLE_01_015: [ If clds_hash_table is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
+        (clds_hash_table == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_017: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_016: [ If key is NULL, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
         (key == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_066: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_delete shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, sequence_number = %p",
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, int64_t* sequence_number=%p",
             clds_hash_table, key, clds_hazard_pointers_thread, sequence_number);
         result = CLDS_HASH_TABLE_DELETE_ERROR;
     }
@@ -524,12 +531,14 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
 
-    if ((clds_hash_table == NULL) ||
+    if (
+        (clds_hash_table == NULL) ||
         (key == NULL) ||
         (value == NULL) ||
-        (clds_hazard_pointers_thread == NULL))
+        (clds_hazard_pointers_thread == NULL)
+        )
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, value = %p, clds_hazard_pointers_thread = %p, sequence_number = %p",
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t* sequence_number=%p",
             clds_hash_table, key, value, clds_hazard_pointers_thread, sequence_number);
         result = CLDS_HASH_TABLE_DELETE_ERROR;
     }
@@ -593,8 +602,9 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
 {
     CLDS_HASH_TABLE_DELETE_RESULT result;
 
-    /* Codes_SRS_CLDS_HASH_TABLE_01_050: [ If clds_hash_table is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
-    if ((clds_hash_table == NULL) ||
+    if (
+        /* Codes_SRS_CLDS_HASH_TABLE_01_050: [ If clds_hash_table is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
+        (clds_hash_table == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_052: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
         (clds_hazard_pointers_thread == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_051: [ If key is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
@@ -602,9 +612,10 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
         /* Codes_SRS_CLDS_HASH_TABLE_01_056: [ If item is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
         (item == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_070: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, item = %p, sequence_number = %p",
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM** item=%p, int64_t* sequence_number=%p",
             clds_hash_table, key, clds_hazard_pointers_thread, item, sequence_number);
         result = CLDS_HASH_TABLE_REMOVE_ERROR;
     }
@@ -688,9 +699,10 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         /* Codes_SRS_CLDS_HASH_TABLE_01_083: [ If old_item is NULL, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
         (old_item == NULL) ||
         /* Codes_SRS_CLDS_HASH_TABLE_01_084: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
-        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL)))
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL))
+        )
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p, clds_hazard_pointers_thread = %p, new_item = %p, old_item = %p, sequence_number = %p",
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* new_item=%p, CLDS_HASH_TABLE_ITEM** old_item=%p, int64_t* sequence_number=%p",
             clds_hash_table, key, clds_hazard_pointers_thread, new_item, old_item, sequence_number);
         result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
     }
@@ -839,7 +851,8 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         (key == NULL)
         )
     {
-        LogError("Invalid arguments: clds_hash_table = %p, key = %p", clds_hash_table, key);
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p",
+            clds_hash_table, clds_hazard_pointers_thread, key);
         result = NULL;
     }
     else
@@ -903,9 +916,10 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
 CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context)
 {
     void* result = malloc(node_size);
+
     if (result == NULL)
     {
-        LogError("Failed allocating memory");
+        LogError("malloc failed");
     }
     else
     {
@@ -927,7 +941,7 @@ int clds_hash_table_node_inc_ref(CLDS_HASH_TABLE_ITEM* item)
 
     if (item == NULL)
     {
-        LogError("NULL item");
+        LogError("Invalid arguments: CLDS_HASH_TABLE_ITEM* item=%p", item);
         result = MU_FAILURE;
     }
     else
@@ -950,7 +964,7 @@ void clds_hash_table_node_release(CLDS_HASH_TABLE_ITEM* item)
 {
     if (item == NULL)
     {
-        LogError("NULL item");
+        LogError("Invalid arguments: CLDS_HASH_TABLE_ITEM* item=%p", item);
     }
     else
     {

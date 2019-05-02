@@ -43,11 +43,11 @@ static void internal_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, N
 LOCK_FREE_SET_HANDLE lock_free_set_create(void)
 {
     /* Codes_SRS_LOCK_FREE_SET_01_001: [ lock_free_set_create shall create a lock free set. ] */
-    LOCK_FREE_SET_HANDLE lock_free_set = (LOCK_FREE_SET_HANDLE)malloc(sizeof(LOCK_FREE_SET));
+    LOCK_FREE_SET_HANDLE lock_free_set = malloc(sizeof(LOCK_FREE_SET));
     if (lock_free_set == NULL)
     {
         /* Codes_SRS_LOCK_FREE_SET_01_003: [ If lock_free_set_create fails allocating memory for the set then it shall fail and return NULL. ] */
-        LogError("Cannot create lock free set");
+        LogError("malloc failed");
     }
     else
     {
@@ -79,11 +79,13 @@ int lock_free_set_insert(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
 {
     int result;
 
-    if ((lock_free_set == NULL) ||
-        (item == NULL))
-    {
+    if (
         /* Codes_SRS_LOCK_FREE_SET_01_011: [ If lock_free_set or item is NULL, lock_free_set_insert shall fail and return a non-zero value. ]*/
-        LogError("Bad arguments: lock_free_set = %p, item = %p",
+        (lock_free_set == NULL) ||
+        (item == NULL)
+        )
+    {
+        LogError("Invalid arguments: LOCK_FREE_SET_HANDLE lock_free_set=%p, LOCK_FREE_SET_ITEM* item=%p",
             lock_free_set, item);
         result = MU_FAILURE;
     }
@@ -164,11 +166,13 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
 {
     int result;
 
-    if ((lock_free_set == NULL) ||
-        (item == NULL))
-    {
+    if (
         /* Codes_SRS_LOCK_FREE_SET_01_017: [ If lock_free_set or item is NULL, lock_free_set_remove shall fail and return a non-zero value. ]*/
-        LogError("Bad arguments: lock_free_set = %p, item = %p",
+        (lock_free_set == NULL) ||
+        (item == NULL)
+        )
+    {
+        LogError("Invalid arguments: LOCK_FREE_SET_HANDLE lock_free_set=%p, LOCK_FREE_SET_ITEM* item=%p",
             lock_free_set, item);
         result = MU_FAILURE;
     }
@@ -702,7 +706,8 @@ int lock_free_set_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, NODE
     if (lock_free_set == NULL)
     {
         /* Codes_SRS_LOCK_FREE_SET_01_021: [ If lock_free_set is NULL, lock_free_set_purge_not_thread_safe shall fail and return a non-zero value. ]*/
-        LogError("NULL lock_free_set");
+        LogError("Invalid arguments: LOCK_FREE_SET_HANDLE lock_free_set=%p, NODE_CLEANUP_FUNC node_cleanup_callback=%p, void* context=%p",
+            lock_free_set, node_cleanup_callback, context);
         result = MU_FAILURE;
     }
     else

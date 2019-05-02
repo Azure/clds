@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include "azure_c_shared_utility/gballoc.h"
 #include "azure_c_shared_utility/xlogging.h"
 #include "clds/clds_st_hash_set.h"
@@ -90,8 +89,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
     if (clds_st_hash_set == NULL)
     {
         /* Codes_SRS_CLDS_ST_HASH_SET_01_007: [ If clds_st_hash_set is NULL, clds_st_hash_set_destroy shall return. ]*/
-        LogError("Invalid arguments: clds_st_hash_set=%p",
-            clds_st_hash_set);
+        LogError("Invalid arguments: clds_st_hash_set=%p", clds_st_hash_set);
     }
     else
     {
@@ -123,7 +121,8 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
         /* Codes_SRS_CLDS_ST_HASH_SET_01_010: [ If clds_st_hash_set is NULL, clds_st_hash_set_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
         (clds_st_hash_set == NULL) ||
         /* Codes_SRS_CLDS_ST_HASH_SET_01_011: [ If key is NULL, clds_st_hash_set_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
-        (key == NULL))
+        (key == NULL)
+        )
     {
         LogError("Invalid arguments: CLDS_ST_HASH_SET_HANDLE clds_st_hash_set=%p, void* key=%p", clds_st_hash_set, key);
         result = CLDS_ST_HASH_SET_INSERT_ERROR;
@@ -161,8 +160,10 @@ CLDS_ST_HASH_SET_FIND_RESULT clds_st_hash_set_find(CLDS_ST_HASH_SET_HANDLE clds_
 {
     CLDS_ST_HASH_SET_FIND_RESULT result;
 
-    if ((clds_st_hash_set == NULL) ||
-        (key == NULL))
+    if (
+        (clds_st_hash_set == NULL) ||
+        (key == NULL)
+        )
     {
         LogError("Invalid arguments: CLDS_ST_HASH_SET_HANDLE clds_st_hash_set=%p, void* key=%p", clds_st_hash_set, key);
         result = CLDS_ST_HASH_SET_FIND_ERROR;
