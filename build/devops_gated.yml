@@ -83,7 +83,7 @@ phases:
       arguments: '-C "Debug" -V --output-on-failure'
       workingFolder: 'build_x64'
 
-- phase: windowsx64relwithdebinfo
+- phase: windowsx86relwithdebinfo
   displayName: 'Build Windows x86 RelWithDebInfo'
   queue:
     name: Hosted VS2017
