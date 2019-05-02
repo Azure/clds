@@ -113,11 +113,11 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH
 
 **SRS_CLDS_HASH_TABLE_01_027: [** The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. **]**
 
-**SRS_CLDS_HASH_TABLE_01_072: [** `skipped_seq_no_cb` shall be allowed to be NULL. **]**
+**S_R_S_CLDS_HASH_TABLE_01_072: [** `skipped_seq_no_cb` shall be allowed to be NULL. **]**
 
-**SRS_CLDS_HASH_TABLE_01_073: [** `skipped_seq_no_cb_context` shall be allowed to be NULL. **]**
+**S_R_S_CLDS_HASH_TABLE_01_073: [** `skipped_seq_no_cb_context` shall be allowed to be NULL. **]**
 
-**SRS_CLDS_HASH_TABLE_01_074: [** If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. **]**
+**S_R_S_CLDS_HASH_TABLE_01_074: [** If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `clds_sorted_list_create` shall fail and return NULL. **]**
 
 ### clds_hazard_pointers_destroy
 
@@ -147,11 +147,11 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_038: [** `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_096: [** `clds_hash_table_insert` shall attempt to find the key `key` in all the arrays of buckets except the top level array of buckets one. **]**
+**S_R_S_CLDS_HASH_TABLE_01_096: [** `clds_hash_table_insert` shall attempt to find the key `key` in all the arrays of buckets except the top level array of buckets one. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_097: [** If the key is not found then `clds_hash_table_insert` shall proceed to insert the key/value pair in the top level array of buckets. **]**
+**S_R_S_CLDS_HASH_TABLE_01_097: [** If the key is not found then `clds_hash_table_insert` shall proceed to insert the key/value pair in the top level array of buckets. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_098: [** If the top level array of buckets has changed while looking up the key, the key lookup shall be restarted. **]**
+**S_R_S_CLDS_HASH_TABLE_01_098: [** If the top level array of buckets has changed while looking up the key, the key lookup shall be restarted. **]**
 
 **SRS_CLDS_HASH_TABLE_01_018: [** `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. **]**
 
@@ -169,9 +169,9 @@ Y**SRS_CLDS_HASH_TABLE_01_098: [** If the top level array of buckets has changed
 
 **SRS_CLDS_HASH_TABLE_01_030: [** If the number of items in the list reaches the number of buckets, the number of buckets shall be doubled. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_031: [** When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets. **]**
+**S_R_S_CLDS_HASH_TABLE_01_031: [** When the number of buckets is doubled a new array of buckets shall be allocated and added to the list of array of buckets. **]**
 
-Y**SRS_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
+**S_R_S_CLDS_HASH_TABLE_01_032: [** All new inserts shall be done to this new array of buckets. **]**
 
 **SRS_CLDS_HASH_TABLE_01_059: [** For each insert the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_insert`. **]**
 
@@ -243,13 +243,13 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, const void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
 ```
 
-**SRS_CLDS_HASH_TABLE_01_077: [** `clds_hash_table_set_value` shall set a key value in the hash table and on success it shall return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+**S_R_S_CLDS_HASH_TABLE_01_077: [** `clds_hash_table_set_value` shall set a key value in the hash table and on success it shall return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_078: [** `clds_hash_table_set_value` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+**S_R_S_CLDS_HASH_TABLE_01_078: [** `clds_hash_table_set_value` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
-X**SRS_CLDS_HASH_TABLE_01_079: [** If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_079: [** If `clds_hash_table` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-X**SRS_CLDS_HASH_TABLE_01_080: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_080: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
 X**SRS_CLDS_HASH_TABLE_01_081: [** If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
