@@ -108,6 +108,4 @@ add_library(clds
 
 target_link_libraries(clds aziotsharedutil)
 
-if (${run_unittests})
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
