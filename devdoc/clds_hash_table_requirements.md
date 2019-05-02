@@ -251,21 +251,21 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 
 **SRS_CLDS_HASH_TABLE_01_080: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-X**SRS_CLDS_HASH_TABLE_01_081: [** If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_081: [** If `key` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-X**SRS_CLDS_HASH_TABLE_01_082: [** If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_082: [** If `new_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-X**SRS_CLDS_HASH_TABLE_01_083: [** If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_083: [** If `old_item` is NULL, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-X**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` on the first (topmost) bucket array while passing `key`, `new_item` and `old_item` as arguments.. **]**
+**S_R_S_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` on the first (topmost) bucket array while passing `key`, `new_item` and `old_item` as arguments.. **]**
 
-**SRS_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` succeeds and returns an item in `old_item`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+**S_R_S_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` succeeds and returns an item in `old_item`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
 
-**SRS_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` succeeds and returns NULL in `old_item`, `clds_hash_table_set_value` shall proceed to delete the `key` from all the bucket arrays except the first one (where the key was set). **]**
+**S_R_S_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` succeeds and returns NULL in `old_item`, `clds_hash_table_set_value` shall proceed to delete the `key` from all the bucket arrays except the first one (where the key was set). **]**
 
-**SRS_CLDS_HASH_TABLE_01_095: [** If any error occurs, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+**S_R_S_CLDS_HASH_TABLE_01_095: [** If any error occurs, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
 ### clds_hash_table_find
 
@@ -297,6 +297,6 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE
 static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequence_no)
 ```
 
-**SRS_CLDS_HASH_TABLE_01_075: [** `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. **]**
+**S_R_S_CLDS_HASH_TABLE_01_075: [** `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. **]**
 
-**SRS_CLDS_HASH_TABLE_01_076: [** `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. **]**
+**S_R_S_CLDS_HASH_TABLE_01_076: [** `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. **]**
