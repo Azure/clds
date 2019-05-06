@@ -61,11 +61,13 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
 {
     if (context == NULL)
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_01_075: [ `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. ]*/
         LogError("Invalid arguments: void* context=%p, int64_t skipped_sequence_no=%" PRId64,
             context, skipped_sequence_no);
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_01_076: [ `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. ]*/
         CLDS_HASH_TABLE_HANDLE clds_hash_table = (CLDS_HASH_TABLE_HANDLE)context;
         clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, skipped_sequence_no);
     }

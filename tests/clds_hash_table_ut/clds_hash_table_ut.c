@@ -2129,4 +2129,72 @@ TEST_FUNCTION(clds_hash_table_set_value_with_non_NULL_sequence_number_when_a_sta
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_1);
 }
 
+/* on_sorted_list_skipped_seq_no */
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_075: [ `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. ]*/
+TEST_FUNCTION(on_sorted_list_skipped_seq_no_with_NULL_returns)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    SORTED_LIST_SKIPPED_SEQ_NO_CB test_on_sorted_list_skipped_seq_no;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+        .CaptureArgumentValue_skipped_seq_no_cb(&test_on_sorted_list_skipped_seq_no);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    test_on_sorted_list_skipped_seq_no(NULL, 1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_076: [ `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. ]*/
+TEST_FUNCTION(on_sorted_list_skipped_seq_no_calls_the_hash_table_skipped_seq_no)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    SORTED_LIST_SKIPPED_SEQ_NO_CB test_on_sorted_list_skipped_seq_no;
+    void* test_on_sorted_list_skipped_seq_no_context;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+        .CaptureArgumentValue_skipped_seq_no_cb(&test_on_sorted_list_skipped_seq_no)
+        .CaptureArgumentValue_skipped_seq_no_cb_context(&test_on_sorted_list_skipped_seq_no_context);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_skipped_seq_no_cb(NULL, 1));
+
+    // act
+    test_on_sorted_list_skipped_seq_no(test_on_sorted_list_skipped_seq_no_context, 1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 END_TEST_SUITE(clds_hash_table_unittests)

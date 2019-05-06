@@ -297,6 +297,6 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE
 static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequence_no)
 ```
 
-**S_R_S_CLDS_HASH_TABLE_01_075: [** `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. **]**
+**SRS_CLDS_HASH_TABLE_01_075: [** `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. **]**
 
-**S_R_S_CLDS_HASH_TABLE_01_076: [** `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. **]**
+**SRS_CLDS_HASH_TABLE_01_076: [** `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. **]**
