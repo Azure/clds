@@ -1,11 +1,10 @@
 name: $(BuildID)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 resources:
 - repo: self
-phases:
-
-- phase: windowsx64debug
+jobs:
+- job: windowsx64debug
   displayName: 'Build Windows x64 Debug'
-  queue:
+  pool:
     name: Hosted VS2017
     demands:
     - Cmd
@@ -83,9 +82,9 @@ phases:
       arguments: '-C "Debug" -V --output-on-failure'
       workingFolder: 'build_x64'
 
-- phase: windowsx86relwithdebinfo
+- job: windowsx86relwithdebinfo
   displayName: 'Build Windows x86 RelWithDebInfo'
-  queue:
+  pool:
     name: Hosted VS2017
     demands:
     - Cmd
@@ -141,9 +140,9 @@ phases:
       vsTestVersion: 15.0
       runTestsInIsolation: true
 
-- phase: windowsx86debug
+- job: windowsx86debug
   displayName: 'Build Windows x86 Debug'
-  queue:
+  pool:
     name: Hosted VS2017
     demands:
     - Cmd
@@ -217,8 +216,8 @@ phases:
       arguments: '-C "Debug" -V --output-on-failure'
       workingFolder: 'build_x86'
       
-- phase: Traceability
-  queue:
+- job: Traceability
+  pool:
     name: Hosted VS2017
     demands:
     - Cmd
@@ -270,9 +269,9 @@ phases:
       modifyEnvironment: false
       workingFolder: '$(Build.SourcesDirectory)'
       
-- phase: windowsperf
+- job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64)'
-  queue:
+  pool:
     name: Hosted VS2017
     demands:
     - Cmd
