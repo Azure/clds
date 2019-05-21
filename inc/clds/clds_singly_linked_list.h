@@ -3,17 +3,21 @@
 #ifndef CLDS_SINGLY_LINKED_LIST_H
 #define CLDS_SINGLY_LINKED_LIST_H
 
-#include "windows.h"
-#include "umock_c/umock_c_prod.h"
-#include "macro_utils.h"
-#include "clds_hazard_pointers.h"
-
 #ifdef __cplusplus
 #include <cstdint>
-extern "C" {
 #else
 #include <stdint.h>
 #include <stdbool.h>
+#endif
+
+#include "windows.h"
+
+#include "azure_macro_utils/macro_utils.h"
+#include "clds_hazard_pointers.h"
+
+#include "umock_c/umock_c_prod.h"
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 // handle to the singly linked list
