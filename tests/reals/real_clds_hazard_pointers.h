@@ -3,7 +3,7 @@
 #ifndef REAL_CLDS_HAZARD_POINTERS_H
 #define REAL_CLDS_HAZARD_POINTERS_H
 
-#include "macro_utils.h"
+#include "azure_macro_utils/macro_utils.h"
 #include "clds/clds_hazard_pointers.h"
 
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);
