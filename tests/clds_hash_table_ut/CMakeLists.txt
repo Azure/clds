@@ -15,6 +15,7 @@ set(${theseTestsName}_c_files
 )
 
 set(${theseTestsName}_h_files
+../../inc/clds/clds_hash_table.h
 ../reals/real_clds_st_hash_set.h
 ../reals/real_clds_st_hash_set_renames.h
 ../reals/real_clds_hazard_pointers.h

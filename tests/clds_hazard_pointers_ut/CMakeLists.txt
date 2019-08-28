@@ -13,6 +13,7 @@ set(${theseTestsName}_c_files
 )
 
 set(${theseTestsName}_h_files
+../../inc/clds/clds_hazard_pointers.h
 )
 
 build_c_test_artifacts(${theseTestsName} ON "tests/clds_tests")

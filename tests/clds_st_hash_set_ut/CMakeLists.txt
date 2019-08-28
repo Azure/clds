@@ -12,6 +12,7 @@ set(${theseTestsName}_c_files
 )
 
 set(${theseTestsName}_h_files
+    ../../inc/clds/clds_st_hash_set.h
 )
 
 build_c_test_artifacts(${theseTestsName} ON "tests/clds_tests")
