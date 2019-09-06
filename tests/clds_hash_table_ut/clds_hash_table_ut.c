@@ -953,7 +953,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int result;
+    CLDS_HASH_TABLE_DELETE_RESULT result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, NULL, NULL, NULL);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
@@ -972,7 +972,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, result);
 
     // cleanup
     clds_hash_table_destroy(hash_table);
@@ -1257,7 +1257,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key_and_stamps_the_sequence_no)
     CLDS_HASH_TABLE_HANDLE hash_table;
     volatile int64_t sequence_number = 42;
     int64_t delete_seq_no = 0;
-    int result;
+    CLDS_HASH_TABLE_DELETE_RESULT result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &sequence_number, NULL, NULL);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
@@ -1276,7 +1276,7 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key_and_stamps_the_sequence_no)
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, result);
     ASSERT_ARE_EQUAL(int64_t, 44, delete_seq_no);
 
     // cleanup
