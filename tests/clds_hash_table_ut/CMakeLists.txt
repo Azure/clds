@@ -23,4 +23,4 @@ set(${theseTestsName}_h_files
 ../reals/real_clds_sorted_list.h
 )
 
-build_c_test_artifacts(${theseTestsName} ON "tests/clds_tests")
+build_c_tests(${theseTestsName} ON "tests/clds_tests")

@@ -16,4 +16,4 @@ set(${theseTestsName}_c_files
 set(${theseTestsName}_h_files
 )
 
-build_c_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS aziotsharedutil)
+build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS aziotsharedutil)
