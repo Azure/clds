@@ -7,6 +7,8 @@
 The module provides the following functionality:
 - Inserting items in the hash table
 - Delete an item from the hash table by its key
+- Replace an item in the hash table by its key
+- Find an item in the hash table by its key
 
 All operations can be concurrent with other operations of the same or different kind.
 
@@ -206,6 +208,38 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_
 **SRS_CLDS_HASH_TABLE_01_063: [** For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_key`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_066: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+### clds_hash_table_delete_key_value
+
+```c
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
+```
+
+`clds_hash_table_delete_key_value` deletes a key from the hash table as long as the `value` pointer matches.
+
+**SRS_CLDS_HASH_TABLE_42_001: [** `clds_hash_table_delete_key_value` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_002: [** On success `clds_hash_table_delete_key_value` shall return `CLDS_HASH_TABLE_DELETE_OK`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_003: [** If `clds_hash_table` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_004: [** If `clds_hazard_pointers_thread` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_005: [** If `key` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_006: [** If `value` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_007: [** Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. **]**
+
+**SRS_CLDS_HASH_TABLE_42_008: [** If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete_key_value` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_009: [** If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_010: [** If the element to be deleted is not found in an array of buckets, then `clds_hash_table_delete_key_value` shall look in the next available array of buckets. **]**
+
+**SRS_CLDS_HASH_TABLE_42_011: [** For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_item`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_012: [** If the `sequence_number` argument is non-`NULL`, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
 
 ### clds_hash_table_remove
 

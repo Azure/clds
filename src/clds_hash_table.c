@@ -534,10 +534,16 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
     CLDS_HASH_TABLE_DELETE_RESULT result;
 
     if (
+        /*Codes_SRS_CLDS_HASH_TABLE_42_003: [ If clds_hash_table is NULL, clds_hash_table_delete_key_value shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
         (clds_hash_table == NULL) ||
+        /*Codes_SRS_CLDS_HASH_TABLE_42_005: [ If key is NULL, clds_hash_table_delete_key_value shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
         (key == NULL) ||
+        /*Codes_SRS_CLDS_HASH_TABLE_42_006: [ If value is NULL, clds_hash_table_delete_key_value shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
         (value == NULL) ||
-        (clds_hazard_pointers_thread == NULL)
+        /*Codes_SRS_CLDS_HASH_TABLE_42_004: [ If clds_hazard_pointers_thread is NULL, clds_hash_table_delete_key_value shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /*Codes_SRS_CLDS_HASH_TABLE_42_012: [ If the sequence_number argument is non-NULL, but no start sequence number was specified in clds_hash_table_create, clds_hash_table_delete_key_value shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
+        ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL))
         )
     {
         LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t* sequence_number=%p",
@@ -550,11 +556,13 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
         BUCKET_ARRAY* current_bucket_array;
 
         // compute the hash
+        /*Codes_SRS_CLDS_HASH_TABLE_42_001: [ clds_hash_table_delete_key_value shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
         uint64_t hash = clds_hash_table->compute_hash(key);
 
         result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
 
         // always insert in the first bucket array
+        /*Codes_SRS_CLDS_HASH_TABLE_42_007: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
         current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
@@ -568,11 +576,14 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list == NULL)
                 {
+                    /*Codes_SRS_CLDS_HASH_TABLE_42_008: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_delete_key_value shall return CLDS_HASH_TABLE_DELETE_NOT_FOUND. ]*/
                     result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
                 }
                 else
                 {
                     CLDS_SORTED_LIST_DELETE_RESULT list_delete_result;
+
+                    /*Codes_SRS_CLDS_HASH_TABLE_42_011: [ For each delete the order of the operation shall be computed by passing sequence_number to clds_sorted_list_delete_item. ]*/
                     list_delete_result = clds_sorted_list_delete_item(bucket_list, clds_hazard_pointers_thread, (void*)value, sequence_number);
                     if (list_delete_result == CLDS_SORTED_LIST_DELETE_NOT_FOUND)
                     {
@@ -582,17 +593,20 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
                     {
                         (void)InterlockedDecrement(&current_bucket_array->item_count);
 
+                        /*Codes_SRS_CLDS_HASH_TABLE_42_002: [ On success clds_hash_table_delete_key_value shall return CLDS_HASH_TABLE_DELETE_OK. ]*/
                         result = CLDS_HASH_TABLE_DELETE_OK;
                         break;
                     }
                     else
                     {
+                        /*Codes_SRS_CLDS_HASH_TABLE_42_009: [ If a bucket is identified and the delete of the item from the underlying list fails, clds_hash_table_delete_key_value shall fail and return CLDS_HASH_TABLE_DELETE_ERROR. ]*/
                         result = CLDS_HASH_TABLE_DELETE_ERROR;
                         break;
                     }
                 }
             }
 
+            /*Codes_SRS_CLDS_HASH_TABLE_42_010: [ If the element to be deleted is not found in an array of buckets, then clds_hash_table_delete_key_value shall look in the next available array of buckets. ]*/
             current_bucket_array = next_bucket_array;
         }
     }
