@@ -7,8 +7,16 @@
 The module provides the following functionality:
 - Inserting items in the hash table
 - Delete an item from the hash table by its key
+- Replace an item in the hash table by its key
+- Find an item in the hash table by its key
 
 All operations can be concurrent with other operations of the same or different kind.
+
+This hash table supports taking a snapshot of the current state by blocking all changes to the table and dumping the nodes.
+
+### Future work
+
+The snapshot functionality will be extended in the future so that concurrent operations are possible. This will be done by storing changes during snapshots in a separate structure and then merging after the snapshot completes.
 
 ## Exposed API
 
@@ -74,6 +82,12 @@ MU_DEFINE_ENUM(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALU
 
 MU_DEFINE_ENUM(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
 
+#define CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES \
+    CLDS_HASH_TABLE_SNAPSHOT_OK, \
+    CLDS_HASH_TABLE_SNAPSHOT_ERROR
+
+MU_DEFINE_ENUM(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
+
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_HANDLE, clds_hash_table_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile int64_t*, start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context);
 MOCKABLE_FUNCTION(, void, clds_hash_table_destroy, CLDS_HASH_TABLE_HANDLE, clds_hash_table);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
@@ -82,6 +96,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_va
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, const void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
+
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM** items, uint64_t*, item_count);
 
 // helper APIs for creating/destroying a hash table node
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_node_create, size_t, node_size, HASH_TABLE_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
@@ -145,6 +161,16 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_012: [** If `clds_hazard_pointers_thread` is NULL, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
 
+`clds_hash_table_insert` shall try the following until it acquires a write lock for the table:
+
+ - `clds_hash_table_insert` shall increment the count of pending write operations.
+
+ - If the counter to lock the table for writes is non-zero then:
+
+   - `clds_hash_table_insert` shall decrement the count of pending write operations.
+
+   - `clds_hash_table_insert` shall wait for the counter to lock the table for writes to reach 0 and repeat.
+
 **SRS_CLDS_HASH_TABLE_01_038: [** `clds_hash_table_insert` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
 
 **S_R_S_CLDS_HASH_TABLE_01_096: [** `clds_hash_table_insert` shall attempt to find the key `key` in all the arrays of buckets except the top level array of buckets one. **]**
@@ -177,6 +203,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_insert` shall fail and return `CLDS_HASH_TABLE_INSERT_ERROR`. **]**
 
+`clds_hash_table_insert` shall decrement the count of pending write operations.
+
 ### clds_hash_table_delete
 
 ```c
@@ -195,6 +223,16 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_016: [** If `key` is NULL, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
 
+`clds_hash_table_delete` shall try the following until it acquires a write lock for the table:
+
+ - `clds_hash_table_delete` shall increment the count of pending write operations.
+
+ - If the counter to lock the table for writes is non-zero then:
+
+   - `clds_hash_table_delete` shall decrement the count of pending write operations.
+
+   - `clds_hash_table_delete` shall wait for the counter to lock the table for writes to reach 0 and repeat.
+
 **SRS_CLDS_HASH_TABLE_01_101: [** Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. **]**
 
 **SRS_CLDS_HASH_TABLE_01_023: [** If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. **]**
@@ -206,6 +244,52 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_
 **SRS_CLDS_HASH_TABLE_01_063: [** For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_key`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_066: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+`clds_hash_table_insert` shall decrement the count of pending write operations.
+
+### clds_hash_table_delete_key_value
+
+```c
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
+```
+
+`clds_hash_table_delete_key_value` deletes a key from the hash table as long as the `value` pointer matches.
+
+**SRS_CLDS_HASH_TABLE_42_001: [** `clds_hash_table_delete_key_value` shall hash the key by calling the `compute_hash` function passed to `clds_hash_table_create`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_002: [** On success `clds_hash_table_delete_key_value` shall return `CLDS_HASH_TABLE_DELETE_OK`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_003: [** If `clds_hash_table` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_004: [** If `clds_hazard_pointers_thread` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_005: [** If `key` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_006: [** If `value` is `NULL`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+`clds_hash_table_delete_key_value` shall try the following until it acquires a write lock for the table:
+
+ - `clds_hash_table_delete_key_value` shall increment the count of pending write operations.
+
+ - If the counter to lock the table for writes is non-zero then:
+
+   - `clds_hash_table_delete_key_value` shall decrement the count of pending write operations.
+
+   - `clds_hash_table_delete_key_value` shall wait for the counter to lock the table for writes to reach 0 and repeat.
+
+**SRS_CLDS_HASH_TABLE_42_007: [** Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. **]**
+
+**SRS_CLDS_HASH_TABLE_42_008: [** If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_delete_key_value` shall return `CLDS_HASH_TABLE_DELETE_NOT_FOUND`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_009: [** If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_010: [** If the element to be deleted is not found in an array of buckets, then `clds_hash_table_delete_key_value` shall look in the next available array of buckets. **]**
+
+**SRS_CLDS_HASH_TABLE_42_011: [** For each delete the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_delete_item`. **]**
+
+**SRS_CLDS_HASH_TABLE_42_012: [** If the `sequence_number` argument is non-`NULL`, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_delete_key_value` shall fail and return `CLDS_HASH_TABLE_DELETE_ERROR`. **]**
+
+`clds_hash_table_delete_key_value` shall decrement the count of pending write operations.
 
 ### clds_hash_table_remove
 
@@ -227,6 +311,16 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 
 **SRS_CLDS_HASH_TABLE_01_056: [** If `item` is NULL, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
 
+`clds_hash_table_remove` shall try the following until it acquires a write lock for the table:
+
+ - `clds_hash_table_remove` shall increment the count of pending write operations.
+
+ - If the counter to lock the table for writes is non-zero then:
+
+   - `clds_hash_table_remove` shall decrement the count of pending write operations.
+
+   - `clds_hash_table_remove` shall wait for the counter to lock the table for writes to reach 0 and repeat.
+
 **SRS_CLDS_HASH_TABLE_01_053: [** If the desired key is not found in the hash table (not found in any of the arrays of buckets), `clds_hash_table_remove` shall return `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_054: [** If a bucket is identified and the delete of the item from the underlying list fails, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
@@ -236,6 +330,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 **SRS_CLDS_HASH_TABLE_01_067: [** For each remove the order of the operation shall be computed by passing `sequence_number` to `clds_sorted_list_remove`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_070: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_remove` shall fail and return `CLDS_HASH_TABLE_REMOVE_ERROR`. **]**
+
+`clds_hash_table_remove` shall decrement the count of pending write operations.
 
 ### clds_hash_table_set_value
 
@@ -259,6 +355,16 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 
 **SRS_CLDS_HASH_TABLE_01_084: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_hash_table_create`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
+`clds_hash_table_set_value` shall try the following until it acquires a write lock for the table:
+
+ - `clds_hash_table_set_value` shall increment the count of pending write operations.
+
+ - If the counter to lock the table for writes is non-zero then:
+
+   - `clds_hash_table_set_value` shall decrement the count of pending write operations.
+
+   - `clds_hash_table_set_value` shall wait for the counter to lock the table for writes to reach 0 and repeat.
+
 **S_R_S_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` on the first (topmost) bucket array while passing `key`, `new_item` and `old_item` as arguments.. **]**
 
 **S_R_S_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` succeeds and returns an item in `old_item`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
@@ -266,6 +372,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 **S_R_S_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` succeeds and returns NULL in `old_item`, `clds_hash_table_set_value` shall proceed to delete the `key` from all the bucket arrays except the first one (where the key was set). **]**
 
 **S_R_S_CLDS_HASH_TABLE_01_095: [** If any error occurs, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+`clds_hash_table_set_value` shall decrement the count of pending write operations.
 
 ### clds_hash_table_find
 
@@ -300,3 +408,49 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
 **SRS_CLDS_HASH_TABLE_01_075: [** `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. **]**
 
 **SRS_CLDS_HASH_TABLE_01_076: [** `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. **]**
+
+### clds_hash_table_snapshot
+
+```c
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM** items, uint64_t*, item_count);
+```
+
+`clds_hash_table_snapshot` locks the table for writes and collects all of the items in the table into an array then unlocks the table. During this call, `clds_hash_table_find` will continue to work, but other APIs will block.
+
+If `clds_hash_table` is `NULL` then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`.
+
+If `clds_hazard_pointers_thread` is `NULL` then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`.
+
+If `items` is `NULL` then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`.
+
+If `item_count` is `NULL` then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`.
+
+`clds_hash_table_snapshot` shall increment a counter to lock the table for writes.
+
+`clds_hash_table_snapshot` shall wait for the ongoing write operations to complete.
+
+For each bucket in the array:
+
+ - `clds_hash_table_snapshot` shall call `clds_sorted_list_lock_writes`.
+
+ - `clds_hash_table_snapshot` shall call `clds_sorted_list_get_count` and add to the running total.
+
+ - If the addition of the list count causes overflow then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`.
+
+`clds_hash_table_snapshot` shall allocate an array of `CLDS_HASH_TABLE_ITEM*`
+
+For each bucket in the array:
+
+ - `clds_hash_table_snapshot` shall call `clds_sorted_list_get_count`.
+
+ - `clds_hash_table_snapshot` shall call `clds_sorted_list_get_all` with the next portion of the allocated array.
+
+ - `clds_hash_table_snapshot` shall call `clds_sorted_list_unlock_writes`.
+
+`clds_hash_table_snapshot` shall store the allocated array of items in `items`.
+
+`clds_hash_table_snapshot` shall store the count of items in `item_count`.
+
+`clds_hash_table_snapshot` shall decrement the counter to unlock the table for writes.
+
+`clds_hash_table_snapshot` shall succeed and return `CLDS_HASH_TABLE_SNAPSHOT_OK`.
