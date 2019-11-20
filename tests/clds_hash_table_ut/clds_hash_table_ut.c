@@ -1331,7 +1331,7 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_deletes_the_key)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)item, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item, NULL));
     STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
@@ -1548,8 +1548,8 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_looks_in_2_buckets)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
     STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
@@ -1592,9 +1592,9 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_looks_in_3_buckets)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
     STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
@@ -1630,8 +1630,8 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_clds_hash_table_delete_key_va
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_3, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x3, item_3, NULL);
@@ -1667,8 +1667,8 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_clds_hash_table_delete_key_va
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_3, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x1, item_3, NULL);
@@ -1703,7 +1703,7 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_deletes_the_key_and_stamps_the_se
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)item, &delete_seq_no));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item, &delete_seq_no));
     STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
 
     // act
