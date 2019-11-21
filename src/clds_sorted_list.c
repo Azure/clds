@@ -1,8 +1,11 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include <stdlib.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdbool.h>
+
+#include "windows.h"
+
 #include "azure_c_shared_utility/gballoc.h"
 #include "azure_c_shared_utility/xlogging.h"
 #include "clds/clds_sorted_list.h"
@@ -22,6 +25,10 @@ typedef struct CLDS_SORTED_LIST_TAG
     volatile LONG64* sequence_number;
     SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb;
     void* skipped_seq_no_cb_context;
+
+    // Support for locking the list for writes
+    volatile LONG locked_for_write;
+    volatile LONG pending_write_operations;
 } CLDS_SORTED_LIST;
 
 typedef int(*SORTED_LIST_ITEM_COMPARE_CB)(void* context, CLDS_SORTED_LIST_ITEM* item1, void* item_compare_target);
@@ -70,6 +77,55 @@ static void internal_node_destroy(CLDS_SORTED_LIST_ITEM* item)
 static void reclaim_list_node(void* node)
 {
     internal_node_destroy((CLDS_SORTED_LIST_ITEM*)node);
+}
+
+static void check_lock_and_begin_write_operation(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
+{
+    ULONG locked_for_write;
+    do
+    {
+        (void)InterlockedIncrement(&clds_sorted_list->pending_write_operations);
+        locked_for_write = InterlockedAdd(&clds_sorted_list->locked_for_write, 0);
+        if (locked_for_write != 0)
+        {
+            (void)InterlockedDecrement(&clds_sorted_list->pending_write_operations);
+            WakeByAddressAll((void*)&clds_sorted_list->pending_write_operations);
+
+            // Wait for unlock
+            (void)WaitOnAddress(&clds_sorted_list->locked_for_write, &locked_for_write, sizeof(locked_for_write), INFINITE);
+        }
+    } while (locked_for_write != 0);
+}
+
+static void end_write_operation(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
+{
+    (void)InterlockedDecrement(&clds_sorted_list->pending_write_operations);
+    WakeByAddressAll((void*)&clds_sorted_list->pending_write_operations);
+}
+
+static void internal_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
+{
+    /*Codes_SRS_CLDS_SORTED_LIST_42_031: [ clds_sorted_list_lock_writes shall increment a counter to lock the list for writes. ]*/
+    (void)InterlockedIncrement(&clds_sorted_list->locked_for_write);
+
+    /*Codes_SRS_CLDS_SORTED_LIST_42_032: [ clds_sorted_list_lock_writes shall wait for all pending write operations to complete. ]*/
+    ULONG pending_writes;
+    do
+    {
+        pending_writes = InterlockedAdd(&clds_sorted_list->pending_write_operations, 0);
+        if (pending_writes != 0)
+        {
+            // Wait for writes
+            (void)WaitOnAddress(&clds_sorted_list->pending_write_operations, &pending_writes, sizeof(pending_writes), INFINITE);
+        }
+    } while (pending_writes != 0);
+}
+
+static void internal_unlock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
+{
+    /*Codes_SRS_CLDS_SORTED_LIST_42_034: [ clds_sorted_list_lock_writes shall decrement a counter to unlock the list for writes. ]*/
+    (void)InterlockedDecrement(&clds_sorted_list->locked_for_write);
+    WakeByAddressAll((void*)&clds_sorted_list->locked_for_write);
 }
 
 static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_target, int64_t* sequence_number)
@@ -592,6 +648,9 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             clds_sorted_list->skipped_seq_no_cb = skipped_seq_no_cb;
             clds_sorted_list->skipped_seq_no_cb_context = skipped_seq_no_cb_context;
 
+            (void)InterlockedExchange(&clds_sorted_list->locked_for_write, 0);
+            (void)InterlockedExchange(&clds_sorted_list->pending_write_operations, 0);
+
             /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ start_sequence_number shall be used by the sorted list to compute the sequence number of each operation. ]*/
             clds_sorted_list->sequence_number = start_sequence_number;
 
@@ -623,7 +682,7 @@ void clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
             /* Codes_SRS_CLDS_SORTED_LIST_01_041: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the freed items. ]*/
             internal_node_destroy(current_item);
             current_item = next_item;
-        } 
+        }
 
         /* Codes_SRS_CLDS_SORTED_LIST_01_004: [ clds_sorted_list_destroy shall free all resources associated with the sorted list instance. ]*/
         free(clds_sorted_list);
@@ -651,6 +710,13 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
     }
     else
     {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_001: [ clds_sorted_list_insert shall try the following until it acquires a write lock for the list: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_002: [ clds_sorted_list_insert shall increment the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_003: [ If the counter to lock the list for writes is non-zero then: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_004: [ clds_sorted_list_insert shall decrement the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_005: [ clds_sorted_list_insert shall wait for the counter to lock the list for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_sorted_list);
+
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
 
@@ -857,6 +923,9 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                 }
             } while (1);
         } while (restart_needed);
+
+        /*Codes_SRS_CLDS_SORTED_LIST_42_051: [ clds_sorted_list_insert shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_sorted_list);
     }
 
     return result;
@@ -883,8 +952,18 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_item(CLDS_SORTED_LIST_HAN
     }
     else
     {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_006: [ clds_sorted_list_delete_item shall try the following until it acquires a write lock for the list: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_007: [ clds_sorted_list_delete_item shall increment the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_008: [ If the counter to lock the list for writes is non-zero then: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_009: [ clds_sorted_list_delete_item shall decrement the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_010: [ clds_sorted_list_delete_item shall wait for the counter to lock the list for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_sorted_list);
+
         /* Codes_SRS_CLDS_SORTED_LIST_01_014: [ clds_sorted_list_delete_item shall delete an item from the list by its pointer. ]*/
         result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_ptr, item, sequence_number);
+
+        /*Codes_SRS_CLDS_SORTED_LIST_42_011: [ clds_sorted_list_delete_item shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_sorted_list);
     }
 
     return result;
@@ -911,8 +990,18 @@ CLDS_SORTED_LIST_DELETE_RESULT clds_sorted_list_delete_key(CLDS_SORTED_LIST_HAND
     }
     else
     {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_012: [ clds_sorted_list_delete_key shall try the following until it acquires a write lock for the list: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_013: [ clds_sorted_list_delete_key shall increment the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_014: [ If the counter to lock the list for writes is non-zero then: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_015: [ clds_sorted_list_delete_key shall decrement the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_016: [ clds_sorted_list_delete_key shall wait for the counter to lock the list for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_sorted_list);
+
         /* Codes_SRS_CLDS_SORTED_LIST_01_019: [ clds_sorted_list_delete_key shall delete an item by its key. ]*/
         result = internal_delete(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key, sequence_number);
+
+        /*Codes_SRS_CLDS_SORTED_LIST_42_017: [ clds_sorted_list_delete_key shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_sorted_list);
     }
 
     return result;
@@ -939,8 +1028,18 @@ CLDS_SORTED_LIST_REMOVE_RESULT clds_sorted_list_remove_key(CLDS_SORTED_LIST_HAND
     }
     else
     {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_018: [ clds_sorted_list_remove_key shall try the following until it acquires a write lock for the list: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_019: [ clds_sorted_list_remove_key shall increment the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_020: [ If the counter to lock the list for writes is non-zero then: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_021: [ clds_sorted_list_remove_key shall decrement the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_022: [ clds_sorted_list_remove_key shall wait for the counter to lock the list for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_sorted_list);
+
         /* Codes_SRS_CLDS_SORTED_LIST_01_051: [ clds_sorted_list_remove_key shall delete an item by its key and return the pointer to the deleted item. ]*/
         result = internal_remove(clds_sorted_list, clds_hazard_pointers_thread, compare_item_by_key, key, item, sequence_number);
+
+        /*Codes_SRS_CLDS_SORTED_LIST_42_023: [ clds_sorted_list_remove_key shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_sorted_list);
     }
 
     return result;
@@ -1099,6 +1198,13 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
     }
     else
     {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_024: [ clds_sorted_list_set_value shall try the following until it acquires a write lock for the list: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_025: [ clds_sorted_list_set_value shall increment the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_026: [ If the counter to lock the list for writes is non-zero then: ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_027: [ clds_sorted_list_set_value shall decrement the count of pending write operations. ]*/
+        /*Codes_SRS_CLDS_SORTED_LIST_42_028: [ clds_sorted_list_set_value shall wait for the counter to lock the list for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_sorted_list);
+
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, new_item);
 
@@ -1402,6 +1508,170 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                 }
             } while (1);
         } while (restart_needed);
+
+        /*Codes_SRS_CLDS_SORTED_LIST_42_029: [ clds_sorted_list_set_value shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_sorted_list);
+    }
+
+    return result;
+}
+
+void clds_sorted_list_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
+{
+    if (clds_sorted_list == NULL)
+    {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_030: [ If clds_sorted_list is NULL then clds_sorted_list_lock_writes shall return. ]*/
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p", clds_sorted_list);
+    }
+    else
+    {
+        internal_lock_writes(clds_sorted_list);
+    }
+}
+
+void clds_sorted_list_unlock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
+{
+    if (clds_sorted_list == NULL)
+    {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_033: [ If clds_sorted_list is NULL then clds_sorted_list_unlock_writes shall return. ]*/
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p", clds_sorted_list);
+    }
+    else
+    {
+        internal_unlock_writes(clds_sorted_list);
+    }
+}
+
+CLDS_SORTED_LIST_GET_COUNT_RESULT clds_sorted_list_get_count(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t* item_count)
+{
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result;
+
+    if (
+        /*Codes_SRS_CLDS_SORTED_LIST_42_035: [ If clds_sorted_list is NULL then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_ERROR. ]*/
+        (clds_sorted_list == NULL) ||
+        /*Codes_SRS_CLDS_SORTED_LIST_42_036: [ If clds_hazard_pointers_thread is NULL then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_ERROR. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /*Codes_SRS_CLDS_SORTED_LIST_42_037: [ If item_count is NULL then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_ERROR. ]*/
+        (item_count == NULL)
+        )
+    {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_038: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED. ]*/
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, uint64_t* item_count=%p",
+            clds_sorted_list, clds_hazard_pointers_thread, item_count);
+        result = CLDS_SORTED_LIST_GET_COUNT_ERROR;
+    }
+    else
+    {
+        if (InterlockedAdd(&clds_sorted_list->locked_for_write, 0) == 0)
+        {
+            /*Codes_SRS_CLDS_SORTED_LIST_42_038: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED. ]*/
+            LogError("Must lock the list before getting the count of items");
+            result = CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED;
+        }
+        else
+        {
+            /*Codes_SRS_CLDS_SORTED_LIST_42_039: [ clds_sorted_list_get_count shall iterate over the items in the list and count them in item_count. ]*/
+            uint64_t count = 0;
+            CLDS_SORTED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL, NULL);
+
+            while (current_item != NULL)
+            {
+                count++;
+                CLDS_SORTED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                current_item = next_item;
+            }
+
+            *item_count = count;
+
+            /*Codes_SRS_CLDS_SORTED_LIST_42_040: [ clds_sorted_list_get_count shall succeed and return CLDS_SORTED_LIST_GET_COUNT_OK. ]*/
+            result = CLDS_SORTED_LIST_GET_COUNT_OK;
+        }
+    }
+
+    return result;
+}
+
+CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t item_count, CLDS_SORTED_LIST_ITEM** items)
+{
+    CLDS_SORTED_LIST_GET_ALL_RESULT result;
+
+    if (
+        /*Codes_SRS_CLDS_SORTED_LIST_42_041: [ If clds_sorted_list is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+        (clds_sorted_list == NULL) ||
+        /*Codes_SRS_CLDS_SORTED_LIST_42_042: [ If clds_hazard_pointers_thread is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /*Codes_SRS_CLDS_SORTED_LIST_42_043: [ If item_count is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+        (item_count == 0) ||
+        /*Codes_SRS_CLDS_SORTED_LIST_42_044: [ If items is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+        (items == NULL)
+        )
+    {
+        /*Codes_SRS_CLDS_SORTED_LIST_42_045: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED. ]*/
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, uint64_t item_count=%" PRIu64 ", CLDS_SORTED_LIST_ITEM* items=%p",
+            clds_sorted_list, clds_hazard_pointers_thread, item_count, items);
+        result = CLDS_SORTED_LIST_GET_ALL_ERROR;
+    }
+    else
+    {
+        if (InterlockedAdd(&clds_sorted_list->locked_for_write, 0) == 0)
+        {
+            /*Codes_SRS_CLDS_SORTED_LIST_42_045: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED. ]*/
+            LogError("Must lock the list before getting all items");
+            result = CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED;
+        }
+        else
+        {
+            result = CLDS_SORTED_LIST_GET_ALL_OK;
+
+            /*Codes_SRS_CLDS_SORTED_LIST_42_046: [ For each item in the list: ]*/
+            uint64_t current_index = 0;
+            CLDS_SORTED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL, NULL);
+
+            while (current_item != NULL)
+            {
+                CLDS_SORTED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+
+                if (current_index + 1 > item_count)
+                {
+                    /*Codes_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE. ]*/
+                    LogError("Attempted to get all items with array of size %" PRIu64 ", but there were at least %" PRIu64 " items in the list (too small)",
+                        item_count, current_index + 1);
+                    result = CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE;
+                    break;
+                }
+
+                /*Codes_SRS_CLDS_SORTED_LIST_42_047: [ clds_sorted_list_get_all shall increment the ref count. ]*/
+                (void)clds_sorted_list_node_inc_ref(current_item);
+
+                /*Codes_SRS_CLDS_SORTED_LIST_42_048: [ clds_sorted_list_get_all shall store the pointer in items. ]*/
+                items[current_index] = current_item;
+
+                current_index++;
+                current_item = next_item;
+            }
+
+            if (current_item != NULL || current_index != item_count)
+            {
+                if (current_index < item_count)
+                {
+                    /*Codes_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE. ]*/
+                    LogError("Attempted to get all items with array of size %" PRIu64 ", but there were %" PRIu64 " items in the list (too large)",
+                        item_count, current_index);
+                    result = CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE;
+                }
+
+                for (uint64_t i = 0; i < current_index; ++i)
+                {
+                    clds_sorted_list_node_release(items[i]);
+                    items[i] = NULL;
+                }
+            }
+            else
+            {
+                /*Codes_SRS_CLDS_SORTED_LIST_42_050: [ clds_sorted_list_get_all shall succeed and return CLDS_SORTED_LIST_GET_ALL_OK. ]*/
+                result = CLDS_SORTED_LIST_GET_ALL_OK;
+            }
+        }
     }
 
     return result;

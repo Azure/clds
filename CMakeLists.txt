@@ -110,6 +110,6 @@ add_library(clds
     ${clds_md_files}
     )
 
-target_link_libraries(clds aziotsharedutil)
+target_link_libraries(clds aziotsharedutil synchronization.lib)
 
 add_subdirectory(tests)

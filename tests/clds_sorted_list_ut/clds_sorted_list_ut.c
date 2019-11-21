@@ -46,6 +46,10 @@ TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RE
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
 
 MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 
@@ -118,6 +122,8 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT);
     REGISTER_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT);
     REGISTER_TYPE(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT);
+    REGISTER_TYPE(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RESULT);
+    REGISTER_TYPE(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT);
 
     REGISTER_UMOCK_ALIAS_TYPE(RECLAIM_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_HANDLE, void*);
@@ -2247,7 +2253,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_deletes_the_oldest_out_of_2_items)
     STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_PTR_ARG)).IgnoreAllCalls();
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_1, IGNORED_PTR_ARG));
-    
+
     // act
     result = clds_sorted_list_remove_key(list, hazard_pointers_thread, (void*)0x42, &removed_item, NULL);
 
@@ -2846,6 +2852,596 @@ TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
     // cleanup
     clds_sorted_list_destroy(list);
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, result);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_sorted_list_lock_writes */
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_030: [ If clds_sorted_list is NULL then clds_sorted_list_lock_writes shall return. ]*/
+TEST_FUNCTION(clds_sorted_list_lock_writes_with_NULL_clds_sorted_list_returns)
+{
+    // act
+    clds_sorted_list_lock_writes(NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+/* clds_sorted_list_unlock_writes */
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_033: [ If clds_sorted_list is NULL then clds_sorted_list_unlock_writes shall return. ]*/
+TEST_FUNCTION(clds_sorted_list_unlock_writes_with_NULL_clds_sorted_list_returns)
+{
+    // act
+    clds_sorted_list_unlock_writes(NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_031: [ clds_sorted_list_lock_writes shall increment a counter to lock the list for writes. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_42_034: [ clds_sorted_list_lock_writes shall decrement a counter to unlock the list for writes. ]*/
+TEST_FUNCTION(clds_sorted_list_lock_then_unlock_works)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+
+    umock_c_reset_all_calls();
+
+    // act
+    clds_sorted_list_lock_writes(list);
+    clds_sorted_list_unlock_writes(list);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_031: [ clds_sorted_list_lock_writes shall increment a counter to lock the list for writes. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_42_034: [ clds_sorted_list_lock_writes shall decrement a counter to unlock the list for writes. ]*/
+TEST_FUNCTION(clds_sorted_list_lock_nests)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+
+    umock_c_reset_all_calls();
+
+    // act
+    clds_sorted_list_lock_writes(list); // 1
+    clds_sorted_list_lock_writes(list); // 2
+    clds_sorted_list_lock_writes(list); // 3
+
+    clds_sorted_list_unlock_writes(list); // 2
+
+    clds_sorted_list_lock_writes(list); // 3
+    clds_sorted_list_unlock_writes(list); // 2
+
+    clds_sorted_list_unlock_writes(list); // 1
+    clds_sorted_list_unlock_writes(list); // 0
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // Insert works after the unlock
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item, NULL);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_sorted_list_get_count */
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_035: [ If clds_sorted_list is NULL then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_with_NULL_clds_sorted_list_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    uint64_t item_count;
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(NULL, hazard_pointers_thread, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_ERROR, result);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_036: [ If clds_hazard_pointers_thread is NULL then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_with_NULL_clds_hazard_pointers_thread_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count;
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(list, NULL, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_ERROR, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_037: [ If item_count is NULL then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_with_NULL_item_count_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(list, hazard_pointers_thread, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_ERROR, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_038: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_without_lock_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count;
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(list, hazard_pointers_thread, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED, result);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_039: [ clds_sorted_list_get_count shall iterate over the items in the list and count them in item_count. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_42_040: [ clds_sorted_list_get_count shall succeed and return CLDS_SORTED_LIST_GET_COUNT_OK. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_with_no_items_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count;
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(list, hazard_pointers_thread, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_OK, result);
+    ASSERT_ARE_EQUAL(uint64_t, 0, item_count);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_039: [ clds_sorted_list_get_count shall iterate over the items in the list and count them in item_count. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_42_040: [ clds_sorted_list_get_count shall succeed and return CLDS_SORTED_LIST_GET_COUNT_OK. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_with_1_item_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count;
+
+    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(list, hazard_pointers_thread, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_OK, result);
+    ASSERT_ARE_EQUAL(uint64_t, 1, item_count);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_42_039: [ clds_sorted_list_get_count shall iterate over the items in the list and count them in item_count. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_42_040: [ clds_sorted_list_get_count shall succeed and return CLDS_SORTED_LIST_GET_COUNT_OK. ]*/
+TEST_FUNCTION(clds_sorted_list_get_count_with_3_items_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count;
+
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_1 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    item_payload_1->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_2 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_payload_2->key = 0x43;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2, NULL);
+
+    CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_3 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_payload_3->key = 0x40;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_3, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_COUNT_RESULT result = clds_sorted_list_get_count(list, hazard_pointers_thread, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_OK, result);
+    ASSERT_ARE_EQUAL(uint64_t, 3, item_count);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_sorted_list_get_all */
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_041: [ If clds_sorted_list is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_NULL_clds_sorted_list_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    uint64_t item_count = 1;
+    CLDS_SORTED_LIST_ITEM* items[1];
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(NULL, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_ERROR, result);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_042: [ If clds_hazard_pointers_thread is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_NULL_clds_hazard_pointers_thread_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 1;
+    CLDS_SORTED_LIST_ITEM* items[1];
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, NULL, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_ERROR, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_043: [ If item_count is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_0_item_count_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 0;
+    CLDS_SORTED_LIST_ITEM* items[1];
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_ERROR, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_044: [ If items is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_NULL_items_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 1;
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_ERROR, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_045: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_without_lock_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 1;
+    CLDS_SORTED_LIST_ITEM* items[1];
+
+    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item, NULL);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED, result);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_046: [ For each item in the list: ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_047: [ clds_sorted_list_get_all shall increment the ref count. ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_048: [ clds_sorted_list_get_all shall store the pointer in items. ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_050: [ clds_sorted_list_get_all shall succeed and return CLDS_SORTED_LIST_GET_ALL_OK. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_1_item_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 1;
+    CLDS_SORTED_LIST_ITEM* items[1];
+    items[0] = NULL;
+
+    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_OK, result);
+
+    ASSERT_IS_NOT_NULL(items[0]);
+    TEST_ITEM* result_item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, items[0]);
+    ASSERT_ARE_EQUAL(uint32_t, 0x42, result_item_payload->key);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, items[0]);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_046: [ For each item in the list: ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_047: [ clds_sorted_list_get_all shall increment the ref count. ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_048: [ clds_sorted_list_get_all shall store the pointer in items. ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_050: [ clds_sorted_list_get_all shall succeed and return CLDS_SORTED_LIST_GET_ALL_OK. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_3_items_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 3;
+    CLDS_SORTED_LIST_ITEM* items[3];
+    items[0] = NULL;
+    items[1] = NULL;
+    items[2] = NULL;
+
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_1 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    item_payload_1->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_2 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_payload_2->key = 0x43;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2, NULL);
+
+    CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_3 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_payload_3->key = 0x40;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_3, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_OK, result);
+
+    ASSERT_IS_NOT_NULL(items[0]);
+    TEST_ITEM* result_item_payload_1 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, items[0]);
+    ASSERT_ARE_EQUAL(uint32_t, 0x40, result_item_payload_1->key);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, items[0]);
+
+    ASSERT_IS_NOT_NULL(items[1]);
+    TEST_ITEM* result_item_payload_2 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, items[1]);
+    ASSERT_ARE_EQUAL(uint32_t, 0x42, result_item_payload_2->key);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, items[1]);
+
+    ASSERT_IS_NOT_NULL(items[2]);
+    TEST_ITEM* result_item_payload_3 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, items[2]);
+    ASSERT_ARE_EQUAL(uint32_t, 0x43, result_item_payload_3->key);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, items[2]);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_3_items_but_item_count_1_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 1;
+    CLDS_SORTED_LIST_ITEM* items[1];
+
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_1 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    item_payload_1->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_2 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    item_payload_2->key = 0x43;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_2, NULL);
+
+    CLDS_SORTED_LIST_ITEM* item_3 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_3 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_3);
+    item_payload_3->key = 0x40;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_3, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE. ]*/
+TEST_FUNCTION(clds_sorted_list_get_all_with_1_item_but_item_count_2_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = real_clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = real_clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, NULL, NULL, NULL);
+    uint64_t item_count = 2;
+    CLDS_SORTED_LIST_ITEM* items[2];
+
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload_1 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    item_payload_1->key = 0x42;
+    (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
+
+    clds_sorted_list_lock_writes(list);
+
+    umock_c_reset_all_calls();
+
+    // act
+    CLDS_SORTED_LIST_GET_ALL_RESULT result = clds_sorted_list_get_all(list, hazard_pointers_thread, item_count, items);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE, result);
+
+    // cleanup
+    clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
