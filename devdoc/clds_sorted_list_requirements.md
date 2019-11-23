@@ -121,7 +121,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_valu
 MOCKABLE_FUNCTION(, void, clds_sorted_list_lock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_unlock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_COUNT_RESULT, clds_sorted_list_get_count, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t*, item_count);
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM*, items);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items);
 
 // helper APIs for creating/destroying a sorted list node
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_node_create, size_t, node_size, SORTED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
@@ -191,15 +191,15 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLD
 
 **SRS_CLDS_SORTED_LIST_01_013: [** If `clds_hazard_pointers_thread` is NULL, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
 
-`clds_sorted_list_insert` shall try the following until it acquires a write lock for the list:
+**SRS_CLDS_SORTED_LIST_42_001: [** `clds_sorted_list_insert` shall try the following until it acquires a write lock for the list: **]**
 
- - `clds_sorted_list_insert` shall increment the count of pending write operations.
+ - **SRS_CLDS_SORTED_LIST_42_002: [** `clds_sorted_list_insert` shall increment the count of pending write operations. **]**
 
- - If the counter to lock the list for writes is non-zero then:
+ - **SRS_CLDS_SORTED_LIST_42_003: [** If the counter to lock the list for writes is non-zero then: **]**
 
-   - `clds_sorted_list_insert` shall decrement the count of pending write operations.
+   - **SRS_CLDS_SORTED_LIST_42_004: [** `clds_sorted_list_insert` shall decrement the count of pending write operations. **]**
 
-   - `clds_sorted_list_insert` shall wait for the counter to lock the list for writes to reach 0 and repeat.
+   - **SRS_CLDS_SORTED_LIST_42_005: [** `clds_sorted_list_insert` shall wait for the counter to lock the list for writes to reach 0 and repeat. **]**
 
 **SRS_CLDS_SORTED_LIST_01_047: [** `clds_sorted_list_insert` shall insert the item at its correct location making sure that items in the list are sorted according to the order given by item keys. **]**
 
@@ -215,9 +215,9 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLD
 
 **SRS_CLDS_SORTED_LIST_01_062: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_insert` shall fail and return `CLDS_SORTED_LIST_INSERT_ERROR`. **]**
 
-`clds_sorted_list_insert` shall decrement the count of pending write operations.
+**SRS_CLDS_SORTED_LIST_42_051: [** `clds_sorted_list_insert` shall decrement the count of pending write operations. **]**
 
-### clds_sorted_list_delete
+### clds_sorted_list_delete_item
 
 ```c
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item, int64_t*, sequence_number);
@@ -233,15 +233,15 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 
 **SRS_CLDS_SORTED_LIST_01_017: [** If `item` is NULL, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-`clds_sorted_list_delete_item` shall try the following until it acquires a write lock for the list:
+**SRS_CLDS_SORTED_LIST_42_006: [** `clds_sorted_list_delete_item` shall try the following until it acquires a write lock for the list: **]**
 
- - `clds_sorted_list_delete_item` shall increment the count of pending write operations.
+ - **SRS_CLDS_SORTED_LIST_42_007: [** `clds_sorted_list_delete_item` shall increment the count of pending write operations. **]**
 
- - If the counter to lock the list for writes is non-zero then:
+ - **SRS_CLDS_SORTED_LIST_42_008: [** If the counter to lock the list for writes is non-zero then: **]**
 
-   - `clds_sorted_list_delete_item` shall decrement the count of pending write operations.
+   - **SRS_CLDS_SORTED_LIST_42_009: [** `clds_sorted_list_delete_item` shall decrement the count of pending write operations. **]**
 
-   - `clds_sorted_list_delete_item` shall wait for the counter to lock the list for writes to reach 0 and repeat.
+   - **SRS_CLDS_SORTED_LIST_42_010: [** `clds_sorted_list_delete_item` shall wait for the counter to lock the list for writes to reach 0 and repeat. **]**
 
 **SRS_CLDS_SORTED_LIST_01_018: [** If the item does not exist in the list, `clds_sorted_list_delete_item` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
 
@@ -255,7 +255,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 
 **SRS_CLDS_SORTED_LIST_01_065: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-`clds_sorted_list_delete_item` shall decrement the count of pending write operations.
+**SRS_CLDS_SORTED_LIST_42_011: [** `clds_sorted_list_delete_item` shall decrement the count of pending write operations. **]**
 
 ### clds_sorted_list_delete_key
 
@@ -275,15 +275,15 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key,
 
 **SRS_CLDS_SORTED_LIST_01_024: [** If the key is not found, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_NOT_FOUND`. **]**
 
-`clds_sorted_list_delete_key` shall try the following until it acquires a write lock for the list:
+**SRS_CLDS_SORTED_LIST_42_012: [** `clds_sorted_list_delete_key` shall try the following until it acquires a write lock for the list: **]**
 
- - `clds_sorted_list_delete_key` shall increment the count of pending write operations.
+ - **SRS_CLDS_SORTED_LIST_42_013: [** `clds_sorted_list_delete_key` shall increment the count of pending write operations. **]**
 
- - If the counter to lock the list for writes is non-zero then:
+ - **SRS_CLDS_SORTED_LIST_42_014: [** If the counter to lock the list for writes is non-zero then: **]**
 
-   - `clds_sorted_list_delete_key` shall decrement the count of pending write operations.
+   - **SRS_CLDS_SORTED_LIST_42_015: [** `clds_sorted_list_delete_key` shall decrement the count of pending write operations. **]**
 
-   - `clds_sorted_list_delete_key` shall wait for the counter to lock the list for writes to reach 0 and repeat.
+   - **SRS_CLDS_SORTED_LIST_42_016: [** `clds_sorted_list_delete_key` shall wait for the counter to lock the list for writes to reach 0 and repeat. **]**
 
 **SRS_CLDS_SORTED_LIST_01_066: [** For each delete key the order of the operation shall be computed based on the start sequence number passed to `clds_sorted_list_create`. **]**
 
@@ -293,7 +293,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key,
 
 **SRS_CLDS_SORTED_LIST_01_068: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_delete_key` shall fail and return `CLDS_SORTED_LIST_DELETE_ERROR`. **]**
 
-`clds_sorted_list_delete_key` shall decrement the count of pending write operations.
+**SRS_CLDS_SORTED_LIST_42_017: [** `clds_sorted_list_delete_key` shall decrement the count of pending write operations. **]**
 
 ### clds_sorted_list_remove_key
 
@@ -313,15 +313,15 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key,
 
 **SRS_CLDS_SORTED_LIST_01_056: [** If `key` is NULL, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
 
-`clds_sorted_list_remove_key` shall try the following until it acquires a write lock for the list:
+**SRS_CLDS_SORTED_LIST_42_018: [** `clds_sorted_list_remove_key` shall try the following until it acquires a write lock for the list: **]**
 
- - `clds_sorted_list_remove_key` shall increment the count of pending write operations.
+ - **SRS_CLDS_SORTED_LIST_42_019: [** `clds_sorted_list_remove_key` shall increment the count of pending write operations. **]**
 
- - If the counter to lock the list for writes is non-zero then:
+ - **SRS_CLDS_SORTED_LIST_42_020: [** If the counter to lock the list for writes is non-zero then: **]**
 
-   - `clds_sorted_list_remove_key` shall decrement the count of pending write operations.
+   - **SRS_CLDS_SORTED_LIST_42_021: [** `clds_sorted_list_remove_key` shall decrement the count of pending write operations. **]**
 
-   - `clds_sorted_list_remove_key` shall wait for the counter to lock the list for writes to reach 0 and repeat.
+   - **SRS_CLDS_SORTED_LIST_42_022: [** `clds_sorted_list_remove_key` shall wait for the counter to lock the list for writes to reach 0 and repeat. **]**
 
 **SRS_CLDS_SORTED_LIST_01_057: [** If the key is not found, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_NOT_FOUND`. **]**
 
@@ -333,7 +333,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key,
 
 **SRS_CLDS_SORTED_LIST_01_075: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_remove_key` shall fail and return `CLDS_SORTED_LIST_REMOVE_ERROR`. **]**
 
-`clds_sorted_list_remove_key` shall decrement the count of pending write operations.
+**SRS_CLDS_SORTED_LIST_42_023: [** `clds_sorted_list_remove_key` shall decrement the count of pending write operations. **]**
 
 ### clds_sorted_list_find_key
 
@@ -375,15 +375,15 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_valu
 
 **SRS_CLDS_SORTED_LIST_01_086: [** If the `sequence_number` argument is non-NULL, but no start sequence number was specified in `clds_sorted_list_create`, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
 
-`clds_sorted_list_set_value` shall try the following until it acquires a write lock for the list:
+**SRS_CLDS_SORTED_LIST_42_024: [** `clds_sorted_list_set_value` shall try the following until it acquires a write lock for the list: **]**
 
- - `clds_sorted_list_set_value` shall increment the count of pending write operations.
+ - **SRS_CLDS_SORTED_LIST_42_025: [** `clds_sorted_list_set_value` shall increment the count of pending write operations. **]**
 
- - If the counter to lock the list for writes is non-zero then:
+ - **SRS_CLDS_SORTED_LIST_42_026: [** If the counter to lock the list for writes is non-zero then: **]**
 
-   - `clds_sorted_list_set_value` shall decrement the count of pending write operations.
+   - **SRS_CLDS_SORTED_LIST_42_027: [** `clds_sorted_list_set_value` shall decrement the count of pending write operations. **]**
 
-   - `clds_sorted_list_set_value` shall wait for the counter to lock the list for writes to reach 0 and repeat.
+   - **SRS_CLDS_SORTED_LIST_42_028: [** `clds_sorted_list_set_value` shall wait for the counter to lock the list for writes to reach 0 and repeat. **]**
 
 **SRS_CLDS_SORTED_LIST_01_087: [** If the `key` entry does not exist in the list, `new_item` shall be inserted at the `key` position. **]**
 
@@ -397,7 +397,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_valu
 
 **SRS_CLDS_SORTED_LIST_01_092: [** If the `sequence_number` argument passed to `clds_sorted_list_set_value` is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. **]**
 
-`clds_sorted_list_set_value` shall decrement the count of pending write operations.
+**SRS_CLDS_SORTED_LIST_42_029: [** `clds_sorted_list_set_value` shall decrement the count of pending write operations. **]**
 
 ### clds_sorted_list_lock_writes
 
@@ -407,11 +407,11 @@ MOCKABLE_FUNCTION(, void, clds_sorted_list_lock_writes, CLDS_SORTED_LIST_HANDLE,
 
 `clds_sorted_list_lock_writes` locks the list for writes. All calls that modify the list (insert, delete) will block until the lock is released. The lock may be taken multiple times concurrently.
 
-If `clds_sorted_list` is `NULL` then `clds_sorted_list_lock_writes` shall return.
+**SRS_CLDS_SORTED_LIST_42_030: [** If `clds_sorted_list` is `NULL` then `clds_sorted_list_lock_writes` shall return. **]**
 
-`clds_sorted_list_lock_writes` shall increment a counter to lock the list for writes.
+**SRS_CLDS_SORTED_LIST_42_031: [** `clds_sorted_list_lock_writes` shall increment a counter to lock the list for writes. **]**
 
-`clds_sorted_list_lock_writes` shall wait for all pending write operations to complete.
+**SRS_CLDS_SORTED_LIST_42_032: [** `clds_sorted_list_lock_writes` shall wait for all pending write operations to complete. **]**
 
 ### clds_sorted_list_unlock_writes
 
@@ -421,9 +421,9 @@ MOCKABLE_FUNCTION(, void, clds_sorted_list_unlock_writes, CLDS_SORTED_LIST_HANDL
 
 `clds_sorted_list_unlock_writes` unlocks the list for writes. Decrements the lock count from `clds_sorted_list_lock_writes`.
 
-If `clds_sorted_list` is `NULL` then `clds_sorted_list_unlock_writes` shall return.
+**SRS_CLDS_SORTED_LIST_42_033: [** If `clds_sorted_list` is `NULL` then `clds_sorted_list_unlock_writes` shall return. **]**
 
-`clds_sorted_list_lock_writes` shall decrement a counter to unlock the list for writes.
+**SRS_CLDS_SORTED_LIST_42_034: [** `clds_sorted_list_lock_writes` shall decrement a counter to unlock the list for writes. **]**
 
 ### clds_sorted_list_get_count
 
@@ -431,47 +431,47 @@ If `clds_sorted_list` is `NULL` then `clds_sorted_list_unlock_writes` shall retu
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_COUNT_RESULT, clds_sorted_list_get_count, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t*, item_count);
 ```
 
-`clds_sorted_list_get_count` gets the count of items in the list. Must call `clds_sorted_list_lock_writes` first.
+`clds_sorted_list_get_count` gets the count of items in the list. Must call `clds_sorted_list_lock_writes` first and leave the list locked until this call returns.
 
-If `clds_sorted_list` is `NULL` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_035: [** If `clds_sorted_list` is `NULL` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_ERROR`. **]**
 
-If `clds_hazard_pointers_thread` is `NULL` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_036: [** If `clds_hazard_pointers_thread` is `NULL` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_ERROR`. **]**
 
-If `item_count` is `NULL` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_037: [** If `item_count` is `NULL` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_ERROR`. **]**
 
-If the counter to lock the list for writes is `0` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED`.
+**SRS_CLDS_SORTED_LIST_42_038: [** If the counter to lock the list for writes is `0` then `clds_sorted_list_get_count` shall fail and return `CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED`. **]**
 
-`clds_sorted_list_get_count` shall iterate over the items in the list and count them in `item_count`.
+**SRS_CLDS_SORTED_LIST_42_039: [** `clds_sorted_list_get_count` shall iterate over the items in the list and count them in `item_count`. **]**
 
-`clds_sorted_list_get_count` shall succeed and return `CLDS_SORTED_LIST_GET_COUNT_OK`.
+**SRS_CLDS_SORTED_LIST_42_040: [** `clds_sorted_list_get_count` shall succeed and return `CLDS_SORTED_LIST_GET_COUNT_OK`. **]**
 
 ### clds_sorted_list_get_all
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM*, items);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items);
 ```
 
 `clds_sorted_list_get_all` copies all items in the list into the `items` while the write lock is held. The array `items` must have `item_count` elements allocated. If the number of items in the list does not match `item_count`, this will fail (caller should get the count first under the same lock).
 
-If `clds_sorted_list` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_041: [** If `clds_sorted_list` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
-If `clds_hazard_pointers_thread` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_042: [** If `clds_hazard_pointers_thread` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
-If `item_count` is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_043: [** If `item_count` is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
-If `items` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`.
+**SRS_CLDS_SORTED_LIST_42_044: [** If `items` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
-If the counter to lock the list for writes is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED`.
+**SRS_CLDS_SORTED_LIST_42_045: [** If the counter to lock the list for writes is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED`. **]**
 
-For each item in the list:
+**SRS_CLDS_SORTED_LIST_42_046: [** For each item in the list: **]**
 
- - `clds_sorted_list_get_all` shall increment the ref count.
+ - **SRS_CLDS_SORTED_LIST_42_047: [** `clds_sorted_list_get_all` shall increment the ref count. **]**
 
- - `clds_sorted_list_get_all` shall store the pointer in `items`.
+ - **SRS_CLDS_SORTED_LIST_42_048: [** `clds_sorted_list_get_all` shall store the pointer in `items`. **]**
 
-If `item_count` does not match the number of items in the list then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE`.
+**SRS_CLDS_SORTED_LIST_42_049: [** If `item_count` does not match the number of items in the list then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE`. **]**
 
-`clds_sorted_list_get_all` shall succeed and return `CLDS_SORTED_LIST_GET_ALL_OK`.
+**SRS_CLDS_SORTED_LIST_42_050: [** `clds_sorted_list_get_all` shall succeed and return `CLDS_SORTED_LIST_GET_ALL_OK`. **]**
 
 ### clds_sorted_list_node_create
 

@@ -18,6 +18,10 @@
         clds_sorted_list_remove_key, \
         clds_sorted_list_find_key, \
         clds_sorted_list_set_value, \
+        clds_sorted_list_lock_writes, \
+        clds_sorted_list_unlock_writes, \
+        clds_sorted_list_get_count, \
+        clds_sorted_list_get_all, \
         clds_sorted_list_node_create, \
         clds_sorted_list_node_inc_ref, \
         clds_sorted_list_node_release \
@@ -40,6 +44,10 @@ CLDS_SORTED_LIST_DELETE_RESULT real_clds_sorted_list_delete_key(CLDS_SORTED_LIST
 CLDS_SORTED_LIST_REMOVE_RESULT real_clds_sorted_list_remove_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_SORTED_LIST_ITEM** item, int64_t* sequence_no);
 CLDS_SORTED_LIST_ITEM* real_clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key);
 CLDS_SORTED_LIST_SET_VALUE_RESULT real_clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, const void* key, CLDS_SORTED_LIST_ITEM* new_item, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number);
+void real_clds_sorted_list_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list);
+void real_clds_sorted_list_unlock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list);
+CLDS_SORTED_LIST_GET_COUNT_RESULT real_clds_sorted_list_get_count(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t* item_count);
+CLDS_SORTED_LIST_GET_ALL_RESULT real_clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t item_count, CLDS_SORTED_LIST_ITEM** items);
 
 // helper APIs for creating/destroying a singly linked list node
 CLDS_SORTED_LIST_ITEM* real_clds_sorted_list_node_create(size_t node_size, SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context);
