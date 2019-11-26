@@ -3,6 +3,11 @@
 #ifndef CLDS_ATOMICS_H
 #define CLDS_ATOMICS_H
 
+#ifdef __cplusplus
+#else
+#include <stdbool.h>
+#endif
+
 #include "umock_c/umock_c_prod.h"
 #include "azure_macro_utils/macro_utils.h"
 
@@ -11,8 +16,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-#else
-#include <stdbool.h>
 #endif
 
 #ifdef __STDC_VERSION__
