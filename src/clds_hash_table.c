@@ -1125,7 +1125,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         else if (temp_item_count > SIZE_MAX / sizeof(CLDS_SORTED_LIST_ITEM*))
         {
             /* Codes_SRS_CLDS_HASH_TABLE_42_062: [ If the number of items multiplied by the size of CLDS_HASH_TABLE_ITEM exceeds SIZE_MAX then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-            LogError("Unable to allocate array of %zu items, requires more than %zu bytes", temp_item_count, SIZE_MAX);
+            LogError("Unable to allocate array of %" PRIu64 " items, requires more than %zu bytes", temp_item_count, SIZE_MAX);
             result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
         }
         else
@@ -1140,12 +1140,12 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
             else
             {
                 /* Codes_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
-                CLDS_SORTED_LIST_ITEM** items_to_return = malloc(sizeof(CLDS_SORTED_LIST_ITEM*) * temp_item_count);
+                CLDS_SORTED_LIST_ITEM** items_to_return = malloc(sizeof(CLDS_SORTED_LIST_ITEM*) * (size_t)temp_item_count);
 
                 if (items_to_return == NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-                    LogError("malloc(%zu) failed for the items to return", sizeof(CLDS_SORTED_LIST_ITEM*) * temp_item_count);
+                    LogError("malloc(%zu) failed for the items to return", sizeof(CLDS_SORTED_LIST_ITEM*) * (size_t)temp_item_count);
                     result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
                 }
                 else
