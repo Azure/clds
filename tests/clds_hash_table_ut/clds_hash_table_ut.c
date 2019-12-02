@@ -1,8 +1,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #ifdef __cplusplus
+#include <cinttypes>
 #include <cstdlib>
 #else
+#include <inttypes.h>
 #include <stdlib.h>
 #endif
 
@@ -21,6 +23,7 @@ void real_free(void* ptr)
 
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_stdint.h"
+#include "umock_c/umock_c_negative_tests.h"
 
 #define ENABLE_MOCKS
 
@@ -53,6 +56,8 @@ TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESU
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
+IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
 
 MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 
@@ -124,6 +129,9 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, real_malloc);
     REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
 
+    REGISTER_GLOBAL_MOCK_FAIL_RETURN(clds_sorted_list_get_count, CLDS_SORTED_LIST_GET_COUNT_ERROR);
+    REGISTER_GLOBAL_MOCK_FAIL_RETURN(clds_sorted_list_get_all, CLDS_SORTED_LIST_GET_ALL_ERROR);
+
     REGISTER_UMOCK_ALIAS_TYPE(RECLAIM_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTER_RECORD_HANDLE, void*);
@@ -144,10 +152,14 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT);
     REGISTER_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT);
     REGISTER_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT);
+    REGISTER_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT);
+
+    ASSERT_ARE_EQUAL(int, 0, umock_c_negative_tests_init());
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
+    umock_c_negative_tests_deinit();
     umock_c_deinit();
 
     TEST_MUTEX_DESTROY(test_serialize_mutex);
@@ -748,7 +760,7 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     umock_c_reset_all_calls();
-    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1))
         .CaptureReturn(&first_hash);
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
     umock_c_reset_all_calls();
@@ -2626,6 +2638,763 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_calls_the_hash_table_skipped_seq_no)
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* clds_hash_table_snapshot */
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_013: [ If clds_hash_table is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_null_clds_hash_table_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(NULL, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
+
+    // cleanup
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_014: [ If clds_hazard_pointers_thread is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_null_clds_hazard_pointers_thread_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, NULL, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_015: [ If items is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_null_items_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    umock_c_reset_all_calls();
+
+    uint64_t item_count;
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, NULL, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_016: [ If item_count is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_null_item_count_fails)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_064: [ If there are no items then clds_hash_table_snapshot shall set items to NULL and item_count to 0 and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_empty_table_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
+
+    ASSERT_ARE_EQUAL(uint64_t, 0, item_count);
+    ASSERT_IS_NULL(items);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
+
+    ASSERT_ARE_EQUAL(uint64_t, 1, item_count);
+    ASSERT_IS_NOT_NULL(items);
+
+    ASSERT_ARE_EQUAL(void_ptr, (void*)item, (void*)items[0]);
+
+    // cleanup
+    for (uint64_t i = 0; i < item_count; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 10, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* original_items[10];
+    bool found_originals[10];
+    uint32_t number_of_items = 10;
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        found_originals[i] = false;
+    }
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
+
+    ASSERT_ARE_EQUAL(uint64_t, number_of_items, item_count);
+    ASSERT_IS_NOT_NULL(items);
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        uint32_t original;
+        for (original = 0; original < 10; original++)
+        {
+            if (!found_originals[original] &&
+                (void*)original_items[original] == (void*)items[i])
+            {
+                found_originals[original] = true;
+                break;
+            }
+        }
+
+        if (original >= number_of_items)
+        {
+            ASSERT_FAIL("The returned item in index %" PRIu32 " was not found in the original", i);
+        }
+    }
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        ASSERT_IS_TRUE(found_originals[i], "should have found the item with index %" PRIu32, i);
+    }
+
+    // cleanup
+    for (uint64_t i = 0; i < item_count; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* original_items[10];
+    bool found_originals[10];
+    uint32_t number_of_items = 10;
+
+    const uint32_t number_of_sorted_lists = 3;
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        found_originals[i] = false;
+    }
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    }
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    }
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
+
+    ASSERT_ARE_EQUAL(uint64_t, number_of_items, item_count);
+    ASSERT_IS_NOT_NULL(items);
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        uint32_t original;
+        for (original = 0; original < number_of_items; original++)
+        {
+            if (!found_originals[original] &&
+                (void*)original_items[original] == (void*)items[i])
+            {
+                found_originals[original] = true;
+                break;
+            }
+        }
+
+        if (original >= number_of_items)
+        {
+            ASSERT_FAIL("The returned item in index %" PRIu32 " was not found in the original", i);
+        }
+    }
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        ASSERT_IS_TRUE(found_originals[i], "should have found the item with index %" PRIu32, i);
+    }
+
+    // cleanup
+    for (uint64_t i = 0; i < item_count; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different_hashes_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* original_items[100];
+    bool found_originals[100];
+    uint32_t number_of_items = 100;
+
+    const uint32_t number_of_sorted_lists = 100;
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+
+        STRICT_EXPECTED_CALL(test_compute_hash((void*)(INT_PTR)(0x1 + i)))
+            .SetReturn(i);
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        found_originals[i] = false;
+        umock_c_reset_all_calls();
+    }
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    }
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    }
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
+
+    ASSERT_ARE_EQUAL(uint64_t, number_of_items, item_count);
+    ASSERT_IS_NOT_NULL(items);
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        uint32_t original;
+        for (original = 0; original < number_of_items; original++)
+        {
+            if (!found_originals[original] &&
+                (void*)original_items[original] == (void*)items[i])
+            {
+                found_originals[original] = true;
+                break;
+            }
+        }
+
+        if (original >= number_of_items)
+        {
+            ASSERT_FAIL("The returned item in index %" PRIu32 " was not found in the original", i);
+        }
+    }
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        ASSERT_IS_TRUE(found_originals[i], "should have found the item with index %" PRIu32, i);
+    }
+
+    // cleanup
+    for (uint64_t i = 0; i < item_count; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_underlying_functions_fail)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 10, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* original_items[10];
+    bool found_originals[10];
+
+    for (uint32_t i = 0; i < 10; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        found_originals[i] = false;
+    }
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+
+    umock_c_negative_tests_snapshot();
+
+    for (size_t i = 0; i < umock_c_negative_tests_call_count(); i++)
+    {
+        if (umock_c_negative_tests_can_call_fail(i))
+        {
+            umock_c_negative_tests_reset();
+            umock_c_negative_tests_fail_call(i);
+
+            // act
+            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+            // assert
+            ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
+        }
+    }
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when_underlying_functions_fail)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* original_items[10];
+    bool found_originals[10];
+
+    const uint32_t number_of_sorted_lists = 3;
+
+    for (uint32_t i = 0; i < 10; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        found_originals[i] = false;
+    }
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    }
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    }
+
+    umock_c_negative_tests_snapshot();
+
+    for (size_t i = 0; i < umock_c_negative_tests_call_count(); i++)
+    {
+        if (umock_c_negative_tests_can_call_fail(i))
+        {
+            umock_c_negative_tests_reset();
+            umock_c_negative_tests_fail_call(i);
+
+            // act
+            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+            // assert
+            ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
+        }
+    }
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_hashes_fails_when_underlying_functions_fail)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* original_items[20];
+    bool found_originals[20];
+    uint32_t number_of_items = 20;
+
+    const uint32_t number_of_sorted_lists = 20;
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+
+        STRICT_EXPECTED_CALL(test_compute_hash((void*)(INT_PTR)(0x1 + i)))
+            .SetReturn(i);
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        found_originals[i] = false;
+        umock_c_reset_all_calls();
+    }
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    }
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+
+    for (uint32_t i = 0; i < number_of_sorted_lists; i++)
+    {
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    }
+
+    umock_c_negative_tests_snapshot();
+
+    for (size_t i = 0; i < umock_c_negative_tests_call_count(); i++)
+    {
+        if (umock_c_negative_tests_can_call_fail(i))
+        {
+            umock_c_negative_tests_reset();
+            umock_c_negative_tests_fail_call(i);
+
+            // act
+            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+            // assert
+            ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
+        }
+    }
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_022: [ If the addition of the list count causes overflow then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_overflow)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
+
+    CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
+
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    uint64_t mocked_item_count_1 = UINT64_MAX / 2 + 1;
+    uint64_t mocked_item_count_2 = UINT64_MAX / 2 + 1;
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+        .CopyOutArgumentBuffer_item_count(&mocked_item_count_1, sizeof(mocked_item_count_1));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+        .CopyOutArgumentBuffer_item_count(&mocked_item_count_2, sizeof(mocked_item_count_2));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_42_062: [ If the number of items multiplied by the size of CLDS_HASH_TABLE_ITEM exceeds SIZE_MAX then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_multiplication_overflow_in_computing_byte_size)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    int64_t start_seq_no;
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+
+    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
+
+    CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
+
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    uint64_t mocked_item_count_1 = SIZE_MAX / sizeof(void*);
+    uint64_t mocked_item_count_2 = 1;
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+        .CopyOutArgumentBuffer_item_count(&mocked_item_count_1, sizeof(mocked_item_count_1));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+        .CopyOutArgumentBuffer_item_count(&mocked_item_count_2, sizeof(mocked_item_count_2));
+
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
 
     // cleanup
     clds_hash_table_destroy(hash_table);

@@ -3,15 +3,17 @@
 #ifndef CLDS_HAZARD_POINTERS_H
 #define CLDS_HAZARD_POINTERS_H
 
-#include "umock_c/umock_c_prod.h"
-
 #ifdef __cplusplus
 #include <cstdint>
 #include <cstddef>
-extern "C" {
 #else
 #include <stdint.h>
 #include <stddef.h>
+#endif
+
+#include "umock_c/umock_c_prod.h"
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef struct CLDS_HAZARD_POINTERS_TAG* CLDS_HAZARD_POINTERS_HANDLE;

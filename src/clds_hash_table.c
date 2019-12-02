@@ -35,6 +35,10 @@ typedef struct CLDS_HASH_TABLE_TAG
     volatile LONG64* sequence_number;
     HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb;
     void* skipped_seq_no_cb_context;
+
+    // Support for locking the list for writes
+    volatile LONG locked_for_write;
+    volatile LONG pending_write_operations;
 } CLDS_HASH_TABLE;
 
 typedef struct FIND_BY_KEY_VALUE_CONTEXT_TAG
@@ -43,6 +47,55 @@ typedef struct FIND_BY_KEY_VALUE_CONTEXT_TAG
     void* value;
     KEY_COMPARE_FUNC key_compare_func;
 } FIND_BY_KEY_VALUE_CONTEXT;
+
+static void check_lock_and_begin_write_operation(CLDS_HASH_TABLE_HANDLE clds_hash_table)
+{
+    ULONG locked_for_write;
+    do
+    {
+        (void)InterlockedIncrement(&clds_hash_table->pending_write_operations);
+        locked_for_write = InterlockedAdd(&clds_hash_table->locked_for_write, 0);
+        if (locked_for_write != 0)
+        {
+            (void)InterlockedDecrement(&clds_hash_table->pending_write_operations);
+            WakeByAddressAll((void*)&clds_hash_table->pending_write_operations);
+
+            // Wait for unlock
+            (void)WaitOnAddress(&clds_hash_table->locked_for_write, &locked_for_write, sizeof(locked_for_write), INFINITE);
+        }
+    } while (locked_for_write != 0);
+}
+
+static void end_write_operation(CLDS_HASH_TABLE_HANDLE clds_hash_table)
+{
+    (void)InterlockedDecrement(&clds_hash_table->pending_write_operations);
+    WakeByAddressAll((void*)&clds_hash_table->pending_write_operations);
+}
+
+static void internal_lock_writes(CLDS_HASH_TABLE_HANDLE clds_hash_table)
+{
+    /*Codes_SRS_CLDS_HASH_TABLE_42_017: [ clds_hash_table_snapshot shall increment a counter to lock the table for writes. ]*/
+    (void)InterlockedIncrement(&clds_hash_table->locked_for_write);
+
+    /*Codes_SRS_CLDS_HASH_TABLE_42_018: [ clds_hash_table_snapshot shall wait for the ongoing write operations to complete. ]*/
+    ULONG pending_writes;
+    do
+    {
+        pending_writes = InterlockedAdd(&clds_hash_table->pending_write_operations, 0);
+        if (pending_writes != 0)
+        {
+            // Wait for writes
+            (void)WaitOnAddress(&clds_hash_table->pending_write_operations, &pending_writes, sizeof(pending_writes), INFINITE);
+        }
+    } while (pending_writes != 0);
+}
+
+static void internal_unlock_writes(CLDS_HASH_TABLE_HANDLE clds_hash_table)
+{
+    /*Codes_SRS_CLDS_HASH_TABLE_42_030: [ clds_hash_table_snapshot shall decrement the counter to unlock the table for writes. ]*/
+    (void)InterlockedDecrement(&clds_hash_table->locked_for_write);
+    WakeByAddressAll((void*)&clds_hash_table->locked_for_write);
+}
 
 static void* get_item_key_cb(void* context, CLDS_SORTED_LIST_ITEM* item)
 {
@@ -76,7 +129,7 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
 static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
 {
     // always insert in the first bucket array
-    BUCKET_ARRAY* first_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+    BUCKET_ARRAY* first_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
     LONG bucket_count = InterlockedAdd(&first_bucket_array->bucket_count, 0);
     while (InterlockedAdd(&first_bucket_array->item_count, 0) >= bucket_count)
     {
@@ -110,7 +163,7 @@ static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
                 // first bucket array changed, drop ours and use the one that was inserted
                 free(new_bucket_array);
 
-                first_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+                first_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
                 bucket_count = InterlockedAdd(&first_bucket_array->bucket_count, 0);
             }
         }
@@ -172,6 +225,9 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
                 clds_hash_table->skipped_seq_no_cb = skipped_seq_no_cb;
                 clds_hash_table->skipped_seq_no_cb_context = skipped_seq_no_cb_context;
 
+                (void)InterlockedExchange(&clds_hash_table->pending_write_operations, 0);
+                (void)InterlockedExchange(&clds_hash_table->locked_for_write, 0);
+
                 /* Codes_SRS_CLDS_HASH_TABLE_01_057: [ start_sequence_number shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. ]*/
                 clds_hash_table->sequence_number = start_sequence_number;
 
@@ -221,10 +277,10 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     {
         LONG i;
 
-        BUCKET_ARRAY* bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        BUCKET_ARRAY* bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&bucket_array->next_bucket, NULL, NULL);
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ clds_hash_table_destroy shall free all resources associated with the hash table instance. ]*/
             for (i = 0; i < bucket_array->bucket_count; i++)
@@ -268,18 +324,25 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_42_032: [ clds_hash_table_insert shall try the following until it acquires a write lock for the table: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_033: [ clds_hash_table_insert shall increment the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_034: [ If the counter to lock the table for writes is non-zero then: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_035: [ clds_hash_table_insert shall decrement the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_036: [ clds_hash_table_insert shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_hash_table);
+
         bool restart_needed;
         CLDS_SORTED_LIST_HANDLE bucket_list = NULL;
         HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, value);
         uint64_t hash;
         BUCKET_ARRAY* current_bucket_array;
-        volatile LONG bucket_count;
+        LONG bucket_count;
         uint64_t bucket_index;
         bool found_in_lower_levels = false;
 
         // find or allocate a new bucket array
         current_bucket_array = get_first_bucket_array(clds_hash_table);
-        bucket_count = current_bucket_array->bucket_count;
+        bucket_count = InterlockedAdd(&current_bucket_array->bucket_count, 0);
 
         (void)InterlockedIncrement(&current_bucket_array->pending_insert_count);
 
@@ -291,7 +354,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
         // check if the key exists in the lover level bucket arrays
         BUCKET_ARRAY* find_bucket_array = current_bucket_array;
-        BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+        BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
 
         if (next_bucket_array != NULL)
         {
@@ -308,9 +371,9 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         find_bucket_array = next_bucket_array;
         while (find_bucket_array != NULL)
         {
-            next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+            next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
 
-            bucket_index = hash % find_bucket_array->bucket_count;
+            bucket_index = hash % InterlockedAdd(&find_bucket_array->bucket_count, 0);
             bucket_list = InterlockedCompareExchangePointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
 
             if (bucket_list != NULL)
@@ -409,20 +472,17 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                 }
                 else
                 {
-                    (void)InterlockedDecrement(&current_bucket_array->pending_insert_count);
-
                     /* Codes_SRS_CLDS_HASH_TABLE_01_009: [ On success clds_hash_table_insert shall return CLDS_HASH_TABLE_INSERT_OK. ]*/
                     result = CLDS_HASH_TABLE_INSERT_OK;
-
-                    goto all_ok;
                 }
             }
         }
 
         (void)InterlockedDecrement(&current_bucket_array->pending_insert_count);
-    }
 
-all_ok:
+        /* Codes_SRS_CLDS_HASH_TABLE_42_063: [ clds_hash_table_insert shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_hash_table);
+    }
     return result;
 }
 
@@ -466,6 +526,13 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_42_037: [ clds_hash_table_delete shall try the following until it acquires a write lock for the table: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_038: [ clds_hash_table_delete shall increment the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_039: [ If the counter to lock the table for writes is non-zero then: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_040: [ clds_hash_table_delete shall decrement the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_041: [ clds_hash_table_delete shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_hash_table);
+
         CLDS_SORTED_LIST_HANDLE bucket_list;
         BUCKET_ARRAY* current_bucket_array;
 
@@ -477,10 +544,10 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
 
         // always delete starting with the first bucket array
         /* Codes_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. ]*/
-        current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
 
             if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
             {
@@ -524,6 +591,9 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
             /* Codes_SRS_CLDS_HASH_TABLE_01_025: [ If the element to be deleted is not found in an array of buckets, then it shall be looked up in the next available array of buckets. ] */
             current_bucket_array = next_bucket_array;
         }
+
+        /* Codes_SRS_CLDS_HASH_TABLE_42_042: [ clds_hash_table_insert shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_hash_table);
     }
 
     return result;
@@ -552,6 +622,13 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_42_043: [ clds_hash_table_delete_key_value shall try the following until it acquires a write lock for the table: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_044: [ clds_hash_table_delete_key_value shall increment the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_045: [ If the counter to lock the table for writes is non-zero then: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_046: [ clds_hash_table_delete_key_value shall decrement the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_047: [ clds_hash_table_delete_key_value shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_hash_table);
+
         CLDS_SORTED_LIST_HANDLE bucket_list;
         BUCKET_ARRAY* current_bucket_array;
 
@@ -563,10 +640,10 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
 
         // always insert in the first bucket array
         /*Codes_SRS_CLDS_HASH_TABLE_42_007: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
-        current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
 
             if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
             {
@@ -609,6 +686,9 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
             /*Codes_SRS_CLDS_HASH_TABLE_42_010: [ If the element to be deleted is not found in an array of buckets, then clds_hash_table_delete_key_value shall look in the next available array of buckets. ]*/
             current_bucket_array = next_bucket_array;
         }
+
+        /* Codes_SRS_CLDS_HASH_TABLE_42_048: [ clds_hash_table_delete_key_value shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_hash_table);
     }
 
     return result;
@@ -637,6 +717,13 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_42_049: [ clds_hash_table_remove shall try the following until it acquires a write lock for the table: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_050: [ clds_hash_table_remove shall increment the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_051: [ If the counter to lock the table for writes is non-zero then: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_052: [ clds_hash_table_remove shall decrement the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_053: [ clds_hash_table_remove shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_hash_table);
+
         CLDS_SORTED_LIST_HANDLE bucket_list;
         BUCKET_ARRAY* current_bucket_array;
 
@@ -649,10 +736,10 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
         result = CLDS_HASH_TABLE_REMOVE_NOT_FOUND;
 
         // always insert in the first bucket array
-        current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
 
             if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
             {
@@ -694,6 +781,9 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
             /* Codes_SRS_CLDS_HASH_TABLE_01_055: [ If the element to be deleted is not found in the biggest array of buckets, then it shall be looked up in the next available array of buckets. ]*/
             current_bucket_array = next_bucket_array;
         }
+
+        /* Codes_SRS_CLDS_HASH_TABLE_42_054: [ clds_hash_table_remove shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_hash_table);
     }
 
     return result;
@@ -724,6 +814,13 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
     }
     else
     {
+        /* Codes_SRS_CLDS_HASH_TABLE_42_055: [ clds_hash_table_set_value shall try the following until it acquires a write lock for the table: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_056: [ clds_hash_table_set_value shall increment the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_057: [ If the counter to lock the table for writes is non-zero then: ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_058: [ clds_hash_table_set_value shall decrement the count of pending write operations. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_42_059: [ clds_hash_table_set_value shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
+        check_lock_and_begin_write_operation(clds_hash_table);
+
         // compute the hash
         uint64_t hash = clds_hash_table->compute_hash(key);
 
@@ -733,7 +830,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         // increment pending inserts count
         (void)InterlockedIncrement(&first_bucket_array->pending_insert_count);
 
-        BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&first_bucket_array->next_bucket, NULL, NULL);
+        BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&first_bucket_array->next_bucket, NULL, NULL);
         if (next_bucket_array != NULL)
         {
             // wait for all outstanding inserts in the lower levels to complete
@@ -815,12 +912,12 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                 }
 
                 // now remove any leftovers in the lower layers
-                current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&first_bucket_array->next_bucket, NULL, NULL);
+                current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&first_bucket_array->next_bucket, NULL, NULL);
                 while (current_bucket_array != NULL)
                 {
                     int64_t remove_seq_no;
                     CLDS_SORTED_LIST_ITEM* removed_old_item;
-                    next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+                    next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
                     bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
                     bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                     if (bucket_list != NULL)
@@ -849,6 +946,9 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         }
 
         (void)InterlockedDecrement(&first_bucket_array->pending_insert_count);
+
+        /* Codes_SRS_CLDS_HASH_TABLE_42_060: [ clds_hash_table_set_value shall decrement the count of pending write operations. ]*/
+        end_write_operation(clds_hash_table);
     }
 
     return result;
@@ -882,10 +982,10 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         uint64_t hash = clds_hash_table->compute_hash(key);
 
         /* Codes_SRS_CLDS_HASH_TABLE_01_041: [ clds_hash_table_find shall look up the key in the biggest array of buckets. ]*/
-        BUCKET_ARRAY* current_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        BUCKET_ARRAY* current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = (BUCKET_ARRAY*)InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
 
             if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
             {
@@ -924,6 +1024,247 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         {
             // all OK
         }
+    }
+
+    return result;
+}
+
+CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM*** items, uint64_t* item_count)
+{
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result;
+
+    if (
+        /* Codes_SRS_CLDS_HASH_TABLE_42_013: [ If clds_hash_table is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+        (clds_hash_table == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_42_014: [ If clds_hazard_pointers_thread is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+        (clds_hazard_pointers_thread == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_42_015: [ If items is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+        (items == NULL) ||
+        /* Codes_SRS_CLDS_HASH_TABLE_42_016: [ If item_count is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+        (item_count == NULL)
+        )
+    {
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_HASH_TABLE_ITEM*** items=%p, uint64_t* item_count=%p",
+            clds_hash_table, clds_hazard_pointers_thread, items, item_count);
+        result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+    }
+    else
+    {
+        internal_lock_writes(clds_hash_table);
+
+        uint64_t temp_item_count = 0;
+        bool failed = false;
+        bool need_to_unlock_all = false;
+
+        /* Codes_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+        BUCKET_ARRAY* current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+        while (current_bucket_array != NULL)
+        {
+            BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+            if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+            {
+                LONG bucket_count = InterlockedAdd(&current_bucket_array->bucket_count, 0);
+                LONG i;
+                for (i = 0; i < bucket_count; i++)
+                {
+                    if (current_bucket_array->hash_table[i] != NULL)
+                    {
+                        /* Codes_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
+                        clds_sorted_list_lock_writes(current_bucket_array->hash_table[i]);
+                        need_to_unlock_all = true;
+
+                        /* Codes_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
+                        uint64_t list_item_count;
+                        CLDS_SORTED_LIST_GET_COUNT_RESULT count_result = clds_sorted_list_get_count(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, &list_item_count);
+                        if (count_result != CLDS_SORTED_LIST_GET_COUNT_OK)
+                        {
+                            /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                            LogError("clds_sorted_list_get_count failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_COUNT_RESULT, count_result));
+                            clds_sorted_list_unlock_writes(current_bucket_array->hash_table[i]);
+                            break;
+                        }
+                        else
+                        {
+                            if (list_item_count + temp_item_count < temp_item_count)
+                            {
+                                /* Codes_SRS_CLDS_HASH_TABLE_42_022: [ If the addition of the list count causes overflow then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                                LogError("overflow in computing total count (%" PRIu64 " + %" PRIu64 ")", temp_item_count, list_item_count);
+                                clds_sorted_list_unlock_writes(current_bucket_array->hash_table[i]);
+                                break;
+                            }
+                            else
+                            {
+                                temp_item_count += list_item_count;
+                            }
+                        }
+                    }
+                }
+
+                if (i < bucket_count)
+                {
+                    for (LONG index_to_clean = 0; index_to_clean < i; index_to_clean++)
+                    {
+                        if (current_bucket_array->hash_table[index_to_clean] != NULL)
+                        {
+                            clds_sorted_list_unlock_writes(current_bucket_array->hash_table[index_to_clean]);
+                        }
+                    }
+                    failed = true;
+                    break;
+                }
+            }
+
+            current_bucket_array = next_bucket_array;
+        }
+
+        if (failed)
+        {
+            result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+        }
+        else if (temp_item_count > SIZE_MAX / sizeof(CLDS_SORTED_LIST_ITEM*))
+        {
+            /* Codes_SRS_CLDS_HASH_TABLE_42_062: [ If the number of items multiplied by the size of CLDS_HASH_TABLE_ITEM exceeds SIZE_MAX then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+            LogError("Unable to allocate array of %" PRIu64 " items, requires more than %zu bytes", temp_item_count, SIZE_MAX);
+            result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+        }
+        else
+        {
+            if (temp_item_count == 0)
+            {
+                /* Codes_SRS_CLDS_HASH_TABLE_42_064: [ If there are no items then clds_hash_table_snapshot shall set items to NULL and item_count to 0 and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+                *items = NULL;
+                *item_count = 0;
+                result = CLDS_HASH_TABLE_SNAPSHOT_OK;
+            }
+            else
+            {
+                /* Codes_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
+                CLDS_SORTED_LIST_ITEM** items_to_return = malloc(sizeof(CLDS_SORTED_LIST_ITEM*) * (size_t)temp_item_count);
+
+                if (items_to_return == NULL)
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                    LogError("malloc(%zu) failed for the items to return", sizeof(CLDS_SORTED_LIST_ITEM*) * (size_t)temp_item_count);
+                    result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+                }
+                else
+                {
+                    uint64_t result_index = 0;
+
+                    /* Codes_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
+                    current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+                    while (current_bucket_array != NULL)
+                    {
+                        BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
+
+                        if (InterlockedAdd(&current_bucket_array->item_count, 0) != 0)
+                        {
+                            LONG bucket_count = InterlockedAdd(&current_bucket_array->bucket_count, 0);
+                            LONG i;
+                            for (i = 0; i < bucket_count; i++)
+                            {
+                                if (current_bucket_array->hash_table[i] != NULL)
+                                {
+                                    if (!failed)
+                                    {
+                                        /* Codes_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
+                                        uint64_t list_item_count;
+                                        CLDS_SORTED_LIST_GET_COUNT_RESULT count_result = clds_sorted_list_get_count(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, &list_item_count);
+                                        if (count_result != CLDS_SORTED_LIST_GET_COUNT_OK)
+                                        {
+                                            /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                                            LogError("clds_sorted_list_get_count failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_COUNT_RESULT, count_result));
+                                            failed = true;
+                                        }
+                                        else
+                                        {
+                                            if (list_item_count == 0)
+                                            {
+                                                // skip
+                                            }
+                                            else
+                                            {
+                                                /* Codes_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
+                                                CLDS_SORTED_LIST_GET_ALL_RESULT get_all_result = clds_sorted_list_get_all(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, list_item_count, items_to_return + result_index);
+                                                if (get_all_result != CLDS_SORTED_LIST_GET_ALL_OK)
+                                                {
+                                                    /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                                                    LogError("clds_sorted_list_get_all failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_ALL_RESULT, get_all_result));
+                                                    failed = true;
+                                                }
+                                                else
+                                                {
+                                                    result_index += list_item_count;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    /* Codes_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+                                    clds_sorted_list_unlock_writes(current_bucket_array->hash_table[i]);
+                                }
+                            }
+                        }
+
+                        current_bucket_array = next_bucket_array;
+                    }
+
+                    need_to_unlock_all = false; // Unlocked
+
+                    if (failed)
+                    {
+                        result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+
+                        for (uint64_t i = 0; i < result_index; i++)
+                        {
+                            clds_sorted_list_node_release(items_to_return[i]);
+                        }
+                        free(items_to_return);
+                    }
+                    else
+                    {
+                        /* Codes_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
+                        *items = (CLDS_HASH_TABLE_ITEM**)items_to_return;
+                        items_to_return = NULL;
+
+                        /* Codes_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
+                        *item_count = result_index;
+
+                        /* Codes_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+                        result = CLDS_HASH_TABLE_SNAPSHOT_OK;
+                    }
+                }
+            }
+        }
+
+        if (need_to_unlock_all)
+        {
+            // Unlock all the lists that have been locked so far
+            // If we only looked at part of the table, the old "current_bucket_array" is already in a cleaned up state
+            // Otherwise it is NULL and we will unlock everything
+            BUCKET_ARRAY* bucket_array_to_clean = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
+            while (bucket_array_to_clean != current_bucket_array)
+            {
+                BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&bucket_array_to_clean->next_bucket, NULL, NULL);
+
+                if (InterlockedAdd(&bucket_array_to_clean->item_count, 0) != 0)
+                {
+                    LONG bucket_count = InterlockedAdd(&bucket_array_to_clean->bucket_count, 0);
+                    for (LONG i = 0; i < bucket_count; i++)
+                    {
+                        if (bucket_array_to_clean->hash_table[i] != NULL)
+                        {
+                            clds_sorted_list_unlock_writes(bucket_array_to_clean->hash_table[i]);
+                        }
+                    }
+                }
+
+                bucket_array_to_clean = next_bucket_array;
+            }
+        }
+
+        internal_unlock_writes(clds_hash_table);
     }
 
     return result;

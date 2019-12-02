@@ -12,6 +12,9 @@
 #include "clds/clds_atomics.h"
 #include "clds/clds_hazard_pointers.h"
 
+MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RESULT_VALUES);
+MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
+
 /* this is a lock free sorted list implementation */
 
 typedef struct CLDS_SORTED_LIST_TAG

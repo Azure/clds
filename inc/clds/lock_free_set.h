@@ -3,12 +3,12 @@
 #ifndef LOCK_FREE_SET_H
 #define LOCK_FREE_SET_H
 
+#include "umock_c/umock_c_prod.h"
+#include "clds/clds_atomics.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "umock_c/umock_c_prod.h"
-#include "clds/clds_atomics.h"
 
 typedef struct LOCK_FREE_SET_TAG* LOCK_FREE_SET_HANDLE;
 
