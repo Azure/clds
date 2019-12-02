@@ -488,6 +488,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
     volatile int64_t sequence_number = 45;
 
@@ -506,9 +507,12 @@ TEST_FUNCTION(clds_hash_table_insert_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     int64_t insert_seq_no;
@@ -528,9 +532,12 @@ TEST_FUNCTION(clds_hash_table_delete_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT insert_result;
     CLDS_HASH_TABLE_DELETE_RESULT delete_result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
@@ -555,9 +562,12 @@ TEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_alrea
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT insert_result;
     CLDS_HASH_TABLE_DELETE_RESULT delete_result;
     // 2 items to force expanding the hash table
@@ -592,9 +602,12 @@ TEST_FUNCTION(clds_hash_table_set_value_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_HASH_TABLE_ITEM* old_item;
@@ -615,9 +628,12 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT insert_result;
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result;
     CLDS_HASH_TABLE_DELETE_RESULT delete_result;
@@ -656,9 +672,12 @@ TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result;
     CLDS_HASH_TABLE_DELETE_RESULT delete_result;
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
@@ -684,9 +703,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_10000_sequential_key_items)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     uint32_t original_count = 10000;
     fill_hash_table_sequentially(hash_table, hazard_pointers_thread, original_count);
@@ -720,9 +742,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     uint32_t original_count = 10000;
     fill_hash_table_sequentially(hash_table, hazard_pointers_thread, original_count);
@@ -773,9 +798,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     uint32_t original_count = 10000;
     fill_hash_table_sequentially(hash_table, hazard_pointers_thread, original_count);
@@ -839,9 +867,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     // Write additional items that will get deleted
     uint32_t original_count = 10000;
@@ -922,9 +953,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     // Write additional items that will get deleted
     uint32_t original_count = 10000;
@@ -1005,9 +1039,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     // Write additional items that will get deleted
     uint32_t original_count = 10000;
@@ -1088,9 +1125,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore /*This is noisy with set_value*/, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     uint32_t original_count = 10000;
     fill_hash_table_sequentially(hash_table, hazard_pointers_thread, original_count);
@@ -1149,9 +1189,12 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile int64_t sequence_number = 45;
-    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore /*This is noisy with set_value*/, (void*)0x5556);
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
 
     uint32_t original_count = 10000;
     fill_hash_table_sequentially(hash_table, hazard_pointers_thread, original_count);
@@ -1168,7 +1211,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
 
         initialize_thread_data(&find_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
 
-        if (ThreadAPI_Create(&find_thread[i], continuous_set_value_thread, &find_thread_data[i]) != THREADAPI_OK)
+        if (ThreadAPI_Create(&find_thread[i], continuous_find_thread, &find_thread_data[i]) != THREADAPI_OK)
         {
             ASSERT_FAIL("Error spawning find test thread %" PRIu32, i);
         }
