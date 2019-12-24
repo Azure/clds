@@ -11,9 +11,9 @@
 #include "azure_macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"
 
-#include "azure_c_shared_utility/gballoc.h"
-#include "azure_c_shared_utility/threadapi.h"
-#include "azure_c_shared_utility/xlogging.h"
+#include "azure_c_util/gballoc.h"
+#include "azure_c_util/threadapi.h"
+#include "azure_c_util/xlogging.h"
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_sorted_list.h"
 

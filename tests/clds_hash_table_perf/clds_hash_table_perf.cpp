@@ -5,13 +5,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "clds/clds_hash_table.h"
-#include "azure_c_shared_utility/threadapi.h"
-#include "azure_c_shared_utility/xlogging.h"
-#include "azure_c_shared_utility/tickcounter.h"
+#include "azure_c_util/threadapi.h"
+#include "azure_c_util/xlogging.h"
+#include "azure_c_util/tickcounter.h"
 #include "windows.h"
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
-#include "azure_c_shared_utility/uuid.h"
+#include "azure_c_util/uuid.h"
 
 #define THREAD_COUNT 8
 #define INSERT_COUNT 100000

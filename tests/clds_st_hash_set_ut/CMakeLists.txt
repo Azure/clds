@@ -1,6 +1,5 @@
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-compileAsC11()
 set(theseTestsName clds_st_hash_set_ut)
 
 set(${theseTestsName}_test_files

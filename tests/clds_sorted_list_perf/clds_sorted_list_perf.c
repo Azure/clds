@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "clds/clds_sorted_list.h"
-#include "azure_c_shared_utility/threadapi.h"
-#include "azure_c_shared_utility/xlogging.h"
-#include "azure_c_shared_utility/tickcounter.h"
+#include "azure_c_util/threadapi.h"
+#include "azure_c_util/xlogging.h"
+#include "azure_c_util/tickcounter.h"
 #include "clds_sorted_list_perf.h"
 
 #define THREAD_COUNT 10

@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "azure_c_shared_utility/gballoc.h"
-#include "azure_c_shared_utility/xlogging.h"
+#include "azure_c_util/gballoc.h"
+#include "azure_c_util/xlogging.h"
 #include "clds/lock_free_set.h"
 #include "clds/clds_atomics.h"
 

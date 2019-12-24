@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "windows.h"
-#include "azure_c_shared_utility/gballoc.h"
-#include "azure_c_shared_utility/xlogging.h"
+#include "azure_c_util/gballoc.h"
+#include "azure_c_util/xlogging.h"
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_atomics.h"
 #include "clds/clds_st_hash_set.h"

@@ -2,7 +2,6 @@
 
 cmake_minimum_required(VERSION 2.8.11)
 
-compileAsC11()
 set(theseTestsName lock_free_set_int)
 
 set(${theseTestsName}_test_files
@@ -16,4 +15,4 @@ set(${theseTestsName}_c_files
 set(${theseTestsName}_h_files
 )
 
-build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS aziotsharedutil)
+build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_util)

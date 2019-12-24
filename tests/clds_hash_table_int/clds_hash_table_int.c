@@ -24,9 +24,9 @@ void real_free(void* ptr)
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_stdint.h"
 
-#include "azure_c_shared_utility/gballoc.h"
-#include "azure_c_shared_utility/threadapi.h"
-#include "azure_c_shared_utility/xlogging.h"
+#include "azure_c_util/gballoc.h"
+#include "azure_c_util/threadapi.h"
+#include "azure_c_util/xlogging.h"
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
 

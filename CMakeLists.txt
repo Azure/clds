@@ -3,9 +3,21 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(clds)
 
-if ((NOT TARGET aziotsharedutil) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-shared-utility/configs/azure_iot_build_rules.cmake))
-        include(deps/azure-c-shared-utility/configs/azure_iot_build_rules.cmake)
+#do not add or build any tests of the dependencies
+set(original_run_e2e_tests ${run_e2e_tests})
+set(original_run_int_tests ${run_int_tests})
+set(original_run_unittests ${run_unittests})
+set(original_run_perf_tests ${run_perf_tests})
+
+set(run_e2e_tests OFF)
+set(run_int_tests OFF)
+set(run_unittests OFF)
+set(run_perf_tests OFF)
+
+if ((NOT TARGET azure_c_build_tools) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-build-tools/CMakeLists.txt))
+        add_subdirectory(deps/azure-c-build-tools)
 endif()
+set_default_build_options()
 
 option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)" OFF)
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
@@ -23,19 +35,6 @@ endif()
 if(WIN32)
     remove_definitions(/W2)
 endif(WIN32)
-
-#do not add or build any tests of the dependencies
-set(original_run_e2e_tests ${run_e2e_tests})
-set(original_run_int_tests ${run_int_tests})
-set(original_run_unittests ${run_unittests})
-
-set(run_e2e_tests OFF)
-set(run_int_tests OFF)
-set(run_unittests OFF)
-
-if ((NOT TARGET azure_c_build_tools) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-build-tools/CMakeLists.txt))
-        add_subdirectory(deps/azure-c-build-tools)
-endif()
 
 if ((NOT TARGET azure_macro_utils_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-macro-utils-c/CMakeLists.txt))
         add_subdirectory(deps/azure-macro-utils-c)
@@ -57,11 +56,11 @@ if ((NOT TARGET umock_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/umock-c/CMak
         include_directories(${UMOCK_C_INC_FOLDER})
 endif()
 
-if ((NOT TARGET aziotsharedutil) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-shared-utility/CMakeLists.txt))
-        add_subdirectory(deps/azure-c-shared-utility)
-        include_directories(${SHARED_UTIL_INC_FOLDER})
+if ((NOT TARGET azure_c_util) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-util/CMakeLists.txt))
+        add_subdirectory(deps/azure-c-util)
+        include_directories(${C_UTIL_INC_FOLDER})
 
-        set_platform_files(${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-shared-utility)
+        set_platform_files(${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-util)
 endif()
 
 set(run_e2e_tests ${original_run_e2e_tests})
@@ -110,6 +109,6 @@ add_library(clds
     ${clds_md_files}
     )
 
-target_link_libraries(clds aziotsharedutil synchronization)
+target_link_libraries(clds azure_c_util synchronization)
 
 add_subdirectory(tests)
