@@ -60,6 +60,9 @@ jobs:
       filename: '"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat"'
       modifyEnvironment: true
 
+  - task: NuGetToolInstaller@0
+    displayName: 'Use NuGet 4.3.0 (required for .NET core assemblies)'
+
   - task: CMake@1
     displayName: 'CMake .. -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Duse_cppunittest:bool=OFF -Drun_e2e_tests:bool=OFF -G "Visual Studio 15 2017 Win64"'
     inputs:
@@ -116,6 +119,9 @@ jobs:
     inputs:
       filename: '"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat"'
       modifyEnvironment: true
+
+  - task: NuGetToolInstaller@0
+    displayName: 'Use NuGet 4.3.0 (required for .NET core assemblies)'
 
   - task: CMake@1
     displayName: 'CMake ..'
@@ -194,6 +200,9 @@ jobs:
     inputs:
       filename: '"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat"'
       modifyEnvironment: true
+
+  - task: NuGetToolInstaller@0
+    displayName: 'Use NuGet 4.3.0 (required for .NET core assemblies)'
 
   - task: CMake@1
     displayName: CMake
@@ -303,11 +312,14 @@ jobs:
       filename: '"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat"'
       modifyEnvironment: true
 
+  - task: NuGetToolInstaller@0
+    displayName: 'Use NuGet 4.3.0 (required for .NET core assemblies)'
+
   - task: CMake@1
     displayName: CMake
     inputs:
       workingDirectory: 'build_x64'
-      cmakeArgs: '.. -Drun_int_tests:bool=ON -G "Visual Studio 15 2017 Win64"'
+      cmakeArgs: '.. -Drun_int_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 15 2017 Win64"'
 
   - task: VSBuild@1
     displayName: 'Build solution build_x64\*.sln'
