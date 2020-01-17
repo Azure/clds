@@ -7,6 +7,7 @@ ${theseTestsName}.c
 )
 
 set(${theseTestsName}_c_files
+nothing.c
 )
 
 set(${theseTestsName}_h_files

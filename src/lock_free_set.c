@@ -295,7 +295,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                             else
                             {
                                 // we marked the link for deletion, any next node will see that we're deleting and back off
-                                // first thing, we need to change the head to point to the next item. This is because it is much harder to unwind changes 
+                                // first thing, we need to change the head to point to the next item. This is because it is much harder to unwind changes
                                 // if we would first change the item->next->previous
                                 LOCK_FREE_SET_ITEM* expected_head = item;
                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_head, (CLDS_ATOMIC(intptr_t))item_next))
@@ -386,7 +386,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                         // we now want to mark the next link
                         // get the item->next value
                         LOCK_FREE_SET_ITEM* item_next = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next);
-                        // If that is the case then the next node will back off when it will see 
+                        // If that is the case then the next node will back off when it will see
                         if (item_next == NULL)
                         {
                             //LogInfo("Delete tail, TID=%lu", GetCurrentThreadId());
@@ -589,7 +589,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                             LOCK_FREE_SET_ITEM* expected_item_previous_next = item;
                                             if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_previous->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous_next, (CLDS_ATOMIC(intptr_t))item_next))
                                             {
-                                                // previous->next has changed (probably locked now), so 
+                                                // previous->next has changed (probably locked now), so
                                                 // we have to back off, as the previous node wins, unlock previous link
                                                 expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
                                                 if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
@@ -620,7 +620,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                 bool wait_for_next_node = false;
 
                                                 // we successfully changed the item->previous->next value to whatever we had in item->next
-                                                // 
+                                                //
                                                 // Our layout now looks like
                                                 //
                                                 // [head]   ...   [previous]                [item]                  [next]
@@ -668,7 +668,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                             else
                                                             {
                                                                 // we successfully changed the item->next->previous value to whatever we had in item->previous
-                                                                // 
+                                                                //
                                                                 // Our layout now looks like
                                                                 //
                                                                 // [head]   ...   [previous]                [item]                  [next]
