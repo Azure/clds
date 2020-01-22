@@ -22,6 +22,7 @@ static TEST_MUTEX_HANDLE test_serialize_mutex;
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
 
 typedef struct TEST_ITEM_TAG
 {
@@ -1142,6 +1143,39 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_se
     // cleanup
     sleep_time = 0;
     clds_sorted_list_unlock_writes(list);
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_succeeds)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list;
+    volatile int64_t sequence_number = -1;
+
+    CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
+    item_payload->key = 0x42;
+
+    uint32_t sleep_time = 0;
+
+    list = clds_sorted_list_create(hazard_pointers, test_get_item_key_with_sleep, (void*)&sleep_time, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(list);
+
+    int64_t insert_seq_no;
+    CLDS_SORTED_LIST_INSERT_RESULT insert_result = clds_sorted_list_insert(list, hazard_pointers_thread, item, &insert_seq_no);
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_OK, insert_result);
+
+    CLDS_SORTED_LIST_ITEM* old_item;
+    // act
+    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (const void*)(uintptr_t)item_payload->key, item, &old_item, &insert_seq_no);
+
+    // assert
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, set_value_result);
+
+    // cleanup
     clds_sorted_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
 }

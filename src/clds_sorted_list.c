@@ -679,7 +679,7 @@ void clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
         // go through all the items and free them
         while (current_item != NULL)
         {
-            CLDS_SORTED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+            CLDS_SORTED_LIST_ITEM* next_item = (CLDS_SORTED_LIST_ITEM*)((uintptr_t)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL) & ~0x1);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback item_cleanup_callback passed to clds_sorted_list_node_create shall be called, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
             /* Codes_SRS_CLDS_SORTED_LIST_01_041: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the freed items. ]*/
@@ -1331,6 +1331,28 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             if (compare_result == 0)
                             {
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_088: [ If the key entry exists in the list, its value shall be replaced with new_item. ]*/
+
+                                if (current_item == new_item)
+                                {
+                                    if (previous_item != NULL)
+                                    {
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                    }
+
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                    restart_needed = false;
+
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+                                    *old_item = (CLDS_SORTED_LIST_ITEM*)(void*)((uintptr_t)current_item & ~0x1);
+                                    (void)clds_sorted_list_node_inc_ref(*old_item);
+
+                                    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+                                    result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                    break;
+                                }
+
                                 // set the new_item->next to point to the next item in the list
                                 new_item->next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
                                 if ((((uintptr_t)new_item->next) & 0x1) != 0)
