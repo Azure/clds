@@ -1,8 +1,12 @@
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#reals
+add_subdirectory(reals)
+
 #unittests
 if(${run_unittests})
 if(WIN32)
+        add_subdirectory(reals_ut)
         add_subdirectory(clds_hash_table_ut)
         add_subdirectory(clds_hazard_pointers_ut)
         add_subdirectory(clds_singly_linked_list_ut)

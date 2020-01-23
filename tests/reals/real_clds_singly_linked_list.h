@@ -3,13 +3,13 @@
 #ifndef REAL_CLDS_SINGLY_LINKED_LIST_H
 #define REAL_CLDS_SINGLY_LINKED_LIST_H
 
-#include "macro_utils.h"
+#include "azure_macro_utils/macro_utils.h"
 #include "clds/clds_singly_linked_list.h"
 
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);
 
 #define REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS() \
-    FOR_EACH_1(R2, \
+    MU_FOR_EACH_1(R2, \
         clds_singly_linked_list_create, \
         clds_singly_linked_list_destroy, \
         clds_singly_linked_list_insert, \
