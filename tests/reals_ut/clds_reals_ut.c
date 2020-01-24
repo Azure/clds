@@ -6,18 +6,22 @@
 
 #define ENABLE_MOCKS
 
+#if defined MSC_VER
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_singly_linked_list.h"
 #include "clds/clds_sorted_list.h"
 #include "clds/clds_st_hash_set.h"
+#endif
 #include "clds/lock_free_set.h"
 
 #undef ENABLE_MOCKS
 
+#if defined MSC_VER
 #include "../tests/reals/real_clds_hazard_pointers.h"
 #include "../tests/reals/real_clds_singly_linked_list.h"
 #include "../tests/reals/real_clds_sorted_list.h"
 #include "../tests/reals/real_clds_st_hash_set.h"
+#endif
 #include "../tests/reals/real_lock_free_set.h"
 
 BEGIN_TEST_SUITE(clds_reals_ut)
@@ -29,10 +33,12 @@ TEST_FUNCTION(check_all_c_util_reals)
     // arrange
 
     // act
+#if defined MSC_VER
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_SORTED_LIST_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_ST_HASH_SET_GLOBAL_MOCK_HOOKS();
+#endif
     REGISTER_LOCK_FREE_SET_GLOBAL_MOCK_HOOKS();
 
     // assert
