@@ -344,3 +344,31 @@ jobs:
      
     workingDirectory: 'build_x64'
     displayName: 'Run perf tests'
+
+- job: linuxubuntu
+  displayName: 'Build Linux Ubuntu 16.04'
+  pool:
+    name: Hosted Ubuntu 1604
+
+  steps:
+  - bash: |
+      sudo apt-get update
+      sudo apt-get install build-essential pkg-config git cmake uuid-dev valgrind
+    displayName: 'Bash Script'
+
+  - bash: |
+     pushd $(Build.Repository.LocalPath)
+     git submodule update --init
+     git submodule foreach --recursive "git clean -xdff"
+     git clean -xdff
+     popd
+    workingDirectory: '$(Build.Repository.LocalPath)'
+    displayName: 'git submodule update and clean'
+
+  - task: Bash@3
+    displayName: 'Build and run tests'
+    inputs:
+      targetType: filePath
+      filePath: './build/linux/build_linux.sh'
+      arguments: '$(Build.Repository.LocalPath)'
+      workingDirectory: '$(Build.Repository.LocalPath)'
