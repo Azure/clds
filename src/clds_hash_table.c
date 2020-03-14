@@ -120,13 +120,13 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
 {
     if (context == NULL)
     {
-        /* Codes_SRS_CLDS_HASH_TABLE_01_075: [ `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_075: [ on_sorted_list_skipped_seq_no called with NULL context shall return. ]*/
         LogError("Invalid arguments: void* context=%p, int64_t skipped_sequence_no=%" PRId64,
             context, skipped_sequence_no);
     }
     else
     {
-        /* Codes_SRS_CLDS_HASH_TABLE_01_076: [ `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_076: [ on_sorted_list_skipped_seq_no shall call the skipped sequence number callback passed to clds_hash_table_create and pass the skipped_sequence_no as skipped_sequence_no argument. ]*/
         CLDS_HASH_TABLE_HANDLE clds_hash_table = (CLDS_HASH_TABLE_HANDLE)context;
         clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, skipped_sequence_no);
     }
@@ -407,7 +407,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             (void)InterlockedIncrement(&current_bucket_array->item_count);
 
             // find the bucket
-            /* Codes_SRS_CLDS_HASH_TABLE_01_018: [ `clds_hash_table_insert` shall obtain the bucket index to be used by calling `compute_hash` and passing to it the `key` value. ]*/
+            /* Codes_SRS_CLDS_HASH_TABLE_01_018: [ clds_hash_table_insert shall obtain the bucket index to be used by calling compute_hash and passing to it the key value. ]*/
             bucket_index = hash % bucket_count;
 
             do
@@ -549,7 +549,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
         result = CLDS_HASH_TABLE_DELETE_NOT_FOUND;
 
         // always delete starting with the first bucket array
-        /* Codes_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
         current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {

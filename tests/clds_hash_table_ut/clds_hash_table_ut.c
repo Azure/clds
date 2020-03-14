@@ -1142,7 +1142,7 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_delete_
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_025: [ If the element to be deleted is not found in an array of buckets, then it shall be looked up in the next available array of buckets. ] */
 TEST_FUNCTION(delete_looks_in_2_buckets)
 {
@@ -1179,7 +1179,7 @@ TEST_FUNCTION(delete_looks_in_2_buckets)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, `key` shall be looked up in each of the arrays of buckets starting with the first. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_025: [ If the element to be deleted is not found in an array of buckets, then it shall be looked up in the next available array of buckets. ] */
 TEST_FUNCTION(delete_looks_in_3_buckets)
 {
@@ -2578,7 +2578,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_non_NULL_sequence_number_when_a_sta
 
 /* on_sorted_list_skipped_seq_no */
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_075: [ `on_sorted_list_skipped_seq_no` called with NULL `context` shall return. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_075: [ on_sorted_list_skipped_seq_no called with NULL context shall return. ]*/
 TEST_FUNCTION(on_sorted_list_skipped_seq_no_with_NULL_returns)
 {
     // arrange
@@ -2609,7 +2609,7 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_with_NULL_returns)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_076: [ `on_sorted_list_skipped_seq_no` shall call the skipped sequence number callback passed to `clds_hash_table_create` and pass the `skipped_sequence_no` as `skipped_sequence_no` argument. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_076: [ on_sorted_list_skipped_seq_no shall call the skipped sequence number callback passed to clds_hash_table_create and pass the skipped_sequence_no as skipped_sequence_no argument. ]*/
 TEST_FUNCTION(on_sorted_list_skipped_seq_no_calls_the_hash_table_skipped_seq_no)
 {
     // arrange
