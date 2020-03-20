@@ -193,8 +193,8 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     volatile int64_t sequence_number = 55;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
@@ -219,8 +219,8 @@ TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_skipped_seq_no_cb)
     volatile int64_t sequence_number = 55;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
@@ -244,8 +244,8 @@ TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_sequence_number_and_skip
     CLDS_HASH_TABLE_HANDLE hash_table;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, NULL, NULL, NULL);
@@ -286,7 +286,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_fails_clds_hash_table_cr
     CLDS_HASH_TABLE_HANDLE hash_table;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG))
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
         .SetReturn(NULL);
 
     // act
@@ -308,10 +308,10 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_array_fails_clds_hash_ta
     CLDS_HASH_TABLE_HANDLE hash_table;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG))
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
         .SetReturn(NULL);
-    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, NULL, NULL, NULL);
@@ -403,11 +403,11 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_the_same_hazard_pointer_instan
     CLDS_HASH_TABLE_HANDLE hash_table_2;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table_1 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, NULL, NULL, NULL);
@@ -435,11 +435,11 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_different_hazard_pointer_insta
     CLDS_HASH_TABLE_HANDLE hash_table_2;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table_1 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers_1, NULL, NULL, NULL);
@@ -466,8 +466,8 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
     CLDS_HASH_TABLE_HANDLE hash_table;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, NULL, NULL, NULL);
@@ -490,8 +490,8 @@ TEST_FUNCTION(clds_hash_table_create_with_non_NULL_start_sequence_number_succeed
     volatile int64_t sequence_number;
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
@@ -516,8 +516,8 @@ TEST_FUNCTION(clds_hash_table_destroy_frees_the_hash_table_resources)
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, NULL, NULL, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(free(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     clds_hash_table_destroy(hash_table);
@@ -564,9 +564,9 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, NULL, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, NULL, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
@@ -596,9 +596,9 @@ TEST_FUNCTION(clds_hash_table_insert_inserts_one_key_value_pair_with_non_NULL_st
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, &sequence_number, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
@@ -697,7 +697,7 @@ TEST_FUNCTION(when_creating_the_singly_linked_list_fails_clds_hash_table_insert_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .SetReturn(NULL);
 
     // act
@@ -726,8 +726,8 @@ TEST_FUNCTION(when_inserting_the_singly_linked_list_item_fails_clds_hash_table_i
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL))
         .SetReturn(CLDS_SORTED_LIST_INSERT_ERROR);
 
     // act
@@ -765,11 +765,11 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_the_same_bucket_does_not_cr
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
         .SetReturn(first_hash);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_2, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_2, NULL));
 
     // act
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
@@ -804,9 +804,9 @@ TEST_FUNCTION(clds_hash_table_insert_with_2nd_key_on_a_different_bucket_creates_
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2))
         .SetReturn(1);
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_2, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_2, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
@@ -836,15 +836,15 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x2));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, hazard_pointers_thread, (void*)0x2));
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item_2, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item_2, NULL))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
@@ -874,11 +874,11 @@ TEST_FUNCTION(clds_hash_table_insert_with_the_same_key_2_times_returns_KEY_ALREA
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_2, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_2, NULL));
 
     // act
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_2, NULL);
@@ -909,9 +909,9 @@ TEST_FUNCTION(clds_hash_table_insert_passes_the_sequence_number_to_the_sorted_li
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, &sequence_number, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, &sequence_number, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&linked_list);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, &insert_seq_no))
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, &insert_seq_no))
         .ValidateArgumentValue_clds_sorted_list(&linked_list);
 
     // act
@@ -970,13 +970,13 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, NULL));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, hazard_pointers_thread, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
@@ -1127,7 +1127,7 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_delete_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, NULL))
         .SetReturn(CLDS_SORTED_LIST_DELETE_ERROR);
 
     // act
@@ -1158,14 +1158,14 @@ TEST_FUNCTION(delete_looks_in_2_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
@@ -1202,15 +1202,15 @@ TEST_FUNCTION(delete_looks_in_3_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x4, item_4, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, NULL));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, NULL);
@@ -1239,13 +1239,13 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_delete_returns_NOT_FOUND)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, IGNORED_ARG, (void*)0x3, NULL));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x3, NULL);
@@ -1274,13 +1274,13 @@ TEST_FUNCTION(clds_hash_table_delete_deletes_the_key_and_stamps_the_sequence_no)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, &delete_seq_no));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_key(IGNORED_ARG, hazard_pointers_thread, (void*)0x1, &delete_seq_no));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete(hash_table, hazard_pointers_thread, (void*)0x1, &delete_seq_no);
@@ -1338,13 +1338,13 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_deletes_the_key)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item, NULL));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
@@ -1524,7 +1524,7 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_delete_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, NULL))
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, NULL))
         .SetReturn(CLDS_SORTED_LIST_DELETE_ERROR);
 
     // act
@@ -1555,14 +1555,14 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_looks_in_2_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
@@ -1599,15 +1599,15 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_looks_in_3_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x4, item_4, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_1, NULL));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
@@ -1637,13 +1637,13 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_clds_hash_table_delete_key_va
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x3, item_3, NULL);
@@ -1674,13 +1674,13 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_clds_hash_table_delete_key_va
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item_3, NULL));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x1, item_3, NULL);
@@ -1710,13 +1710,13 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_deletes_the_key_and_stamps_the_se
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_PTR_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item, &delete_seq_no));
-    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_delete_item(IGNORED_ARG, hazard_pointers_thread, (CLDS_SORTED_LIST_ITEM*)item, &delete_seq_no));
+    STRICT_EXPECTED_CALL(test_item_cleanup_func((void*)0x4242, IGNORED_ARG));
 
     // act
     result = clds_hash_table_delete_key_value(hash_table, hazard_pointers_thread, (void*)0x1, item, &delete_seq_no);
@@ -1776,12 +1776,12 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, hazard_pointers_thread, (void*)0x1, IGNORED_ARG, IGNORED_ARG));
 
     // act
     result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
@@ -1812,12 +1812,12 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list_with_non_NULL
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, hazard_pointers_thread, (void*)0x1, IGNORED_PTR_ARG, &remove_seq_no));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, hazard_pointers_thread, (void*)0x1, IGNORED_ARG, &remove_seq_no));
 
     // act
     result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, &remove_seq_no);
@@ -2001,7 +2001,7 @@ TEST_FUNCTION(when_the_underlying_delete_from_list_fails_clds_hash_table_remove_
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .SetReturn(CLDS_SORTED_LIST_REMOVE_ERROR);
 
     // act
@@ -2032,13 +2032,13 @@ TEST_FUNCTION(remove_looks_in_2_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, IGNORED_ARG, IGNORED_ARG));
 
     // act
     result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
@@ -2076,14 +2076,14 @@ TEST_FUNCTION(remove_looks_in_3_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x4, item_4, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1, IGNORED_ARG, IGNORED_ARG));
 
     // act
     result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x1, &removed_item, NULL);
@@ -2114,13 +2114,13 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_remove_returns_NOT_FOUND)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3, IGNORED_PTR_ARG, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x3, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_remove_key(IGNORED_ARG, IGNORED_ARG, (void*)0x3, IGNORED_ARG, IGNORED_ARG));
 
     // act
     result = clds_hash_table_remove(hash_table, hazard_pointers_thread, (void*)0x3, &removed_item, NULL);
@@ -2179,12 +2179,12 @@ TEST_FUNCTION(clds_hash_table_find_succeeds)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -2217,12 +2217,12 @@ TEST_FUNCTION(clds_hash_table_find_2nd_item_out_of_3_succeeds)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x2));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x2));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x2);
@@ -2255,12 +2255,12 @@ TEST_FUNCTION(clds_hash_table_find_3rd_item_out_of_3_succeeds)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x3));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x3));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x3));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x3);
@@ -2362,13 +2362,13 @@ TEST_FUNCTION(clds_hash_table_find_looks_up_in_the_2nd_array_of_buckets)
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x1));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x1);
@@ -2400,13 +2400,13 @@ TEST_FUNCTION(when_key_is_not_found_in_any_bucket_levels_clds_hash_table_find_yi
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x3, item_3, NULL);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x4));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x4));
-    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (void*)0x4));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x4));
+    STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, IGNORED_ARG, (void*)0x4));
 
     // act
     result = clds_hash_table_find(hash_table, hazard_pointers_thread, (void*)0x4);
@@ -2592,9 +2592,9 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_with_NULL_returns)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureArgumentValue_skipped_seq_no_cb(&test_on_sorted_list_skipped_seq_no);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
@@ -2624,10 +2624,10 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_calls_the_hash_table_skipped_seq_no)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
-    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureArgumentValue_skipped_seq_no_cb(&test_on_sorted_list_skipped_seq_no)
         .CaptureArgumentValue_skipped_seq_no_cb_context(&test_on_sorted_list_skipped_seq_no_context);
-    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_PTR_ARG, IGNORED_PTR_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
     (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
     umock_c_reset_all_calls();
 
@@ -2802,14 +2802,14 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
     CLDS_HASH_TABLE_ITEM** items;
     uint64_t item_count;
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
@@ -2869,14 +2869,14 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
     CLDS_HASH_TABLE_ITEM** items;
     uint64_t item_count;
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
@@ -2962,17 +2962,17 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
     }
 
     // act
@@ -3063,17 +3063,17 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
     }
 
     // act
@@ -3145,14 +3145,14 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
     CLDS_HASH_TABLE_ITEM** items;
     uint64_t item_count;
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
 
     umock_c_negative_tests_snapshot();
 
@@ -3204,17 +3204,17 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
     }
 
     umock_c_negative_tests_snapshot();
@@ -3272,17 +3272,17 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_NUM_ARG, IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
     }
 
     umock_c_negative_tests_snapshot();
@@ -3331,16 +3331,16 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_overflow)
     uint64_t mocked_item_count_1 = UINT64_MAX / 2 + 1;
     uint64_t mocked_item_count_2 = UINT64_MAX / 2 + 1;
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))
         .CopyOutArgumentBuffer_item_count(&mocked_item_count_1, sizeof(mocked_item_count_1));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))
         .CopyOutArgumentBuffer_item_count(&mocked_item_count_2, sizeof(mocked_item_count_2));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
@@ -3378,16 +3378,16 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_mult
     uint64_t mocked_item_count_1 = SIZE_MAX / sizeof(void*);
     uint64_t mocked_item_count_2 = 1;
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))
         .CopyOutArgumentBuffer_item_count(&mocked_item_count_1, sizeof(mocked_item_count_1));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_PTR_ARG, hazard_pointers_thread, IGNORED_PTR_ARG))
+    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))
         .CopyOutArgumentBuffer_item_count(&mocked_item_count_2, sizeof(mocked_item_count_2));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);

@@ -109,8 +109,8 @@ TEST_FUNCTION(clds_st_hash_set_create_succeeds)
     // arrange
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
@@ -130,8 +130,8 @@ TEST_FUNCTION(clds_st_hash_set_create_with_bucket_size_1_succeeds)
     // arrange
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1);
@@ -194,7 +194,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_set_fails_clds_st_hash_set_cre
     // arrange
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG))
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
         .SetReturn(NULL);
 
     // act
@@ -211,10 +211,10 @@ TEST_FUNCTION(when_allocating_memory_for_the_bucket_array_fails_clds_st_hash_set
     // arrange
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG))
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
         .SetReturn(NULL);
-    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1);
@@ -233,8 +233,8 @@ TEST_FUNCTION(clds_st_hash_set_destroy_frees_the_memory)
     CLDS_ST_HASH_SET_HANDLE st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
-    STRICT_EXPECTED_CALL(free(IGNORED_PTR_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     clds_st_hash_set_destroy(st_hash_set);
@@ -268,7 +268,7 @@ TEST_FUNCTION(clds_st_hash_set_insert_succeeds)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x42));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_NUM_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     result = clds_st_hash_set_insert(st_hash_set, (void*)0x42);
