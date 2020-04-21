@@ -19,6 +19,7 @@ endif()
 if(${run_int_tests})
 #integration tests
 if(WIN32)
+        add_subdirectory(clds_singly_linked_list_int)
         add_subdirectory(clds_sorted_list_int)
         add_subdirectory(clds_hash_table_int)
         add_subdirectory(lock_free_set_int)

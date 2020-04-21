@@ -70,7 +70,7 @@ static int insert_thread(void* arg)
             {
                 int64_t insert_seq_no;
 
-                if (clds_sorted_list_insert(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], &insert_seq_no) != 0)
+                if (clds_sorted_list_insert(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i], &insert_seq_no) != CLDS_SORTED_LIST_INSERT_OK)
                 {
                     LogError("Error inserting");
                     break;

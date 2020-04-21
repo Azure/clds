@@ -15,6 +15,40 @@ All operations can be concurrent with other operations of the same or different 
 
 This list supports taking a snapshot of the current state by blocking all changes and dumping the nodes.
 
+## Design
+
+### Insert
+
+The sequence for inserting one node looks like:
+
+- Iterate through all nodes starting at the head to find the item that should be AFTER the item we need to insert. During iteration maintain a previous pointer.
+
+  - If no item that should be AFTER is found (end of list reached):
+    - If no previous item exists, this means we are inserting at the head. Switch the head of the list if it has not changed.
+    - If a previous item exists, set the previous->next to the new item. If the previous->next has changed, restart.
+    
+  
+
+### Delete
+
+Note: deletion by key or by item pointer are similar, the only difference being in the compare step that checks whether we hit the node that needs to be deleted.
+
+Deletion from the sorted list requires locking a node for deletion so that any other delete operations that involve that node are aware of the removal of the node.
+The lock delete flag is maintained in the next field of the node, in order to be able to perform CAS operations.
+
+The sequence for deleting one node looks like:
+
+- Iterate through all nodes starting at the head
+
+  - If current item is `NULL` (locked or not), this is the end of the search and not found shall be returned.
+  - Acquire hazard pointer for the item (account for lock bit)
+  - Check whether the item shall be deleted by comparing the key/comparing the pointer of the item
+  - If yes, then lock the item by setting the lock delete bit in the next field
+  - Replace the previous->next with current->next if previous->next has not changed
+    - If the item to be removed is at head, that is a special case, as there is no previous->next, but rather the list head is replaced if it has not changed.
+
+  If previous->next has changed it means that someone else is deleting the previous node or has already deleted our current node, so we need to restart.
+
 ### Future work
 
 The snapshot functionality will be extended in the future so that concurrent operations are possible.
