@@ -3,10 +3,12 @@
 #ifdef __cplusplus
 #include <cstdlib>
 #include <cinttypes>
+#include <ctime>
 #else
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <time.h>
 #endif
 
 #include "azure_macro_utils/macro_utils.h"
@@ -1274,6 +1276,8 @@ static int chaos_thread(void* arg)
     int result;
     CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)arg;
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)chaos_thread_data->chaos_test_context;
+
+    srand((unsigned int)time(NULL));
 
     while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
     {
