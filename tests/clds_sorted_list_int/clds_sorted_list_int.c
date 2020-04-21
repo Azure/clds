@@ -1236,6 +1236,28 @@ MU_DEFINE_ENUM(TEST_LIST_ITEM_STATE, TEST_LIST_ITEM_STATE_VALUES);
 
 MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
 
+static int get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, LONG new_item_state, LONG old_item_state)
+{
+    int item_index = (rand() * (item_count - 1)) / RAND_MAX;
+    do
+    {
+        if (InterlockedCompareExchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
+        {
+            break;
+        }
+        else
+        {
+            item_index++;
+            if (item_index == item_count)
+            {
+                item_index = 0;
+            }
+        }
+    } while (1);
+
+    return item_index;
+}
+
 static int chaos_thread(void* arg)
 {
     int result;
@@ -1256,98 +1278,114 @@ static int chaos_thread(void* arg)
             LogError("Invalid action: %d", action);
             break;
         case CHAOS_TEST_ACTION_INSERT:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_INSERTING, TEST_LIST_ITEM_NOT_USED) == TEST_LIST_ITEM_NOT_USED)
-            {
-                chaos_test_context->items[item_index].item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-                TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
-                item_payload->key = item_index + 1;
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_INSERTING, TEST_LIST_ITEM_NOT_USED);
 
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_OK, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
+            chaos_test_context->items[item_index].item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+            TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
+            item_payload->key = item_index + 1;
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
-            }
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_OK, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_DELETE_ITEM:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED) == TEST_LIST_ITEM_USED)
-            {
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_OK, clds_sorted_list_delete_item(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
-            
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
-            }
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED);
+
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_OK, clds_sorted_list_delete_item(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_DELETE_KEY:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED) == TEST_LIST_ITEM_USED)
-            {
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_OK, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
-            
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
-            }
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED);
+
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_OK, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_REMOVE_KEY:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED) == TEST_LIST_ITEM_USED)
-            {
-                CLDS_SORTED_LIST_ITEM* removed_item;
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED);
 
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_OK, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
+            CLDS_SORTED_LIST_ITEM* removed_item;
 
-                CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, removed_item);
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_OK, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
-            }
+            CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, removed_item);
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_INSERT_KEY_TWICE:
-            // insert_key twice
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_INSERTING_AGAIN, TEST_LIST_ITEM_USED) == TEST_LIST_ITEM_USED)
-            {
-                CLDS_SORTED_LIST_ITEM* new_item;
-                new_item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-                TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, new_item);
-                item_payload->key = item_index + 1;
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_INSERTING_AGAIN, TEST_LIST_ITEM_USED);
 
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
+            CLDS_SORTED_LIST_ITEM* new_item;
+            new_item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+            TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, new_item);
+            item_payload->key = item_index + 1;
 
-                CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
-            }
+            CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_DELETE_KEY_NOT_FOUND:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED) == TEST_LIST_ITEM_NOT_USED)
-            {
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_NOT_FOUND, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
-            }
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_NOT_FOUND, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_REMOVE_KEY_NOT_FOUND:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED) == TEST_LIST_ITEM_NOT_USED)
-            {
-                CLDS_SORTED_LIST_ITEM* removed_item;
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_NOT_FOUND, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
-            }
+            CLDS_SORTED_LIST_ITEM* removed_item;
+            ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_NOT_FOUND, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_FIND:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_FINDING, TEST_LIST_ITEM_USED) == TEST_LIST_ITEM_USED)
-            {
-                CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
-                ASSERT_IS_NOT_NULL(found_item);
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_FINDING, TEST_LIST_ITEM_NOT_USED);
 
-                CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, found_item);
+            CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
+            ASSERT_IS_NOT_NULL(found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
-            }
+            CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, found_item);
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             break;
+        }
+
         case CHAOS_TEST_ACTION_FIND_NOT_FOUND:
-            if (InterlockedCompareExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_FINDING, TEST_LIST_ITEM_NOT_USED) == TEST_LIST_ITEM_NOT_USED)
-            {
-                CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
-                ASSERT_IS_NULL(found_item);
+        {
+            item_index = get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_FINDING, TEST_LIST_ITEM_NOT_USED);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
-            }
+            CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
+            ASSERT_IS_NULL(found_item);
+
+            (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             break;
+        }
         }
     }
 
