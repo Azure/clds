@@ -8,6 +8,7 @@
 #include <inttypes.h>
 #endif
 
+#include "windows.h"
 #include "azure_macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"
 
@@ -20,9 +21,6 @@ void real_free(void* ptr)
 {
     free(ptr);
 }
-
-#include "umock_c/umock_c.h"
-#include "umock_c/umocktypes_stdint.h"
 
 #include "azure_c_util/gballoc.h"
 #include "azure_c_util/threadapi.h"
@@ -38,14 +36,7 @@ TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESU
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
 
-MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
-
 #define THREAD_COUNT 4
-
-static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
-{
-    ASSERT_FAIL("umock_c reported error :%" PRI_MU_ENUM "", MU_ENUM_VALUE(UMOCK_C_ERROR_CODE, error_code));
-}
 
 typedef struct TEST_ITEM_TAG
 {
@@ -475,8 +466,6 @@ TEST_FUNCTION_INITIALIZE(method_init)
     {
         ASSERT_FAIL("Could not acquire test serialization mutex.");
     }
-
-    umock_c_reset_all_calls();
 }
 
 TEST_FUNCTION_CLEANUP(method_cleanup)
