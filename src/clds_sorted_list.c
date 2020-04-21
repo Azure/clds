@@ -865,6 +865,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                         }
                         else
                         {
+                            // clear any leftover delete lock bit, since we made sure it is not set
                             current_item = (PVOID)((uintptr_t)current_item & ~0x1);
 
                             // we are in a stable state, at this point the previous node does not have a delete lock bit set

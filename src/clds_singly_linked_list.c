@@ -70,7 +70,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
         {
             // get the current_item value
             volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_item = (volatile CLDS_SINGLY_LINKED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
-            if (current_item == NULL)
+            if ((void*)((uintptr_t)current_item & (~0x1)) == NULL)
             {
                 if (previous_hp != NULL)
                 {
@@ -120,6 +120,9 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                     }
                     else
                     {
+                        // clear any leftover delete lock bit, since we made sure it is not set
+                        current_item = (PVOID)((uintptr_t)current_item & ~0x1);
+
                         if (item_compare_callback(item_compare_callback_context, (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item))
                         {
                             // mark the node as deleted
@@ -127,7 +130,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                             volatile CLDS_SINGLY_LINKED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
                             // mark that the node is deleted
-                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
+                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)((uintptr_t)current_next & (~0x1))) != (PVOID)((uintptr_t)current_next & (~0x1)))
                             {
                                 if (previous_hp != NULL)
                                 {
@@ -143,6 +146,10 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                             }
                             else
                             {
+                                // clear any leftover delete lock bit, since we made sure of its state and 
+                                // we don't want to accidentaly reference memory with the delete lock flag in the pointer
+                                current_next = (PVOID)((uintptr_t)current_next & ~0x1);
+
                                 // the current node is marked for deletion, now try to change the previous link to the next value
 
                                 // If in the meanwhile someone would be deleting node A they would have to first set the
@@ -168,7 +175,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
 
                                         // reclaim the memory
                                         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
-                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)current_item, reclaim_list_node);
                                         restart_needed = false;
 
                                         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
@@ -199,7 +206,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
 
                                         // reclaim the memory
                                         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_042: [ When an item is deleted it shall be indicated to the hazard pointers instance as reclaimed by calling clds_hazard_pointers_reclaim. ]*/
-                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)((uintptr_t)current_item & ~0x1), reclaim_list_node);
+                                        clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)current_item, reclaim_list_node);
 
                                         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_026: [ On success, clds_singly_linked_list_delete shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
                                         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_025: [ On success, clds_singly_linked_list_delete_if shall return CLDS_SINGLY_LINKED_LIST_DELETE_OK. ]*/
