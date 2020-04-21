@@ -438,6 +438,58 @@ static void cleanup_snapshot(CLDS_HASH_TABLE_ITEM** items, uint64_t item_count)
     free(items);
 }
 
+typedef struct CHAOS_TEST_ITEM_DATA_TAG
+{
+    CLDS_HASH_TABLE_ITEM* item;
+    volatile LONG item_state;
+} CHAOS_TEST_ITEM_DATA;
+
+typedef struct CHAOS_TEST_CONTEXT_TAG
+{
+    volatile LONG done;
+    CLDS_HASH_TABLE_HANDLE hash_table;
+#ifdef _MSC_VER
+    /*warning C4200: nonstandard extension used: zero-sized array in struct/union */
+#pragma warning(disable:4200)
+#endif
+    CHAOS_TEST_ITEM_DATA items[];
+} CHAOS_TEST_CONTEXT;
+
+typedef struct CHAOS_THREAD_DATA_TAG
+{
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
+    THREAD_HANDLE thread_handle;
+    CHAOS_TEST_CONTEXT* chaos_test_context;
+} CHAOS_THREAD_DATA;
+
+#define CHAOS_THREAD_COUNT  8
+#define CHAOS_ITEM_COUNT    10000
+#define CHAOS_TEST_RUNTIME  30000
+
+#define TEST_HASH_TABLE_ITEM_STATE_VALUES \
+    TEST_HASH_TABLE_ITEM_NOT_USED, \
+    TEST_HASH_TABLE_ITEM_INSERTING, \
+    TEST_HASH_TABLE_ITEM_USED, \
+    TEST_HASH_TABLE_ITEM_DELETING, \
+    TEST_HASH_TABLE_ITEM_INSERTING_AGAIN, \
+    TEST_HASH_TABLE_ITEM_FINDING
+
+MU_DEFINE_ENUM(TEST_HASH_TABLE_ITEM_STATE, TEST_HASH_TABLE_ITEM_STATE_VALUES);
+
+#define CHAOS_TEST_ACTION_VALUES \
+    CHAOS_TEST_ACTION_INSERT, \
+    CHAOS_TEST_ACTION_DELETE_KEY_VALUE, \
+    CHAOS_TEST_ACTION_DELETE, \
+    CHAOS_TEST_ACTION_REMOVE, \
+    CHAOS_TEST_ACTION_INSERT_KEY_TWICE, \
+    CHAOS_TEST_ACTION_DELETE_KEY_VALUE_NOT_FOUND, \
+    CHAOS_TEST_ACTION_DELETE_NOT_FOUND, \
+    CHAOS_TEST_ACTION_REMOVE_NOT_FOUND, \
+    CHAOS_TEST_ACTION_FIND, \
+    CHAOS_TEST_ACTION_FIND_NOT_FOUND
+
+MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
+
 BEGIN_TEST_SUITE(clds_hash_table_inttests)
 
 TEST_SUITE_INITIALIZE(suite_init)
@@ -1297,58 +1349,6 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-typedef struct CHAOS_TEST_ITEM_DATA_TAG
-{
-    CLDS_HASH_TABLE_ITEM* item;
-    volatile LONG item_state;
-} CHAOS_TEST_ITEM_DATA;
-
-typedef struct CHAOS_TEST_CONTEXT_TAG
-{
-    volatile LONG done;
-    CLDS_HASH_TABLE_HANDLE hash_table;
-#ifdef _MSC_VER
-    /*warning C4200: nonstandard extension used: zero-sized array in struct/union */
-#pragma warning(suppress:4200)
-#endif
-    CHAOS_TEST_ITEM_DATA items[];
-} CHAOS_TEST_CONTEXT;
-
-typedef struct CHAOS_THREAD_DATA_TAG
-{
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
-    THREAD_HANDLE thread_handle;
-    CHAOS_TEST_CONTEXT* chaos_test_context;
-} CHAOS_THREAD_DATA;
-
-#define CHAOS_THREAD_COUNT  8
-#define CHAOS_ITEM_COUNT    10000
-#define CHAOS_TEST_RUNTIME  30000
-
-#define TEST_LIST_ITEM_STATE_VALUES \
-    TEST_LIST_ITEM_NOT_USED, \
-    TEST_LIST_ITEM_INSERTING, \
-    TEST_LIST_ITEM_USED, \
-    TEST_LIST_ITEM_DELETING, \
-    TEST_LIST_ITEM_INSERTING_AGAIN, \
-    TEST_LIST_ITEM_FINDING
-
-MU_DEFINE_ENUM(TEST_LIST_ITEM_STATE, TEST_LIST_ITEM_STATE_VALUES);
-
-#define CHAOS_TEST_ACTION_VALUES \
-    CHAOS_TEST_ACTION_INSERT, \
-    CHAOS_TEST_ACTION_DELETE_KEY_VALUE, \
-    CHAOS_TEST_ACTION_DELETE, \
-    CHAOS_TEST_ACTION_REMOVE, \
-    CHAOS_TEST_ACTION_INSERT_KEY_TWICE, \
-    CHAOS_TEST_ACTION_DELETE_KEY_VALUE_NOT_FOUND, \
-    CHAOS_TEST_ACTION_DELETE_NOT_FOUND, \
-    CHAOS_TEST_ACTION_REMOVE_NOT_FOUND, \
-    CHAOS_TEST_ACTION_FIND, \
-    CHAOS_TEST_ACTION_FIND_NOT_FOUND
-
-MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
-
 static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, LONG new_item_state, LONG old_item_state, int* selected_item_index)
 {
     int item_index = (rand() * (item_count - 1)) / RAND_MAX;
@@ -1391,7 +1391,7 @@ static int chaos_thread(void* arg)
     while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
-        CHAOS_TEST_ACTION action = rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX;
+        CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
         int item_index = (rand() * (CHAOS_ITEM_COUNT - 1)) / RAND_MAX;
         int64_t seq_no;
 
@@ -1402,7 +1402,7 @@ static int chaos_thread(void* arg)
             break;
 
         case CHAOS_TEST_ACTION_INSERT:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_INSERTING, TEST_LIST_ITEM_NOT_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_INSERTING, TEST_HASH_TABLE_ITEM_NOT_USED, &item_index))
             {
                 chaos_test_context->items[item_index].item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
@@ -1410,30 +1410,30 @@ static int chaos_thread(void* arg)
 
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_DELETE_KEY_VALUE:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_DELETING, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, clds_hash_table_delete_key_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_DELETE:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_DELETING, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, clds_hash_table_delete(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_REMOVE:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_DELETING, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* removed_item;
 
@@ -1441,12 +1441,12 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_INSERT_KEY_TWICE:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_INSERTING_AGAIN, TEST_LIST_ITEM_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_INSERTING_AGAIN, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* new_item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, new_item);
@@ -1456,12 +1456,12 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_DELETE_KEY_VALUE_NOT_FOUND:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_DELETING, TEST_HASH_TABLE_ITEM_NOT_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* new_item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, new_item);
@@ -1471,48 +1471,48 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_DELETE_NOT_FOUND:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_DELETING, TEST_HASH_TABLE_ITEM_NOT_USED, &item_index))
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_NOT_FOUND, clds_hash_table_delete(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
         case CHAOS_TEST_ACTION_REMOVE_NOT_FOUND:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_DELETING, TEST_HASH_TABLE_ITEM_NOT_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* removed_item;
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_NOT_FOUND, clds_hash_table_remove(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
         
         case CHAOS_TEST_ACTION_FIND:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_FINDING, TEST_LIST_ITEM_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_FINDING, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* found_item = clds_hash_table_find(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NOT_NULL(found_item);
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
         
         case CHAOS_TEST_ACTION_FIND_NOT_FOUND:
-            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_FINDING, TEST_LIST_ITEM_NOT_USED, &item_index))
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_FINDING, TEST_HASH_TABLE_ITEM_NOT_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* found_item = clds_hash_table_find(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NULL(found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
         }
@@ -1535,7 +1535,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_LIST_ITEM_NOT_USED);
+        (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
     }
 
     chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 256, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);

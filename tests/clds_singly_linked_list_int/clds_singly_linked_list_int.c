@@ -47,6 +47,54 @@ bool test_item_compare(void* item_compare_context, struct CLDS_SINGLY_LINKED_LIS
     return item_index == test_item->value;
 }
 
+typedef struct CHAOS_TEST_ITEM_DATA_TAG
+{
+    CLDS_SINGLY_LINKED_LIST_ITEM* item;
+    volatile LONG item_state;
+} CHAOS_TEST_ITEM_DATA;
+
+typedef struct CHAOS_TEST_CONTEXT_TAG
+{
+    volatile LONG done;
+    CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
+#ifdef _MSC_VER
+    /*warning C4200: nonstandard extension used: zero-sized array in struct/union */
+#pragma warning(disable:4200)
+#endif
+    CHAOS_TEST_ITEM_DATA items[];
+} CHAOS_TEST_CONTEXT;
+
+typedef struct CHAOS_THREAD_DATA_TAG
+{
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
+    THREAD_HANDLE thread_handle;
+    CHAOS_TEST_CONTEXT* chaos_test_context;
+} CHAOS_THREAD_DATA;
+
+#define CHAOS_THREAD_COUNT  8
+#define CHAOS_ITEM_COUNT    10000
+#define CHAOS_TEST_RUNTIME  30000
+
+#define TEST_LIST_ITEM_STATE_VALUES \
+    TEST_LIST_ITEM_NOT_USED, \
+    TEST_LIST_ITEM_INSERTING, \
+    TEST_LIST_ITEM_USED, \
+    TEST_LIST_ITEM_DELETING, \
+    TEST_LIST_ITEM_INSERTING_AGAIN, \
+    TEST_LIST_ITEM_FINDING
+
+MU_DEFINE_ENUM(TEST_LIST_ITEM_STATE, TEST_LIST_ITEM_STATE_VALUES);
+
+#define CHAOS_TEST_ACTION_VALUES \
+    CHAOS_TEST_ACTION_INSERT, \
+    CHAOS_TEST_ACTION_DELETE, \
+    CHAOS_TEST_ACTION_DELETE_IF, \
+    CHAOS_TEST_ACTION_DELETE_NOT_FOUND, \
+    CHAOS_TEST_ACTION_FIND, \
+    CHAOS_TEST_ACTION_FIND_NOT_FOUND
+
+MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
+
 BEGIN_TEST_SUITE(clds_singly_linked_list_inttests)
 
 TEST_SUITE_INITIALIZE(suite_init)
@@ -91,54 +139,6 @@ TEST_FUNCTION(clds_singly_linked_list_create_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-typedef struct CHAOS_TEST_ITEM_DATA_TAG
-{
-    CLDS_SINGLY_LINKED_LIST_ITEM* item;
-    volatile LONG item_state;
-} CHAOS_TEST_ITEM_DATA;
-
-typedef struct CHAOS_TEST_CONTEXT_TAG
-{
-    volatile LONG done;
-    CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
-#ifdef _MSC_VER
-    /*warning C4200: nonstandard extension used: zero-sized array in struct/union */
-#pragma warning(suppress:4200)
-#endif
-    CHAOS_TEST_ITEM_DATA items[];
-} CHAOS_TEST_CONTEXT;
-
-typedef struct CHAOS_THREAD_DATA_TAG
-{
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
-    THREAD_HANDLE thread_handle;
-    CHAOS_TEST_CONTEXT* chaos_test_context;
-} CHAOS_THREAD_DATA;
-
-#define CHAOS_THREAD_COUNT  8
-#define CHAOS_ITEM_COUNT    10000
-#define CHAOS_TEST_RUNTIME  30000
-
-#define TEST_LIST_ITEM_STATE_VALUES \
-    TEST_LIST_ITEM_NOT_USED, \
-    TEST_LIST_ITEM_INSERTING, \
-    TEST_LIST_ITEM_USED, \
-    TEST_LIST_ITEM_DELETING, \
-    TEST_LIST_ITEM_INSERTING_AGAIN, \
-    TEST_LIST_ITEM_FINDING
-
-MU_DEFINE_ENUM(TEST_LIST_ITEM_STATE, TEST_LIST_ITEM_STATE_VALUES);
-
-#define CHAOS_TEST_ACTION_VALUES \
-    CHAOS_TEST_ACTION_INSERT, \
-    CHAOS_TEST_ACTION_DELETE, \
-    CHAOS_TEST_ACTION_DELETE_IF, \
-    CHAOS_TEST_ACTION_DELETE_NOT_FOUND, \
-    CHAOS_TEST_ACTION_FIND, \
-    CHAOS_TEST_ACTION_FIND_NOT_FOUND
-
-MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
-
 static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, LONG new_item_state, LONG old_item_state, int* selected_item_index)
 {
     int item_index = (rand() * (item_count - 1)) / RAND_MAX;
@@ -181,7 +181,7 @@ static int chaos_thread(void* arg)
     while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
-        CHAOS_TEST_ACTION action = rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX;
+        CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
         int item_index = (rand() * (CHAOS_ITEM_COUNT - 1)) / RAND_MAX;
 
         switch (action)
