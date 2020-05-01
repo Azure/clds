@@ -141,7 +141,8 @@ jobs:
     displayName: 'VsTest - testAssemblies'
     inputs:
       testAssemblyVer2: |
-          **\*test*.dll
+          build_x86\**\*_ut_*.dll
+          build_x86\**\*_int_*.dll
           !**\obj\**
       vsTestVersion: 15.0
       runTestsInIsolation: true
