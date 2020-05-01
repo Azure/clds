@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(clds)
 
+include(CTest)
+
 option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)" OFF)
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
 option(run_traceability "run traceability tool (default is ON)" ON)
