@@ -156,7 +156,8 @@ typedef struct CHAOS_THREAD_DATA_TAG
     TEST_LIST_ITEM_USED, \
     TEST_LIST_ITEM_DELETING, \
     TEST_LIST_ITEM_INSERTING_AGAIN, \
-    TEST_LIST_ITEM_FINDING
+    TEST_LIST_ITEM_FINDING, \
+    TEST_LIST_ITEM_SETTING_VALUE
 
 MU_DEFINE_ENUM(TEST_LIST_ITEM_STATE, TEST_LIST_ITEM_STATE_VALUES);
 
@@ -169,7 +170,8 @@ MU_DEFINE_ENUM(TEST_LIST_ITEM_STATE, TEST_LIST_ITEM_STATE_VALUES);
     CHAOS_TEST_ACTION_DELETE_KEY_NOT_FOUND, \
     CHAOS_TEST_ACTION_REMOVE_KEY_NOT_FOUND, \
     CHAOS_TEST_ACTION_FIND, \
-    CHAOS_TEST_ACTION_FIND_NOT_FOUND
+    CHAOS_TEST_ACTION_FIND_NOT_FOUND, \
+    CHAOS_TEST_ACTION_SET_VALUE
 
 MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
 
@@ -1343,11 +1345,11 @@ static int chaos_thread(void* arg)
                 new_item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, new_item);
                 item_payload->key = item_index + 1;
-
+            
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
-
+            
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
-
+            
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1356,7 +1358,7 @@ static int chaos_thread(void* arg)
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED, &item_index))
             {
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_NOT_FOUND, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
-
+            
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1366,7 +1368,7 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* removed_item;
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_NOT_FOUND, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
-
+            
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1390,6 +1392,22 @@ static int chaos_thread(void* arg)
                 ASSERT_IS_NULL(found_item);
             
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+            }
+            break;
+
+        case CHAOS_TEST_ACTION_SET_VALUE:
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_SETTING_VALUE, TEST_LIST_ITEM_USED, &item_index))
+            {
+                CLDS_SORTED_LIST_ITEM* old_item;
+                chaos_test_context->items[item_index].item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+                TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
+                item_payload->key = item_index + 1;
+
+                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
+
+                CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
+
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
         }
