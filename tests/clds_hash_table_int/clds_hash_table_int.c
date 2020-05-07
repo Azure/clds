@@ -67,7 +67,6 @@ static int test_key_compare(void* key1, void* key2)
 
 static void test_skipped_seq_no_cb(void* context, int64_t skipped_sequence_no)
 {
-    LogInfo("Skipped seq no.: %" PRIu64, skipped_sequence_no);
     (void)context;
     (void)skipped_sequence_no;
 }
@@ -475,7 +474,8 @@ typedef struct CHAOS_THREAD_DATA_TAG
     TEST_HASH_TABLE_ITEM_USED, \
     TEST_HASH_TABLE_ITEM_DELETING, \
     TEST_HASH_TABLE_ITEM_INSERTING_AGAIN, \
-    TEST_HASH_TABLE_ITEM_FINDING
+    TEST_HASH_TABLE_ITEM_FINDING, \
+    TEST_HASH_TABLE_ITEM_SETTING_VALUE
 
 MU_DEFINE_ENUM(TEST_HASH_TABLE_ITEM_STATE, TEST_HASH_TABLE_ITEM_STATE_VALUES);
 
@@ -489,7 +489,9 @@ MU_DEFINE_ENUM(TEST_HASH_TABLE_ITEM_STATE, TEST_HASH_TABLE_ITEM_STATE_VALUES);
     CHAOS_TEST_ACTION_DELETE_NOT_FOUND, \
     CHAOS_TEST_ACTION_REMOVE_NOT_FOUND, \
     CHAOS_TEST_ACTION_FIND, \
-    CHAOS_TEST_ACTION_FIND_NOT_FOUND
+    CHAOS_TEST_ACTION_FIND_NOT_FOUND, \
+    CHAOS_TEST_ACTION_SET_VALUE, \
+    CHAOS_TEST_ACTION_SET_VALUE_SAME_ITEM
 
 MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
 
@@ -1369,15 +1371,15 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
         else
         {
             item_index++;
+            if (item_index == item_count)
+            {
+                item_index = 0;
+            }
+
             if (item_index == start_item_index)
             {
                 result = false;
                 break;
-            }
-
-            if (item_index == item_count)
-            {
-                item_index = 0;
             }
         }
     } while (1);
@@ -1518,6 +1520,38 @@ static int chaos_thread(void* arg)
                 ASSERT_IS_NULL(found_item);
 
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+            }
+            break;
+
+        case CHAOS_TEST_ACTION_SET_VALUE:
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
+            {
+                CLDS_HASH_TABLE_ITEM* old_item;
+
+                chaos_test_context->items[item_index].item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+                TEST_ITEM* item_payload = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
+                item_payload->key = item_index + 1;
+
+                ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
+
+                CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
+
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+            }
+            break;
+
+        case CHAOS_TEST_ACTION_SET_VALUE_SAME_ITEM:
+            if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
+            {
+                CLDS_HASH_TABLE_ITEM* old_item;
+
+                CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
+
+                ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
+
+                CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
+
+                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
         }

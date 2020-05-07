@@ -399,7 +399,6 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
         if (found_in_lower_levels)
         {
-            LogError("Key already exists in hash table");
             result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
         }
         else
@@ -467,7 +466,6 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                 if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS. ]*/
-                    LogError("Key already exists in hash table");
                     result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
                 }
                 else if (list_insert_result != CLDS_SORTED_LIST_INSERT_OK)

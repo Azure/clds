@@ -12,6 +12,8 @@
 #include "clds/clds_atomics.h"
 #include "clds/clds_hazard_pointers.h"
 
+#define ITERATION_COUNT_LOG_LIMIT 100000
+
 MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RESULT_VALUES);
 MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
 
@@ -136,10 +138,16 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
     CLDS_SORTED_LIST_DELETE_RESULT result = CLDS_SORTED_LIST_DELETE_ERROR;
 
     bool restart_needed;
-
+    uint64_t iteration_count = 0;
 
     do
     {
+        if (++iteration_count > ITERATION_COUNT_LOG_LIMIT)
+        {
+            LogInfo("internal_delete spun for %" PRIu64 " iterations", (uint64_t)ITERATION_COUNT_LOG_LIMIT);
+            iteration_count = 0;
+        }
+
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
         volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
         // start at the head of the list and scan through all nodes until we find the one we are looking for
@@ -388,9 +396,16 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
 
     // check that the node is really in the list and obtain
     bool restart_needed;
+    uint64_t iteration_count = 0;
 
     do
     {
+        if (++iteration_count > ITERATION_COUNT_LOG_LIMIT)
+        {
+            LogInfo("internal_remove spun for %" PRIu64 " iterations", (uint64_t)ITERATION_COUNT_LOG_LIMIT);
+            iteration_count = 0;
+        }
+
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
         volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
         volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
@@ -763,9 +778,16 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
             volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
             volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
             result = CLDS_SORTED_LIST_INSERT_ERROR;
+            uint64_t iteration_count = 0;
 
             do
             {
+                if (++iteration_count > ITERATION_COUNT_LOG_LIMIT)
+                {
+                    LogInfo("clds_sorted_list_insert spun for %" PRIu64 " iterations", (uint64_t)ITERATION_COUNT_LOG_LIMIT);
+                    iteration_count = 0;
+                }
+
                 // get the current_item value
                 volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
 
@@ -1106,9 +1128,16 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
 
         bool restart_needed;
         result = NULL;
+        uint64_t iteration_count = 0;
 
         do
         {
+            if (++iteration_count > ITERATION_COUNT_LOG_LIMIT)
+            {
+                LogInfo("clds_sorted_list_find_key spun for %" PRIu64 " iterations", (uint64_t)ITERATION_COUNT_LOG_LIMIT);
+                iteration_count = 0;
+            }
+
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
             volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
             volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
@@ -1263,8 +1292,16 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
             }
         }
 
+        uint64_t iteration_count = 0;
+
         do
         {
+            if (++iteration_count > ITERATION_COUNT_LOG_LIMIT)
+            {
+                LogInfo("clds_sorted_list_set_value spun for %" PRIu64 " iterations", (uint64_t)ITERATION_COUNT_LOG_LIMIT);
+                iteration_count = 0;
+            }
+
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
             volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
             volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;

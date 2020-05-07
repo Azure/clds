@@ -158,15 +158,15 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
         else
         {
             item_index++;
+            if (item_index == item_count)
+            {
+                item_index = 0;
+            }
+
             if (item_index == start_item_index)
             {
                 result = false;
                 break;
-            }
-
-            if (item_index == item_count)
-            {
-                item_index = 0;
             }
         }
     } while (1);
