@@ -2866,7 +2866,6 @@ TEST_FUNCTION(when_clds_sorted_list_set_value_in_lower_layer_fails_clds_hash_tab
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item_3);
 }
 
-#if 0
 /* on_sorted_list_skipped_seq_no */
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_075: [ on_sorted_list_skipped_seq_no called with NULL context shall return. ]*/
@@ -3691,6 +3690,5 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_mult
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
-#endif
 
 END_TEST_SUITE(clds_hash_table_unittests)
