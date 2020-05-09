@@ -1244,7 +1244,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
     return result;
 }
 
-CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, const void* key, CLDS_SORTED_LIST_ITEM* new_item, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number)
+CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, const void* key, CLDS_SORTED_LIST_ITEM* new_item, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number, bool only_if_exists)
 {
     CLDS_SORTED_LIST_SET_VALUE_RESULT result;
 
@@ -1278,17 +1278,18 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, new_item);
-
+        int64_t insert_seq_no;
+        
         /* Codes_SRS_CLDS_SORTED_LIST_01_091: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
         if (clds_sorted_list->sequence_number != NULL)
         {
             /* Codes_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
-            new_item->seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+            insert_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_092: [ If the sequence_number argument passed to clds_sorted_list_set_value is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
             if (sequence_number != NULL)
             {
-                *sequence_number = new_item->seq_no;
+                *sequence_number = insert_seq_no;
             }
         }
 
@@ -1317,18 +1318,32 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
                 if (current_item == NULL)
                 {
+                    if (only_if_exists)
+                    {
+                        if (previous_item != NULL)
+                        {
+                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                        }
+
+                        /* Codes_SRS_CLDS_SORTED_LIST_01_093: [ If the key entry does not exist and only_if_exists is true, clds_sorted_list_set_value shall return CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND. ]*/
+                        result = CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND;
+                        restart_needed = false;
+                        break;
+                    }
+
                     new_item->next = NULL;
 
                     // not found, so insert it here
                     if (previous_item != NULL)
                     {
                         // have a previous item
-                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list, new_item shall be inserted at the key position. ]*/
+                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
                         if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, NULL) != NULL)
                         {
                             // let go of previous hazard pointer
                             clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                             restart_needed = true;
+
                             break;
                         }
                         else
@@ -1347,7 +1362,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                     else
                     {
                         // no previous item, replace the head
-                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list, new_item shall be inserted at the key position. ]*/
+                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
                         if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, new_item, NULL) != NULL)
                         {
                             restart_needed = true;
@@ -1412,34 +1427,10 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             {
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_088: [ If the key entry exists in the list, its value shall be replaced with new_item. ]*/
 
-                                if (current_item == new_item)
-                                {
-                                    if (previous_item != NULL)
-                                    {
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                    }
-
-                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                    restart_needed = false;
-
-                                    /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
-                                    *old_item = (CLDS_SORTED_LIST_ITEM*)current_item;
-                                    (void)clds_sorted_list_node_inc_ref(*old_item);
-
-                                    clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, (void*)current_item, reclaim_list_node);
-
-                                    /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
-                                    result = CLDS_SORTED_LIST_SET_VALUE_OK;
-                                    break;
-                                }
-
                                 volatile CLDS_SORTED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
 
                                 // clear any delete lock bit from what we read
                                 current_next = (void*)((uintptr_t)current_next & ~0x1);
-
-                                // set the new_item->next to point to the next item in the list
-                                new_item->next = current_next;
 
                                 if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 0x1), (PVOID)current_next) != (PVOID)current_next)
                                 {
@@ -1452,6 +1443,70 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                     restart_needed = true;
                                     break;
                                 }
+
+                                if (clds_sorted_list->sequence_number != NULL)
+                                {
+                                    if (InterlockedAdd64(clds_sorted_list->sequence_number, 0) != insert_seq_no)
+                                    {
+                                        if (clds_sorted_list->skipped_seq_no_cb != NULL)
+                                        {
+                                            clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, insert_seq_no);
+                                        }
+
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
+                                        insert_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_092: [ If the sequence_number argument passed to clds_sorted_list_set_value is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
+                                        if (sequence_number != NULL)
+                                        {
+                                            *sequence_number = insert_seq_no;
+                                        }
+                                    }
+                                }
+
+                                // same item!, locked, noone changes it now, so we can set the seq no.
+                                if (current_item == new_item)
+                                {
+                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 0x1)) != (PVOID)((uintptr_t)current_next | 0x1))
+                                    {
+                                        LogError("This should not happen");
+                                        if (previous_item != NULL)
+                                        {
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        }
+
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                        restart_needed = false;
+
+                                        result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        if (previous_item != NULL)
+                                        {
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        }
+
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+                                        *old_item = (CLDS_SORTED_LIST_ITEM*)current_item;
+
+                                        // no need to inc_ref or similar as the item is going to be held in the list
+
+                                        restart_needed = false;
+
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
+
+                                        break;
+                                    }
+                                }
+
+                                // set the new_item->next to point to the next item in the list
+                                new_item->next = current_next;
 
                                 // now its locked, no insert/delete should be happening on current->next
                                 if (previous_item != NULL)
@@ -1536,56 +1591,73 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             }
                             else if (compare_result < 0)
                             {
-                                // need to insert between these 2 nodes
-                                new_item->next = current_item;
-
-                                if (previous_item != NULL)
+                                if (only_if_exists)
                                 {
-                                    // have a previous item
-                                    /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list, new_item shall be inserted at the key position. ]*/
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
-                                    {
-                                        // let go of previous hazard pointer
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                        restart_needed = true;
-                                        break;
-                                    }
-                                    else
+                                    if (previous_item != NULL)
                                     {
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                        restart_needed = false;
-
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
-                                        *old_item = NULL;
-
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
-                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
-                                        break;
                                     }
+
+                                    clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_093: [ If the key entry does not exist and only_if_exists is true, clds_sorted_list_set_value shall return CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND. ]*/
+                                    result = CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND;
+                                    restart_needed = false;
+                                    break;
                                 }
                                 else
                                 {
-                                    /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list, new_item shall be inserted at the key position. ]*/
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    // need to insert between these 2 nodes
+                                    new_item->next = current_item;
+
+                                    if (previous_item != NULL)
                                     {
-                                        // let go of previous hazard pointer
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                        restart_needed = true;
-                                        break;
+                                        // have a previous item
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
+                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                        {
+                                            // let go of previous hazard pointer
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = false;
+
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+                                            *old_item = NULL;
+
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+                                            result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                            break;
+                                        }
                                     }
                                     else
                                     {
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-                                        restart_needed = false;
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
+                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                        {
+                                            // let go of previous hazard pointer
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+                                            restart_needed = false;
 
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
-                                        *old_item = NULL;
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
+                                            *old_item = NULL;
 
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
-                                        result = CLDS_SORTED_LIST_SET_VALUE_OK;
-                                        break;
+                                            /* Codes_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
+                                            result = CLDS_SORTED_LIST_SET_VALUE_OK;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -1610,6 +1682,15 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
         /*Codes_SRS_CLDS_SORTED_LIST_42_029: [ clds_sorted_list_set_value shall decrement the count of pending write operations. ]*/
         end_write_operation(clds_sorted_list);
+
+        if (result != CLDS_SORTED_LIST_SET_VALUE_OK)
+        {
+            // the insert as part of set value did not really materialize
+            if (clds_sorted_list->skipped_seq_no_cb != NULL)
+            {
+                clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, insert_seq_no);
+            }
+        }
     }
 
     return result;

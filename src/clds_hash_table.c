@@ -1,9 +1,5 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4200)
-#endif
-
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -29,6 +25,9 @@ typedef struct BUCKET_ARRAY_TAG
     volatile LONG bucket_count;
     volatile LONG item_count;
     volatile LONG pending_insert_count;
+#ifdef _MSC_VER
+#pragma warning(suppress: 4200)
+#endif
     CLDS_SORTED_LIST_HANDLE hash_table[];
 } BUCKET_ARRAY;
 
@@ -358,7 +357,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
         found_in_lower_levels = false;
 
-        // check if the key exists in the lover level bucket arrays
+        // check if the key exists in the lower level bucket arrays
         BUCKET_ARRAY* find_bucket_array = current_bucket_array;
         BUCKET_ARRAY* next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
 
@@ -818,6 +817,9 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
     }
     else
     {
+        uint64_t bucket_index;
+        CLDS_SORTED_LIST_HANDLE bucket_list;
+
         /* Codes_SRS_CLDS_HASH_TABLE_42_055: [ clds_hash_table_set_value shall try the following until it acquires a write lock for the table: ]*/
         /* Codes_SRS_CLDS_HASH_TABLE_42_056: [ clds_hash_table_set_value shall increment the count of pending write operations. ]*/
         /* Codes_SRS_CLDS_HASH_TABLE_42_057: [ If the counter to lock the table for writes is non-zero then: ]*/
@@ -847,105 +849,125 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
             } while (1);
         }
 
-        // now replace the item in the list
-        BUCKET_ARRAY* current_bucket_array = first_bucket_array;
-        CLDS_SORTED_LIST_HANDLE bucket_list;
-
-        // look for the item in this bucket array
-        // find the bucket
-        uint64_t bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
-        bool restart_needed = false;
-
-        do
+        bool found_in_lower_levels = false;
+        BUCKET_ARRAY* find_bucket_array = next_bucket_array;
+        while (find_bucket_array != NULL)
         {
-            // do we have a list here or do we create one?
-            bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+            next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&find_bucket_array->next_bucket, NULL, NULL);
+
+            bucket_index = hash % InterlockedAdd(&find_bucket_array->bucket_count, 0);
+            bucket_list = InterlockedCompareExchangePointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
+
             if (bucket_list != NULL)
             {
-                restart_needed = false;
-            }
-            else
-            {
-                // create a list
-                bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, clds_hash_table->sequence_number == NULL ? NULL : on_sorted_list_skipped_seq_no, clds_hash_table);
-                if (bucket_list == NULL)
+                CLDS_SORTED_LIST_ITEM* sorted_list_item = clds_sorted_list_find_key(bucket_list, clds_hazard_pointers_thread, key);
+                if (sorted_list_item != NULL)
                 {
-                    LogError("Cannot allocate list for hash table bucket");
+                    clds_sorted_list_node_release(sorted_list_item);
+
+                    HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, new_item);
+                    hash_table_item->key = key;
+
+                    CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value_result = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number, true);
+                    switch (sorted_list_set_value_result)
+                    {
+                    default:
+                    case CLDS_SORTED_LIST_SET_VALUE_ERROR:
+                        LogError("Cannot set key in sorted list");
+                        result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
+                        break;
+
+                    case CLDS_SORTED_LIST_SET_VALUE_OK:
+                        found_in_lower_levels = true;
+                        result = CLDS_HASH_TABLE_SET_VALUE_OK;
+                        break;
+
+                    case CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND:
+                        break;
+                    }
+
+                    if (sorted_list_set_value_result != CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND)
+                    {
+                        // do not continue iterating through the bucket layers
+                        break;
+                    }
+                }
+            }
+
+            find_bucket_array = next_bucket_array;
+        }
+
+        if (!found_in_lower_levels)
+        {
+            // now replace the item in the list
+            BUCKET_ARRAY* current_bucket_array = first_bucket_array;
+
+            // look for the item in this bucket array
+            // find the bucket
+            bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
+            bool restart_needed = false;
+
+            do
+            {
+                // do we have a list here or do we create one?
+                bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                if (bucket_list != NULL)
+                {
                     restart_needed = false;
                 }
                 else
                 {
-                    // now put the list in the bucket
-                    if (InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                    // create a list
+                    bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, clds_hash_table->sequence_number == NULL ? NULL : on_sorted_list_skipped_seq_no, clds_hash_table);
+                    if (bucket_list == NULL)
                     {
-                        // oops, someone else inserted a new list, just bail on our list and restart
-                        clds_sorted_list_destroy(bucket_list);
-                        restart_needed = true;
+                        LogError("Cannot allocate list for hash table bucket");
+                        restart_needed = false;
                     }
                     else
                     {
-                        // set new list
-                        restart_needed = false;
+                        // now put the list in the bucket
+                        if (InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                        {
+                            // oops, someone else inserted a new list, just bail on our list and restart
+                            clds_sorted_list_destroy(bucket_list);
+                            restart_needed = true;
+                        }
+                        else
+                        {
+                            // set new list
+                            restart_needed = false;
+                        }
                     }
                 }
-            }
-        } while (restart_needed);
+            } while (restart_needed);
 
-        if (bucket_list == NULL)
-        {
-            LogError("Cannot acquire bucket list");
-            result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
-        }
-        else
-        {
-            HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, new_item);
-
-            hash_table_item->key = key;
-
-            CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number);
-            if (sorted_list_set_value != CLDS_SORTED_LIST_SET_VALUE_OK)
+            if (bucket_list == NULL)
             {
-                LogError("Cannot set key in sorted list");
+                LogError("Cannot acquire bucket list");
                 result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
             }
             else
             {
-                if (*old_item == NULL)
+                HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, new_item);
+
+                hash_table_item->key = key;
+
+                CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number, false);
+                if (sorted_list_set_value != CLDS_SORTED_LIST_SET_VALUE_OK)
                 {
-                    (void)InterlockedIncrement(&first_bucket_array->item_count);
+                    LogError("Cannot set key in sorted list");
+                    result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
                 }
-
-                // now remove any leftovers in the lower layers
-                current_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&first_bucket_array->next_bucket, NULL, NULL);
-                while (current_bucket_array != NULL)
+                else
                 {
-                    int64_t remove_seq_no;
-                    CLDS_SORTED_LIST_ITEM* removed_old_item;
-                    next_bucket_array = InterlockedCompareExchangePointer((volatile PVOID*)&current_bucket_array->next_bucket, NULL, NULL);
-                    bucket_index = hash % InterlockedAdd(&current_bucket_array->bucket_count, 0);
-                    bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
-                    if (bucket_list != NULL)
+                    if (*old_item == NULL)
                     {
-                        if (clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, &removed_old_item, &remove_seq_no) == CLDS_SORTED_LIST_REMOVE_OK)
-                        {
-                            if (clds_hash_table->skipped_seq_no_cb != NULL)
-                            {
-                                // notify the user that this seq no will be skipped
-                                clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, remove_seq_no);
-                            }
-
-                            (void)InterlockedDecrement(&current_bucket_array->item_count);
-
-                            *old_item = (void*)removed_old_item;
-
-                            break;
-                        }
+                        (void)InterlockedIncrement(&first_bucket_array->item_count);
                     }
 
-                    current_bucket_array = next_bucket_array;
+                    result = CLDS_HASH_TABLE_SET_VALUE_OK;
                 }
-
-                result = CLDS_HASH_TABLE_SET_VALUE_OK;
             }
         }
 

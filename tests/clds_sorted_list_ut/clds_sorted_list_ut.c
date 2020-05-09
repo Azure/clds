@@ -3541,7 +3541,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_sorted_list_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(NULL, hazard_pointers_thread, (void*)0x42, item_1, &old_item, NULL);
+    result = clds_sorted_list_set_value(NULL, hazard_pointers_thread, (void*)0x42, item_1, &old_item, NULL, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3567,7 +3567,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_hazard_pointers_thread_f
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(list, NULL, (void*)0x42, item_1, &old_item, NULL);
+    result = clds_sorted_list_set_value(list, NULL, (void*)0x42, item_1, &old_item, NULL, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3595,7 +3595,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_key_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, NULL, item_1, &old_item, NULL);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, NULL, item_1, &old_item, NULL, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3620,7 +3620,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_new_item_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, NULL, &old_item, NULL);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, NULL, &old_item, NULL, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3646,7 +3646,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_old_item_fails)
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, NULL, NULL);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, NULL, NULL, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3674,7 +3674,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_when_no_start
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3687,7 +3687,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_when_no_start
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
-/* Tests_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list, new_item shall be inserted at the key position. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_089: [ The previous value shall be returned in old_item. ]*/
 /* Tests_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
 TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts_the_item)
@@ -3707,7 +3707,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts
     umock_c_reset_all_calls();
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3721,6 +3721,124 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts
     CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, result_item_1);
     clds_sorted_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_093: [ If the key entry does not exist and only_if_exists is true, clds_sorted_list_set_value shall return CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_and_only_if_exists_is_true_returns_NOT_FOUND)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    volatile int64_t sequence_number = 45;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4244);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    int64_t set_value_seq_no;
+    item_1_payload->key = 0x42;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(test_skipped_seq_no_cb((void*)0x4244, 46));
+
+    // act
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no, true);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, result);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item_1);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_093: [ If the key entry does not exist and only_if_exists is true, clds_sorted_list_set_value shall return CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_with_one_other_item_in_the_list_and_only_if_exists_is_true_returns_NOT_FOUND)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    volatile int64_t sequence_number = 45;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4244);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    int64_t set_value_seq_no_1;
+    item_1_payload->key = 0x42;
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    int64_t set_value_seq_no_2;
+    item_2_payload->key = 0x43;
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no_1, false));
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(test_skipped_seq_no_cb((void*)0x4244, 47));
+
+    // act
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_2, &old_item, &set_value_seq_no_2, true);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, result);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item_2);
+}
+
+/* Tests_SRS_CLDS_SORTED_LIST_01_093: [ If the key entry does not exist and only_if_exists is true, clds_sorted_list_set_value shall return CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND. ]*/
+TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_insert_before_an_insert_and_only_if_exists_is_true_returns_NOT_FOUND)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    volatile int64_t sequence_number = 45;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4244);
+    CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    CLDS_SORTED_LIST_ITEM* old_item;
+    CLDS_SORTED_LIST_SET_VALUE_RESULT result;
+    TEST_ITEM* item_1_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_1);
+    int64_t set_value_seq_no_1;
+    item_1_payload->key = 0x42;
+    TEST_ITEM* item_2_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item_2);
+    int64_t set_value_seq_no_2;
+    item_2_payload->key = 0x41;
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no_1, false));
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
+    STRICT_EXPECTED_CALL(test_skipped_seq_no_cb((void*)0x4244, 47));
+
+    // act
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x41, item_2, &old_item, &set_value_seq_no_2, true);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, result);
+
+    // cleanup
+    clds_sorted_list_destroy(list);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, item_2);
 }
 
 /* Tests_SRS_CLDS_SORTED_LIST_01_080: [ clds_sorted_list_set_value shall replace in the list the item that matches the criteria given by the compare function passed to clds_sorted_list_create with new_item and on success it shall return CLDS_SORTED_LIST_SET_VALUE_OK. ]*/
@@ -3756,7 +3874,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_1, IGNORED_ARG));
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_2, &old_item, &set_value_seq_no);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_2, &old_item, &set_value_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3810,7 +3928,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_2, IGNORED_ARG));
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, &set_value_seq_no);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, &set_value_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3859,7 +3977,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_2, IGNORED_ARG));
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, NULL);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, NULL, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3898,7 +4016,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_still_increme
     item_3_payload->key = 0x43;
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
     (void)clds_sorted_list_insert(list, hazard_pointers_thread, item_1, NULL);
-    (void)clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, NULL);
+    (void)clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_3, &old_item, NULL, false);
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
@@ -3909,7 +4027,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_still_increme
     STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_3, IGNORED_ARG));
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_2, &old_item, &set_value_seq_no);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x43, item_2, &old_item, &set_value_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3959,10 +4077,9 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_the_same_item_succeeds)
     STRICT_EXPECTED_CALL(clds_st_hash_set_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
     STRICT_EXPECTED_CALL(clds_st_hash_set_destroy(IGNORED_ARG)).IgnoreAllCalls();
     STRICT_EXPECTED_CALL(clds_st_hash_set_find(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
-    STRICT_EXPECTED_CALL(clds_hazard_pointers_reclaim(hazard_pointers_thread, item_1, IGNORED_ARG));
 
     // act
-    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no);
+    result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)0x42, item_1, &old_item, &set_value_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
