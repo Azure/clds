@@ -371,15 +371,35 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 
    - **SRS_CLDS_HASH_TABLE_42_059: [** `clds_hash_table_set_value` shall wait for the counter to lock the table for writes to reach 0 and repeat. **]**
 
-**S_R_S_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` on the first (topmost) bucket array while passing `key`, `new_item` and `old_item` as arguments.. **]**
+**SRS_CLDS_HASH_TABLE_01_085: [** `clds_hash_table_set_value` shall go through all non top level bucket arrays and: **]**
 
-**S_R_S_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` succeeds and returns an item in `old_item`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+- **SRS_CLDS_HASH_TABLE_01_107: [** If there is no sorted list in the bucket identified by the hash of the key, `clds_hash_table_set_value` shall advance to the next level of buckets. **]**
 
-**S_R_S_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` succeeds and returns NULL in `old_item`, `clds_hash_table_set_value` shall proceed to delete the `key` from all the bucket arrays except the first one (where the key was set). **]**
+- **SRS_CLDS_HASH_TABLE_01_108: [** If there is a sorted list in the bucket identified by the hash of the key, `clds_hash_table_set_value` shall find the key in the list. **]**
 
-**S_R_S_CLDS_HASH_TABLE_01_095: [** If any error occurs, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+- **SRS_CLDS_HASH_TABLE_01_109: [** If the key is not found, `clds_hash_table_set_value` shall advance to the next level of buckets. **]**
+
+- **SRS_CLDS_HASH_TABLE_01_110: [** If the key is found, `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` with the `key`, `new_item` and `old_item` and `only_if_exists` set to `true`. **]**
+
+  - **SRS_CLDS_HASH_TABLE_01_111: [** If `clds_sorted_list_set_value` fails, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+  - **SRS_CLDS_HASH_TABLE_01_112: [** If `clds_sorted_list_set_value` succeeds, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+
+**SRS_CLDS_HASH_TABLE_01_102: [** If the key is not found in any of the non top level buckets arrays, `clds_hash_table_set_value`: **]**
+
+- **SRS_CLDS_HASH_TABLE_01_103: [** `clds_hash_table_set_value` shall obtain the sorted list at the bucked corresponding to the hash of the key. **]**
+
+- **SRS_CLDS_HASH_TABLE_01_104: [**  If no list exists at the designated bucket, one shall be created. **]**
+
+- **SRS_CLDS_HASH_TABLE_01_105: [** `clds_hash_table_set_value` shall call `clds_hash_table_set_value` on the top level bucket array, passing `key`, `new_item`, `old_item` and `only_if_exists` set to `false`. **]**
+
+- **SRS_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` returns `CLDS_SORTED_LIST_SET_VALUE_OK`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+
+- **SRS_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` returns any other value, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
 **SRS_CLDS_HASH_TABLE_42_060: [** `clds_hash_table_set_value` shall decrement the count of pending write operations. **]**
+
+**SRS_CLDS_HASH_TABLE_01_106: [** If any error occurs, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 
 ### clds_hash_table_find
 

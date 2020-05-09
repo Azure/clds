@@ -849,7 +849,8 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
             } while (1);
         }
 
-        bool found_in_lower_levels = false;
+        /* Codes_SRS_CLDS_HASH_TABLE_01_085: [ clds_hash_table_set_value shall go through all non top level bucket arrays and: ]*/
+        bool set_value_in_top_level = true;
         BUCKET_ARRAY* find_bucket_array = next_bucket_array;
         while (find_bucket_array != NULL)
         {
@@ -860,6 +861,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 
             if (bucket_list != NULL)
             {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_108: [ If there is a sorted list in the bucket identified by the hash of the key, clds_hash_table_set_value shall find the key in the list. ]*/
                 CLDS_SORTED_LIST_ITEM* sorted_list_item = clds_sorted_list_find_key(bucket_list, clds_hazard_pointers_thread, key);
                 if (sorted_list_item != NULL)
                 {
@@ -868,38 +870,46 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, new_item);
                     hash_table_item->key = key;
 
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_110: [ If the key is found, clds_hash_table_set_value shall call clds_sorted_list_set_value with the key, new_item and old_item and only_if_exists set to true. ]*/
                     CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value_result = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number, true);
                     switch (sorted_list_set_value_result)
                     {
                     default:
                     case CLDS_SORTED_LIST_SET_VALUE_ERROR:
-                        LogError("Cannot set key in sorted list");
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_111: [ If clds_sorted_list_set_value fails, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
+                        LogError("Cannot set key in sorted list: failed with %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_set_value_result));
                         result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
                         break;
 
                     case CLDS_SORTED_LIST_SET_VALUE_OK:
-                        found_in_lower_levels = true;
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_112: [ If clds_sorted_list_set_value succeeds, clds_hash_table_set_value shall return CLDS_HASH_TABLE_SET_VALUE_OK. ]*/
                         result = CLDS_HASH_TABLE_SET_VALUE_OK;
                         break;
 
                     case CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND:
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_109: [ If the key is not found, clds_hash_table_set_value shall advance to the next level of buckets. ]*/
                         break;
                     }
 
                     if (sorted_list_set_value_result != CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND)
                     {
                         // do not continue iterating through the bucket layers
+                        set_value_in_top_level = false;
                         break;
                     }
                 }
+            }
+            else
+            {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_107: [ If there is no sorted list in the bucket identified by the hash of the key, clds_hash_table_set_value shall advance to the next level of buckets. ]*/
             }
 
             find_bucket_array = next_bucket_array;
         }
 
-        if (!found_in_lower_levels)
+        if (set_value_in_top_level)
         {
-            // now replace the item in the list
+            /* Codes_SRS_CLDS_HASH_TABLE_01_102: [ If the key is not found in any of the non top level buckets arrays, clds_hash_table_set_value: ]*/
             BUCKET_ARRAY* current_bucket_array = first_bucket_array;
 
             // look for the item in this bucket array
@@ -909,6 +919,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 
             do
             {
+                /* Codes_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucked corresponding to the hash of the key. ]*/
                 // do we have a list here or do we create one?
                 bucket_list = InterlockedCompareExchangePointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
@@ -918,9 +929,11 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                 else
                 {
                     // create a list
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_104: [  If no list exists at the designated bucket, one shall be created. ]*/
                     bucket_list = clds_sorted_list_create(clds_hash_table->clds_hazard_pointers, get_item_key_cb, clds_hash_table, key_compare_cb, clds_hash_table, clds_hash_table->sequence_number, clds_hash_table->sequence_number == NULL ? NULL : on_sorted_list_skipped_seq_no, clds_hash_table);
                     if (bucket_list == NULL)
                     {
+                        /* Codes_SRS_CLDS_HASH_TABLE_01_106: [ If any error occurs, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
                         LogError("Cannot allocate list for hash table bucket");
                         restart_needed = false;
                     }
@@ -953,9 +966,11 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 
                 hash_table_item->key = key;
 
+                /* Codes_SRS_CLDS_HASH_TABLE_01_105: [ clds_hash_table_set_value shall call clds_hash_table_set_value on the top level bucket array, passing key, new_item, old_item and only_if_exists set to false. ]*/
                 CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number, false);
                 if (sorted_list_set_value != CLDS_SORTED_LIST_SET_VALUE_OK)
                 {
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_100: [ If clds_sorted_list_set_value returns any other value, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
                     LogError("Cannot set key in sorted list");
                     result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
                 }
@@ -966,6 +981,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                         (void)InterlockedIncrement(&first_bucket_array->item_count);
                     }
 
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_099: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_OK, clds_hash_table_set_value shall succeed and return CLDS_HASH_TABLE_SET_VALUE_OK. ]*/
                     result = CLDS_HASH_TABLE_SET_VALUE_OK;
                 }
             }
