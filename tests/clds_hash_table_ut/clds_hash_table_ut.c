@@ -3142,7 +3142,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
     int64_t start_seq_no;
-    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 10, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 20, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
     bool found_originals[10];
@@ -3151,7 +3151,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
     for (uint32_t i = 0; i < number_of_items; i++)
     {
         original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)((20 * i) + 1), original_items[i], NULL);
         found_originals[i] = false;
     }
     umock_c_reset_all_calls();
@@ -3237,7 +3237,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
     bool found_originals[10];
     uint32_t number_of_items = 10;
 
-    const uint32_t number_of_sorted_lists = 3;
+    const uint32_t number_of_sorted_lists = 10;
 
     for (uint32_t i = 0; i < number_of_items; i++)
     {
@@ -3419,7 +3419,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
     int64_t start_seq_no;
-    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 10, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 20, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
     bool found_originals[10];
@@ -3427,7 +3427,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
     for (uint32_t i = 0; i < 10; i++)
     {
         original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + (20 * i)), original_items[i], NULL);
         found_originals[i] = false;
     }
     umock_c_reset_all_calls();
@@ -3479,7 +3479,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
     CLDS_HASH_TABLE_ITEM* original_items[10];
     bool found_originals[10];
 
-    const uint32_t number_of_sorted_lists = 3;
+    const uint32_t number_of_sorted_lists = 10;
 
     for (uint32_t i = 0; i < 10; i++)
     {

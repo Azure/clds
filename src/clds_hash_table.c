@@ -26,7 +26,7 @@ typedef struct BUCKET_ARRAY_TAG
     volatile LONG item_count;
     volatile LONG pending_insert_count;
 #ifdef _MSC_VER
-#pragma warning(suppress: 4200)
+#pragma warning(disable: 4200)
 #endif
     CLDS_SORTED_LIST_HANDLE hash_table[];
 } BUCKET_ARRAY;
@@ -851,6 +851,8 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 
         /* Codes_SRS_CLDS_HASH_TABLE_01_085: [ clds_hash_table_set_value shall go through all non top level bucket arrays and: ]*/
         bool set_value_in_top_level = true;
+        result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
+
         BUCKET_ARRAY* find_bucket_array = next_bucket_array;
         while (find_bucket_array != NULL)
         {
@@ -878,23 +880,17 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     case CLDS_SORTED_LIST_SET_VALUE_ERROR:
                         /* Codes_SRS_CLDS_HASH_TABLE_01_111: [ If clds_sorted_list_set_value fails, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
                         LogError("Cannot set key in sorted list: failed with %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_set_value_result));
-                        result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
+                        set_value_in_top_level = false;
                         break;
 
                     case CLDS_SORTED_LIST_SET_VALUE_OK:
                         /* Codes_SRS_CLDS_HASH_TABLE_01_112: [ If clds_sorted_list_set_value succeeds, clds_hash_table_set_value shall return CLDS_HASH_TABLE_SET_VALUE_OK. ]*/
                         result = CLDS_HASH_TABLE_SET_VALUE_OK;
+                        set_value_in_top_level = false;
                         break;
 
                     case CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND:
                         /* Codes_SRS_CLDS_HASH_TABLE_01_109: [ If the key is not found, clds_hash_table_set_value shall advance to the next level of buckets. ]*/
-                        break;
-                    }
-
-                    if (sorted_list_set_value_result != CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND)
-                    {
-                        // do not continue iterating through the bucket layers
-                        set_value_in_top_level = false;
                         break;
                     }
                 }

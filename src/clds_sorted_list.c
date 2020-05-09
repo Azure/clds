@@ -1279,7 +1279,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, new_item);
-        int64_t insert_seq_no;
+        int64_t insert_seq_no = 0;
         
         /* Codes_SRS_CLDS_SORTED_LIST_01_091: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
         if (clds_sorted_list->sequence_number != NULL)
