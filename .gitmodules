@@ -19,3 +19,6 @@
 [submodule "deps/azure-c-util"]
 	path = deps/azure-c-util
 	url = https://github.com/Azure/azure-c-util.git
+[submodule "deps/azure-c-logging"]
+	path = deps/azure-c-logging
+	url = https://github.com/Azure/azure-c-logging.git

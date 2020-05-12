@@ -47,6 +47,11 @@ if ((NOT TARGET azure_macro_utils_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/
         include_directories(${MACRO_UTILS_INC_FOLDER})
 endif()
 
+if ((NOT TARGET azure_c_logging) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-logging/CMakeLists.txt))
+        add_subdirectory(deps/azure-c-logging)
+        include_directories(deps/azure-c-logging/inc)
+endif()
+
 if ((NOT TARGET ctest) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-ctest/CMakeLists.txt))
         add_subdirectory(deps/azure-ctest)
         include_directories(${CTEST_INC_FOLDER})
