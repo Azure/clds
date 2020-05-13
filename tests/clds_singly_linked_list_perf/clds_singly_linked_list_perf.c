@@ -6,8 +6,8 @@
 #include <stdbool.h>
 #include "clds/clds_singly_linked_list.h"
 #include "azure_c_util/threadapi.h"
-#include "azure_c_util/xlogging.h"
-#include "azure_c_util/tickcounter.h"
+#include "azure_c_util/timer.h"
+#include "azure_c_logging/xlogging.h"
 #include "clds_singly_linked_list_perf.h"
 
 #define THREAD_COUNT 10
@@ -24,8 +24,7 @@ typedef struct THREAD_DATA_TAG
 {
     CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
     CLDS_SINGLY_LINKED_LIST_ITEM* items[INSERT_COUNT];
-    TICK_COUNTER_HANDLE tick_counter;
-    tickcounter_ms_t runtime;
+    double runtime;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
 } THREAD_DATA;
 
@@ -35,46 +34,25 @@ static int insert_thread(void* arg)
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
     int result;
 
-    TICK_COUNTER_HANDLE tick_counter = tickcounter_create();
-    if (tick_counter == NULL)
+    double start_time = timer_global_get_elapsed_ms();
+    for (i = 0; i < INSERT_COUNT; i++)
     {
-        LogError("Cannot create tick counter");
+        if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
+        {
+            LogError("Error inserting");
+            break;
+        }
+    }
+
+    if (i < INSERT_COUNT)
+    {
+        LogError("Error in test");
         result = MU_FAILURE;
     }
     else
     {
-        tickcounter_ms_t start_time;
-
-        if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
-        {
-            LogError("Cannot get start time");
-            result = MU_FAILURE;
-        }
-        else
-        {
-            tickcounter_ms_t end_time;
-            for (i = 0; i < INSERT_COUNT; i++)
-            {
-                if (clds_singly_linked_list_insert(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != 0)
-                {
-                    LogError("Error inserting");
-                    break;
-                }
-            }
-
-            if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
-            {
-                LogError("Cannot get end time");
-                result = MU_FAILURE;
-            }
-            else
-            {
-                thread_data->runtime = end_time - start_time;
-                result = 0;
-            }
-        }
-
-        tickcounter_destroy(tick_counter);
+        thread_data->runtime = timer_global_get_elapsed_ms() - start_time;
+        result = 0;
     }
 
     ThreadAPI_Exit(result);
@@ -87,46 +65,25 @@ static int delete_thread(void* arg)
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
     int result;
 
-    TICK_COUNTER_HANDLE tick_counter = tickcounter_create();
-    if (tick_counter == NULL)
+    double start_time = timer_global_get_elapsed_ms();
+    for (i = 0; i < INSERT_COUNT; i++)
     {
-        LogError("Cannot create tick counter");
+        if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != CLDS_SINGLY_LINKED_LIST_DELETE_OK)
+        {
+            LogError("Error deleting");
+            break;
+        }
+    }
+
+    if (i < INSERT_COUNT)
+    {
+        LogError("Error in test");
         result = MU_FAILURE;
     }
     else
     {
-        tickcounter_ms_t start_time;
-
-        if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
-        {
-            LogError("Cannot get start time");
-            result = MU_FAILURE;
-        }
-        else
-        {
-            tickcounter_ms_t end_time;
-            for (i = 0; i < INSERT_COUNT; i++)
-            {
-                if (clds_singly_linked_list_delete(thread_data->singly_linked_list, thread_data->clds_hazard_pointers_thread, thread_data->items[i]) != CLDS_SINGLY_LINKED_LIST_DELETE_OK)
-                {
-                    LogError("Error deleting");
-                    break;
-                }
-            }
-
-            if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
-            {
-                LogError("Cannot get end time");
-                result = MU_FAILURE;
-            }
-            else
-            {
-                thread_data->runtime = end_time - start_time;
-                result = 0;
-            }
-        }
-
-        tickcounter_destroy(tick_counter);
+        thread_data->runtime = timer_global_get_elapsed_ms() - start_time;
+        result = 0;
     }
 
     ThreadAPI_Exit(result);
@@ -231,7 +188,7 @@ int clds_singly_linked_list_perf_main(void)
                     else
                     {
                         bool is_error = false;
-                        tickcounter_ms_t runtime = 0;
+                        double runtime = 0.0;
 
                         for (i = 0; i < THREAD_COUNT; i++)
                         {
@@ -249,8 +206,8 @@ int clds_singly_linked_list_perf_main(void)
 
                         if (!is_error)
                         {
-                            LogInfo("Insert test done in %zu ms, %02f inserts/s/thread, %02f inserts/s on all threads",
-                                (size_t)runtime,
+                            LogInfo("Insert test done in %.02f ms, %.02f inserts/s/thread, %.02f inserts/s on all threads",
+                                runtime,
                                 ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
                                 ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
 
@@ -294,8 +251,8 @@ int clds_singly_linked_list_perf_main(void)
 
                                 if (!is_error)
                                 {
-                                    LogInfo("Delete test done in %zu ms, %02f deletes/s/thread, %02f deletes/s on all threads",
-                                        (size_t)runtime,
+                                    LogInfo("Delete test done in %.02f ms, %.02f deletes/s/thread, %.02f deletes/s on all threads",
+                                        runtime,
                                         ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
                                         ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
                                 }

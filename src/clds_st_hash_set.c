@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "azure_c_util/gballoc.h"
-#include "azure_c_util/xlogging.h"
+#include "azure_c_logging/xlogging.h"
 #include "clds/clds_st_hash_set.h"
 
 /* this is a hash set implementation that is single threaded (not thread safe) */

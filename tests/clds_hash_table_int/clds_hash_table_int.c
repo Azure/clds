@@ -17,7 +17,7 @@
 #include "azure_c_util/gballoc.h"
 #include "azure_c_util/timer.h"
 #include "azure_c_util/threadapi.h"
-#include "azure_c_util/xlogging.h"
+#include "azure_c_logging/xlogging.h"
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
 

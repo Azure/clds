@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include "clds/lock_free_set.h"
 #include "azure_c_util/threadapi.h"
-#include "azure_c_util/xlogging.h"
-#include "azure_c_util/tickcounter.h"
+#include "azure_c_logging/xlogging.h"
+#include "azure_c_util/timer.h"
 
 #define THREAD_COUNT 4
 #define INSERT_COUNT 1000000
@@ -20,8 +20,7 @@ typedef struct THREAD_DATA_TAG
 {
     LOCK_FREE_SET_HANDLE set;
     TEST_SET_ITEM* items[INSERT_COUNT];
-    TICK_COUNTER_HANDLE tick_counter;
-    tickcounter_ms_t runtime;
+    double runtime;
 } THREAD_DATA;
 
 static int insert_thread(void* arg)
@@ -30,46 +29,26 @@ static int insert_thread(void* arg)
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
     int result;
 
-    TICK_COUNTER_HANDLE tick_counter = tickcounter_create();
-    if (tick_counter == NULL)
+    double start_time = timer_global_get_elapsed_ms();
+
+    for (i = 0; i < INSERT_COUNT; i++)
     {
-        LogError("Cannot create tick counter");
+        if (lock_free_set_insert(thread_data->set, &thread_data->items[i]->item) != 0)
+        {
+            LogError("Error inserting");
+            break;
+        }
+    }
+
+    if (i < INSERT_COUNT)
+    {
+        LogError("Error removing item");
         result = MU_FAILURE;
     }
     else
     {
-        tickcounter_ms_t start_time;
-
-        if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
-        {
-            LogError("Cannot get start time");
-            result = MU_FAILURE;
-        }
-        else
-        {
-            tickcounter_ms_t end_time;
-            for (i = 0; i < INSERT_COUNT; i++)
-            {
-                if (lock_free_set_insert(thread_data->set, &thread_data->items[i]->item) != 0)
-                {
-                    LogError("Error inserting");
-                    break;
-                }
-            }
-
-            if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
-            {
-                LogError("Cannot get end time");
-                result = MU_FAILURE;
-            }
-            else
-            {
-                thread_data->runtime = end_time - start_time;
-                result = 0;
-            }
-        }
-
-        tickcounter_destroy(tick_counter);
+        thread_data->runtime = timer_global_get_elapsed_ms() - start_time;
+        result = 0;
     }
 
     ThreadAPI_Exit(result);
@@ -82,46 +61,25 @@ static int remove_thread(void* arg)
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
     int result;
 
-    TICK_COUNTER_HANDLE tick_counter = tickcounter_create();
-    if (tick_counter == NULL)
+    double start_time = timer_global_get_elapsed_ms();
+    for (i = 0; i < INSERT_COUNT; i++)
     {
-        LogError("Cannot create tick counter");
+        if (lock_free_set_remove(thread_data->set, &thread_data->items[i]->item) != 0)
+        {
+            LogError("Error removing item %zu", i);
+            break;
+        }
+    }
+
+    if (i < INSERT_COUNT)
+    {
+        LogError("Error removing item");
         result = MU_FAILURE;
     }
     else
     {
-        tickcounter_ms_t start_time;
-
-        if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
-        {
-            LogError("Cannot get start time");
-            result = MU_FAILURE;
-        }
-        else
-        {
-            tickcounter_ms_t end_time;
-            for (i = 0; i < INSERT_COUNT; i++)
-            {
-                if (lock_free_set_remove(thread_data->set, &thread_data->items[i]->item) != 0)
-                {
-                    LogError("Error removing item %zu", i);
-                    break;
-                }
-            }
-
-            if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
-            {
-                LogError("Cannot get end time");
-                result = MU_FAILURE;
-            }
-            else
-            {
-                thread_data->runtime = end_time - start_time;
-                result = 0;
-            }
-        }
-
-        tickcounter_destroy(tick_counter);
+        thread_data->runtime = timer_global_get_elapsed_ms() - start_time;
+        result = 0;
     }
 
     ThreadAPI_Exit(result);
@@ -134,51 +92,30 @@ static int insert_and_remove_thread(void* arg)
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
     int result;
 
-    TICK_COUNTER_HANDLE tick_counter = tickcounter_create();
-    if (tick_counter == NULL)
+    double start_time = timer_global_get_elapsed_ms();
+    for (i = 0; i < INSERT_COUNT; i++)
     {
-        LogError("Cannot create tick counter");
+        if (lock_free_set_insert(thread_data->set, &thread_data->items[i]->item) != 0)
+        {
+            LogError("Error inserting item %zu", i);
+            break;
+        }
+        if (lock_free_set_remove(thread_data->set, &thread_data->items[i]->item) != 0)
+        {
+            LogError("Error removing item %zu", i);
+            break;
+        }
+    }
+
+    if (i < INSERT_COUNT)
+    {
+        LogError("Error in test");
         result = MU_FAILURE;
     }
     else
     {
-        tickcounter_ms_t start_time;
-
-        if (tickcounter_get_current_ms(tick_counter, &start_time) != 0)
-        {
-            LogError("Cannot get start time");
-            result = MU_FAILURE;
-        }
-        else
-        {
-            tickcounter_ms_t end_time;
-            for (i = 0; i < INSERT_COUNT; i++)
-            {
-                if (lock_free_set_insert(thread_data->set, &thread_data->items[i]->item) != 0)
-                {
-                    LogError("Error inserting item %zu", i);
-                    break;
-                }
-                if (lock_free_set_remove(thread_data->set, &thread_data->items[i]->item) != 0)
-                {
-                    LogError("Error removing item %zu", i);
-                    break;
-                }
-            }
-
-            if (tickcounter_get_current_ms(tick_counter, &end_time) != 0)
-            {
-                LogError("Cannot get end time");
-                result = MU_FAILURE;
-            }
-            else
-            {
-                thread_data->runtime = end_time - start_time;
-                result = 0;
-            }
-        }
-
-        tickcounter_destroy(tick_counter);
+        thread_data->runtime = timer_global_get_elapsed_ms() - start_time;
+        result = 0;
     }
 
     ThreadAPI_Exit(result);
@@ -266,7 +203,7 @@ int lock_free_set_perf_main(void)
                 else
                 {
                     bool is_error = false;
-                    tickcounter_ms_t runtime = 0;
+                    double runtime = 0.0;
 
                     for (i = 0; i < THREAD_COUNT; i++)
                     {
@@ -284,10 +221,10 @@ int lock_free_set_perf_main(void)
 
                     if (!is_error)
                     {
-                        LogInfo("Insert test done in %zu ms, %02f inserts/s/thread, %02f inserts/s on all threads",
-                            (size_t)runtime,
-                            ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
-                            ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
+                        LogInfo("Insert test done in %.02f ms, %.02f inserts/s/thread, %.02f inserts/s on all threads",
+                            runtime,
+                            ((double)THREAD_COUNT * (double)INSERT_COUNT) / runtime * 1000.0,
+                            ((double)THREAD_COUNT * (double)INSERT_COUNT) / (runtime / THREAD_COUNT) * 1000.0);
 
                         // remove test
 
@@ -310,7 +247,7 @@ int lock_free_set_perf_main(void)
                         }
                         else
                         {
-                            runtime = 0;
+                            runtime = 0.0;
 
                             for (i = 0; i < THREAD_COUNT; i++)
                             {
@@ -328,10 +265,10 @@ int lock_free_set_perf_main(void)
 
                             if (!is_error)
                             {
-                                LogInfo("Remove test done in %zu ms, %02f removes/s/thread, %02f removes/s on all threads",
-                                    (size_t)runtime,
-                                    ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
-                                    ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
+                                LogInfo("Remove test done in %.02f ms, %.02f removes/s/thread, %.02f removes/s on all threads",
+                                    runtime,
+                                    ((double)THREAD_COUNT * (double)INSERT_COUNT) / runtime * 1000.0,
+                                    ((double)THREAD_COUNT * (double)INSERT_COUNT) / (runtime / THREAD_COUNT) * 1000.0);
 
                                 // insert/remove test
 
@@ -372,8 +309,8 @@ int lock_free_set_perf_main(void)
 
                                     if (!is_error)
                                     {
-                                        LogInfo("Insert&remove test done in %zu ms, %02f cycles/s/thread, %02f cycles/s on all threads",
-                                            (size_t)runtime,
+                                        LogInfo("Insert&remove test done in %.02f ms, %.02f cycles/s/thread, %.02f cycles/s on all threads",
+                                            runtime,
                                             ((double)THREAD_COUNT * (double)INSERT_COUNT) / (double)runtime * 1000.0,
                                             ((double)THREAD_COUNT * (double)INSERT_COUNT) / ((double)runtime / THREAD_COUNT) * 1000.0);
                                     }
