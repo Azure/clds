@@ -457,10 +457,6 @@ typedef struct CHAOS_TEST_CONTEXT_TAG
     volatile LONG done;
     CLDS_HASH_TABLE_HANDLE hash_table;
     volatile LONG64 seq_no_count;
-#ifdef _MSC_VER
-    /*warning C4200: nonstandard extension used: zero-sized array in struct/union */
-#pragma warning(disable:4200)
-#endif
     CHAOS_TEST_ITEM_DATA items[];
 } CHAOS_TEST_CONTEXT;
 

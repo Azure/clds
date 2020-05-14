@@ -59,10 +59,6 @@ typedef struct CHAOS_TEST_CONTEXT_TAG
 {
     volatile LONG done;
     CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
-#ifdef _MSC_VER
-    /*warning C4200: nonstandard extension used: zero-sized array in struct/union */
-#pragma warning(disable:4200)
-#endif
     CHAOS_TEST_ITEM_DATA items[];
 } CHAOS_TEST_CONTEXT;
 
