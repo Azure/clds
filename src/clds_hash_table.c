@@ -25,9 +25,6 @@ typedef struct BUCKET_ARRAY_TAG
     volatile LONG bucket_count;
     volatile LONG item_count;
     volatile LONG pending_insert_count;
-#ifdef _MSC_VER
-#pragma warning(disable: 4200)
-#endif
     CLDS_SORTED_LIST_HANDLE hash_table[];
 } BUCKET_ARRAY;
 
