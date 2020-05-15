@@ -46,7 +46,7 @@ bool test_item_compare(void* item_compare_context, struct CLDS_SINGLY_LINKED_LIS
 {
     uintptr_t item_index = (uintptr_t)item_compare_context;
     TEST_ITEM* test_item = CLDS_SINGLY_LINKED_LIST_GET_VALUE(TEST_ITEM, item);
-    return item_index == test_item->value;
+    return (int)item_index == test_item->value;
 }
 
 typedef struct CHAOS_TEST_ITEM_DATA_TAG
@@ -124,7 +124,6 @@ TEST_FUNCTION(clds_singly_linked_list_create_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SINGLY_LINKED_LIST_HANDLE list;
-    volatile int64_t sequence_number = 45;
 
     // act
     list = clds_singly_linked_list_create(hazard_pointers);
