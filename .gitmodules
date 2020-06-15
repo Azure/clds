@@ -22,3 +22,6 @@
 [submodule "deps/azure-c-logging"]
 	path = deps/azure-c-logging
 	url = https://github.com/Azure/azure-c-logging.git
+[submodule "deps/azure-c-pal"]
+	path = deps/azure-c-pal
+	url = https://github.com/azure/azure-c-pal
