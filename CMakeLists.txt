@@ -68,6 +68,11 @@ if ((NOT TARGET umock_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/umock-c/CMak
     include_directories(${UMOCK_C_INC_FOLDER})
 endif()
 
+if ((NOT TARGET azure_c_pal) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-pal/CMakeLists.txt))
+    add_subdirectory(deps/azure-c-pal)
+    include_directories(${C_PAL_INC_FOLDER})
+endif()
+
 if ((NOT TARGET azure_c_util) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-c-util/CMakeLists.txt))
     add_subdirectory(deps/azure-c-util)
     include_directories(${C_UTIL_INC_FOLDER})
@@ -129,6 +134,6 @@ add_library(clds
     ${clds_md_files}
     )
 
-target_link_libraries(clds azure_c_util synchronization)
+target_link_libraries(clds azure_c_util azure_c_pal)
 
 add_subdirectory(tests)

@@ -15,9 +15,9 @@
 #include "testrunnerswitcher.h"
 
 #include "windows.h"
-#include "azure_c_util/timer.h"
-#include "azure_c_util/gballoc.h"
-#include "azure_c_util/threadapi.h"
+#include "timer.h"
+#include "gballoc.h"
+#include "threadapi.h"
 #include "azure_c_logging/xlogging.h"
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_sorted_list.h"

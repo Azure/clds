@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "clds/lock_free_set.h"
-#include "azure_c_util/threadapi.h"
+#include "threadapi.h"
 #include "azure_c_logging/xlogging.h"
-#include "azure_c_util/timer.h"
+#include "timer.h"
 
 #define THREAD_COUNT 4
 #define INSERT_COUNT 1000000

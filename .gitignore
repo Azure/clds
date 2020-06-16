@@ -9,3 +9,4 @@
 **/[Cc]make/
 **/packages/*
 **/.vs/*
+cmake*/

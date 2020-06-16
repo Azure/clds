@@ -20,7 +20,7 @@ extern "C" {
 
 #ifdef __STDC_VERSION__
 // we have some STDC_VERSION, check if it is C11
-#if (__STDC_VERSION__ == 201112L)
+#if (__STDC_VERSION__ >= 201112L)
 #ifdef __STDC_NO_ATOMICS__
 #define USE_C_ATOMICS 0
 #else /* __STDC_NO_ATOMICS__ */
