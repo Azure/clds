@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "gballoc.h"
+#include "azure_c_pal/gballoc.h"
 #include "azure_c_logging/xlogging.h"
 #include "clds/clds_st_hash_set.h"
 

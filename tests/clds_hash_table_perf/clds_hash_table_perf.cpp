@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "clds/clds_hash_table.h"
-#include "threadapi.h"
-#include "timer.h"
+#include "azure_c_pal/threadapi.h"
+#include "azure_c_pal/timer.h"
 #include "azure_c_logging/xlogging.h"
 #include "windows.h"
 #include "clds_hash_table_perf.h"
