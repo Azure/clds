@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "windows.h"
-#include "gballoc.h"
+#include "azure_c_pal/gballoc.h"
 #include "azure_c_logging/xlogging.h"
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_atomics.h"

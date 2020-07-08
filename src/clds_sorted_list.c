@@ -6,7 +6,7 @@
 
 #include "windows.h"
 
-#include "gballoc.h"
+#include "azure_c_pal/gballoc.h"
 #include "azure_c_logging/xlogging.h"
 #include "clds/clds_sorted_list.h"
 #include "clds/clds_atomics.h"

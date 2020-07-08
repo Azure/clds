@@ -9,7 +9,7 @@
 
 #include "testrunnerswitcher.h"
 #include "clds/lock_free_set.h"
-#include "threadapi.h"
+#include "azure_c_pal/threadapi.h"
 
 #define THREAD_COUNT 4
 #define INSERT_COUNT 1000000

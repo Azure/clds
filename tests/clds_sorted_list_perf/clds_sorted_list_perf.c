@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "clds/clds_sorted_list.h"
-#include "threadapi.h"
-#include "timer.h"
+#include "azure_c_pal/threadapi.h"
+#include "azure_c_pal/timer.h"
 #include "azure_c_logging/xlogging.h"
 #include "clds_sorted_list_perf.h"
 
