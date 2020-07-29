@@ -3,11 +3,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "azure_c_pal/gballoc.h"
+
 #include "azure_c_logging/xlogging.h"
-#include "clds/clds_singly_linked_list.h"
+
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
+
 #include "clds/clds_atomics.h"
 #include "clds/clds_hazard_pointers.h"
+
+#include "clds/clds_singly_linked_list.h"
 
 /* this is a lock free singly linked list implementation */
 

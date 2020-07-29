@@ -26,11 +26,14 @@ void real_free(void* ptr)
 
 #define ENABLE_MOCKS
 
-#include "azure_c_pal/gballoc.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
 #include "clds/clds_st_hash_set.h"
 #include "clds/clds_hazard_pointers.h"
 
 #undef ENABLE_MOCKS
+
+#include "real_gballoc_hl.h"
 
 #include "clds/clds_sorted_list.h"
 #include "../reals/real_clds_st_hash_set.h"
@@ -116,8 +119,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_CLDS_ST_HASH_SET_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
 
-    REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, real_malloc);
-    REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
+    REGISTER_GBALLOC_HL_GLOBAL_MOCK_HOOK();
 
     REGISTER_TYPE(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_RESULT);
     REGISTER_TYPE(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_RESULT);

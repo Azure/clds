@@ -4,12 +4,17 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "windows.h"
-#include "azure_c_pal/gballoc.h"
+
 #include "azure_c_logging/xlogging.h"
-#include "clds/clds_hash_table.h"
+
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
+
 #include "clds/clds_atomics.h"
 #include "clds/clds_sorted_list.h"
 #include "clds/clds_hazard_pointers.h"
+
+#include "clds/clds_hash_table.h"
 
 /* this is a hash table implementation */
 

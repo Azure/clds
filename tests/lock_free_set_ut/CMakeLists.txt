@@ -16,4 +16,4 @@ set(${theseTestsName}_h_files
 ../../inc/clds/lock_free_set.h
 )
 
-build_c_tests(${theseTestsName} ON "tests/clds_tests")
+build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_pal_reals)

@@ -15,11 +15,15 @@
 #include "testrunnerswitcher.h"
 
 #include "windows.h"
-#include "azure_c_pal/timer.h"
-#include "azure_c_pal/gballoc.h"
-#include "azure_c_pal/threadapi.h"
+
 #include "azure_c_logging/xlogging.h"
+
+#include "azure_c_pal/timer.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/threadapi.h"
+
 #include "clds/clds_hazard_pointers.h"
+
 #include "clds/clds_sorted_list.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
