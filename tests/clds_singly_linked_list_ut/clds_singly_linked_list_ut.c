@@ -88,6 +88,8 @@ TEST_SUITE_INITIALIZE(suite_init)
 {
     int result;
 
+    ASSERT_ARE_EQUAL(int, 0, real_gballoc_hl_init(NULL, NULL));
+
     test_serialize_mutex = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 
@@ -116,6 +118,8 @@ TEST_SUITE_CLEANUP(suite_cleanup)
     umock_c_deinit();
 
     TEST_MUTEX_DESTROY(test_serialize_mutex);
+
+    real_gballoc_hl_deinit();
 }
 
 TEST_FUNCTION_INITIALIZE(method_init)

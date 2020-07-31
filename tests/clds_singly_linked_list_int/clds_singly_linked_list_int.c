@@ -102,6 +102,8 @@ BEGIN_TEST_SUITE(clds_singly_linked_list_inttests)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
+    ASSERT_ARE_EQUAL(int, 0, gballoc_hl_init(NULL, NULL));
+
     test_serialize_mutex = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 }
@@ -109,6 +111,8 @@ TEST_SUITE_INITIALIZE(suite_init)
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
     TEST_MUTEX_DESTROY(test_serialize_mutex);
+
+    gballoc_hl_deinit();
 }
 
 TEST_FUNCTION_INITIALIZE(method_init)
