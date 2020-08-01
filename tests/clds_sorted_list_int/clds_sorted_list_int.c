@@ -15,11 +15,15 @@
 #include "testrunnerswitcher.h"
 
 #include "windows.h"
-#include "azure_c_pal/timer.h"
-#include "azure_c_pal/gballoc.h"
-#include "azure_c_pal/threadapi.h"
+
 #include "azure_c_logging/xlogging.h"
+
+#include "azure_c_pal/timer.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/threadapi.h"
+
 #include "clds/clds_hazard_pointers.h"
+
 #include "clds/clds_sorted_list.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
@@ -180,6 +184,7 @@ BEGIN_TEST_SUITE(clds_sorted_list_inttests)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
+    ASSERT_ARE_EQUAL(int, 0, gballoc_hl_init(NULL, NULL));
     test_serialize_mutex = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 }
@@ -187,6 +192,7 @@ TEST_SUITE_INITIALIZE(suite_init)
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
     TEST_MUTEX_DESTROY(test_serialize_mutex);
+    gballoc_hl_deinit();
 }
 
 TEST_FUNCTION_INITIALIZE(method_init)

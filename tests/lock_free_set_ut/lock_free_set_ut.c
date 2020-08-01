@@ -22,13 +22,17 @@ void real_free(void* ptr)
 
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_bool.h"
-#include "clds/lock_free_set.h"
 
 #define ENABLE_MOCKS
 
-#include "azure_c_pal/gballoc.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
 
 #undef ENABLE_MOCKS
+
+#include "real_gballoc_hl.h"
+
+#include "clds/lock_free_set.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
 
@@ -48,6 +52,8 @@ TEST_SUITE_INITIALIZE(suite_init)
 {
     int result;
 
+    ASSERT_ARE_EQUAL(int, 0, real_gballoc_hl_init(NULL, NULL));
+
     test_serialize_mutex = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(test_serialize_mutex);
 
@@ -56,8 +62,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     result = umocktypes_bool_register_types();
     ASSERT_ARE_EQUAL(int, 0, result);
 
-    REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, real_malloc);
-    REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, real_free);
+    REGISTER_GBALLOC_HL_GLOBAL_MOCK_HOOK();
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -65,6 +70,8 @@ TEST_SUITE_CLEANUP(suite_cleanup)
     umock_c_deinit();
 
     TEST_MUTEX_DESTROY(test_serialize_mutex);
+
+    real_gballoc_hl_deinit();
 }
 
 TEST_FUNCTION_INITIALIZE(method_init)
@@ -90,7 +97,7 @@ TEST_FUNCTION(lock_free_set_create_succeeds)
 {
     // arrange
     LOCK_FREE_SET_HANDLE set;
-    STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     set = lock_free_set_create();
@@ -108,7 +115,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_set_fails_lock_free_set_create_fail
 {
     // arrange
     LOCK_FREE_SET_HANDLE set;
-    STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_ARG))
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
         .SetReturn(NULL);
 
     // act
@@ -127,8 +134,8 @@ TEST_FUNCTION(two_lock_free_sets_can_be_created)
     LOCK_FREE_SET_HANDLE set1;
     LOCK_FREE_SET_HANDLE set2;
 
-    STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     set1 = lock_free_set_create();
 
@@ -155,7 +162,7 @@ TEST_FUNCTION(lock_free_set_destroy_frees_the_memory_for_the_set)
     LOCK_FREE_SET_HANDLE set = lock_free_set_create();
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(gballoc_free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     lock_free_set_destroy(set, (NODE_CLEANUP_FUNC)test_node_cleanup, (void*)0x4242);
@@ -183,7 +190,7 @@ TEST_FUNCTION(lock_free_set_destroy_with_NULL_node_cleanup_callback_still_frees_
     LOCK_FREE_SET_HANDLE set = lock_free_set_create();
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(gballoc_free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     lock_free_set_destroy(set, NULL, NULL);
@@ -203,7 +210,7 @@ TEST_FUNCTION(lock_free_set_destroy_with_1_item_calls_the_node_free_callback)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_node_cleanup((void*)0x4242, (struct LOCK_FREE_SET_ITEM_TAG*)&items[0]));
-    STRICT_EXPECTED_CALL(gballoc_free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     lock_free_set_destroy(set, (NODE_CLEANUP_FUNC)test_node_cleanup, (void*)0x4242);
@@ -225,7 +232,7 @@ TEST_FUNCTION(lock_free_set_destroy_with_2_item_calls_the_node_free_callback)
 
     STRICT_EXPECTED_CALL(test_node_cleanup((void*)0x4242, (struct LOCK_FREE_SET_ITEM_TAG*)&items[1]));
     STRICT_EXPECTED_CALL(test_node_cleanup((void*)0x4242, (struct LOCK_FREE_SET_ITEM_TAG*)&items[0]));
-    STRICT_EXPECTED_CALL(gballoc_free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     lock_free_set_destroy(set, (NODE_CLEANUP_FUNC)test_node_cleanup, (void*)0x4242);
@@ -246,7 +253,7 @@ TEST_FUNCTION(lock_free_set_destroy_with_1_item_calls_the_node_free_callback_NUL
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(test_node_cleanup(NULL, (struct LOCK_FREE_SET_ITEM_TAG*)&items[0]));
-    STRICT_EXPECTED_CALL(gballoc_free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     lock_free_set_destroy(set, (NODE_CLEANUP_FUNC)test_node_cleanup, NULL);

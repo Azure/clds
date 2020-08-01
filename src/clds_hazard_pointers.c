@@ -4,11 +4,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "windows.h"
-#include "azure_c_pal/gballoc.h"
+
 #include "azure_c_logging/xlogging.h"
-#include "clds/clds_hazard_pointers.h"
+
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
+
 #include "clds/clds_atomics.h"
 #include "clds/clds_st_hash_set.h"
+
+#include "clds/clds_hazard_pointers.h"
 
 #define DEFAULT_RECLAIM_THRESHOLD 1
 

@@ -15,4 +15,4 @@ set(${theseTestsName}_c_files
 set(${theseTestsName}_h_files
 )
 
-build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_util)
+build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_util azure_c_pal)
