@@ -16,6 +16,8 @@
 
 #include "azure_macro_utils/macro_utils.h"
 
+#include "azure_c_pal/interlocked_hl.h"
+
 #include "azure_c_logging/xlogging.h"
 
 #include "azure_c_pal/gballoc_hl.h"
@@ -29,12 +31,20 @@
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
 
+#define SEQ_NO_STATE_VALUES \
+    SEQ_NO_NOT_USED, \
+    SEQ_NO_USED
+
+MU_DEFINE_ENUM(SEQ_NO_STATE, SEQ_NO_STATE_VALUES);
+
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
+TEST_DEFINE_ENUM_TYPE(SEQ_NO_STATE, SEQ_NO_STATE_VALUES);
+TEST_DEFINE_ENUM_TYPE(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_RESULT_VALUES);
 
 #define THREAD_COUNT 4
 
@@ -44,7 +54,25 @@ typedef struct TEST_ITEM_TAG
     uint32_t appendix;
 } TEST_ITEM;
 
+#define TEST_SEQ_NO_QUEUE_SIZE (1024 * 1024)
+
 DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
+
+typedef struct CHAOS_TEST_ITEM_DATA_TAG
+{
+    CLDS_HASH_TABLE_ITEM* item;
+    volatile LONG item_state;
+} CHAOS_TEST_ITEM_DATA;
+
+typedef struct CHAOS_TEST_CONTEXT_TAG
+{
+    volatile LONG done;
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    volatile LONG64 seq_no_count;
+    int64_t next_seq_no_to_ack;
+    volatile LONG seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
+    CHAOS_TEST_ITEM_DATA items[];
+} CHAOS_TEST_CONTEXT;
 
 static uint64_t test_compute_hash(void* key)
 {
@@ -76,11 +104,18 @@ static int test_key_compare(void* key1, void* key2)
     return result;
 }
 
+static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t seq_no)
+{
+    (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
+    SEQ_NO_STATE seq_no_state = InterlockedCompareExchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
+    ASSERT_ARE_EQUAL(SEQ_NO_STATE, SEQ_NO_NOT_USED, seq_no_state, "sequence number already used at %" PRId64 "", seq_no);
+    WakeByAddressSingle((PVOID)&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
+}
+
 static void test_skipped_seq_no_count(void* context, int64_t skipped_sequence_no)
 {
-    volatile LONG64* counter = (volatile LONG64*)context;
-    (void)InterlockedIncrement64(counter);
-    (void)skipped_sequence_no;
+    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)context;
+    mark_seq_no_as_used(chaos_test_context, skipped_sequence_no);
 }
 
 static void test_skipped_seq_no_ignore(void* context, int64_t skipped_sequence_no)
@@ -451,20 +486,6 @@ static void cleanup_snapshot(CLDS_HASH_TABLE_ITEM** items, uint64_t item_count)
     }
     free(items);
 }
-
-typedef struct CHAOS_TEST_ITEM_DATA_TAG
-{
-    CLDS_HASH_TABLE_ITEM* item;
-    volatile LONG item_state;
-} CHAOS_TEST_ITEM_DATA;
-
-typedef struct CHAOS_TEST_CONTEXT_TAG
-{
-    volatile LONG done;
-    CLDS_HASH_TABLE_HANDLE hash_table;
-    volatile LONG64 seq_no_count;
-    CHAOS_TEST_ITEM_DATA items[];
-} CHAOS_TEST_CONTEXT;
 
 typedef struct CHAOS_THREAD_DATA_TAG
 {
@@ -1480,7 +1501,7 @@ static int chaos_thread(void* arg)
 
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
-                (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
+                mark_seq_no_as_used(chaos_test_context, seq_no);
 
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
@@ -1491,7 +1512,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, clds_hash_table_delete_key_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
-                (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
+                mark_seq_no_as_used(chaos_test_context, seq_no);
 
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
@@ -1502,7 +1523,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, clds_hash_table_delete(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
-                (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
+                mark_seq_no_as_used(chaos_test_context, seq_no);
 
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
@@ -1515,7 +1536,7 @@ static int chaos_thread(void* arg)
 
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_OK, clds_hash_table_remove(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
-                (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
+                mark_seq_no_as_used(chaos_test_context, seq_no);
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
 
@@ -1605,7 +1626,7 @@ static int chaos_thread(void* arg)
 
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
-                (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
+                mark_seq_no_as_used(chaos_test_context, seq_no);
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 
@@ -1622,8 +1643,8 @@ static int chaos_thread(void* arg)
             
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
-                (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
-            
+                mark_seq_no_as_used(chaos_test_context, seq_no);
+
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
             
                 (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
@@ -1637,24 +1658,48 @@ static int chaos_thread(void* arg)
     return result;
 }
 
+static int seq_no_clean_thread(void* arg)
+{
+    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)arg;
+
+    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    {
+        while (InterlockedCompareExchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
+        {
+            chaos_test_context->next_seq_no_to_ack++;
+        }
+        (void)InterlockedHL_WaitForValue(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
+    }
+
+    ThreadAPI_Exit(0);
+    return 0;
+}
+
 TEST_FUNCTION(clds_hash_table_chaos_knight_test)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 1;
+    THREAD_HANDLE seq_no_clean_thread_handle;
+    volatile int64_t sequence_number = 0;
     size_t i;
 
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
     ASSERT_IS_NOT_NULL(chaos_test_context);
 
+    for (i = 0; i < TEST_SEQ_NO_QUEUE_SIZE; i++)
+    {
+        (void)InterlockedExchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
+    }
+
     (void)InterlockedExchange64(&chaos_test_context->seq_no_count, 0);
+    (void)InterlockedExchange64(&chaos_test_context->next_seq_no_to_ack, 1);
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
         (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
     }
 
-    chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, hazard_pointers, &sequence_number, test_skipped_seq_no_count, (void*)&chaos_test_context->seq_no_count);
+    chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, hazard_pointers, &sequence_number, test_skipped_seq_no_count, (void*)chaos_test_context);
     ASSERT_IS_NOT_NULL(chaos_test_context->hash_table);
 
     (void)InterlockedExchange(&chaos_test_context->done, 0);
@@ -1663,6 +1708,8 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
     CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
     ASSERT_IS_NOT_NULL(chaos_thread_data);
 
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&seq_no_clean_thread_handle, seq_no_clean_thread, chaos_test_context), "Error spawning sequence number clean thread");
+
     for (i = 0; i < CHAOS_THREAD_COUNT; i++)
     {
         chaos_thread_data[i].chaos_test_context = chaos_test_context;
@@ -1670,11 +1717,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
         chaos_thread_data[i].clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
         ASSERT_IS_NOT_NULL(chaos_thread_data[i].clds_hazard_pointers_thread);
 
-        if (ThreadAPI_Create(&chaos_thread_data[i].thread_handle, chaos_thread, &chaos_thread_data[i]) != THREADAPI_OK)
-        {
-            ASSERT_FAIL("Error spawning test thread");
-            break;
-        }
+        ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&chaos_thread_data[i].thread_handle, chaos_thread, &chaos_thread_data[i]), "Error spawning test thread %zu", i);
     }
 
     double start_time = timer_global_get_elapsed_ms();
@@ -1688,12 +1731,15 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
 
     (void)InterlockedExchange(&chaos_test_context->done, 1);
 
+    int dont_care;
+
     // assert
     for (i = 0; i < CHAOS_THREAD_COUNT; i++)
     {
-        int dont_care;
         ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(chaos_thread_data[i].thread_handle, &dont_care), "Thread %zu failed to join", i);
     }
+
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(seq_no_clean_thread_handle, &dont_care), "Sequence number clean thread handle join failed");
 
     ASSERT_ARE_EQUAL(int64_t, InterlockedAdd64(&sequence_number, -1), InterlockedAdd64(&chaos_test_context->seq_no_count, 0));
 
