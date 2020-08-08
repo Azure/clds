@@ -112,7 +112,7 @@ static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t 
     WakeByAddressSingle((PVOID)&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
 }
 
-static void test_skipped_seq_no_count(void* context, int64_t skipped_sequence_no)
+static void test_skipped_seq_chaos(void* context, int64_t skipped_sequence_no)
 {
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)context;
     mark_seq_no_as_used(chaos_test_context, skipped_sequence_no);
@@ -1699,7 +1699,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
         (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
     }
 
-    chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, hazard_pointers, &sequence_number, test_skipped_seq_no_count, (void*)chaos_test_context);
+    chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, hazard_pointers, &sequence_number, test_skipped_seq_chaos, chaos_test_context);
     ASSERT_IS_NOT_NULL(chaos_test_context->hash_table);
 
     (void)InterlockedExchange(&chaos_test_context->done, 0);
