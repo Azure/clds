@@ -39,7 +39,6 @@ typedef struct CLDS_SORTED_LIST_ITEM_TAG
     SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
     volatile struct CLDS_SORTED_LIST_ITEM_TAG* next;
-    int64_t seq_no;
 } CLDS_SORTED_LIST_ITEM;
 
 // these are macros that help declaring a type that can be stored in the sorted list

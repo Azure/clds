@@ -107,7 +107,7 @@ static int test_key_compare(void* key1, void* key2)
 static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t seq_no)
 {
     (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
-    SEQ_NO_STATE seq_no_state = InterlockedCompareExchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
+    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)InterlockedCompareExchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
     ASSERT_ARE_EQUAL(SEQ_NO_STATE, SEQ_NO_NOT_USED, seq_no_state, "sequence number already used at %" PRId64 "", seq_no);
     WakeByAddressSingle((PVOID)&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
 }

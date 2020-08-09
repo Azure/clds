@@ -751,17 +751,18 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
 
         bool restart_needed;
         void* new_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
+        int64_t local_seq_no = 0;
 
         /* Codes_SRS_CLDS_SORTED_LIST_01_069: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
         if (clds_sorted_list->sequence_number != NULL)
         {
             /* Codes_SRS_CLDS_SORTED_LIST_01_060: [ For each insert the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
-            item->seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+            local_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_061: [ If the sequence_number argument passed to clds_sorted_list_insert is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. ]*/
             if (sequence_number != NULL)
             {
-                *sequence_number = item->seq_no;
+                *sequence_number = local_seq_no;
             }
         }
 
@@ -852,7 +853,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                         if (clds_sorted_list->skipped_seq_no_cb != NULL)
                         {
                             /* Codes_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
-                            clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, item->seq_no);
+                            clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
                         }
 
                         LogError("Cannot acquire hazard pointer");
@@ -898,7 +899,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                 if (clds_sorted_list->skipped_seq_no_cb != NULL)
                                 {
                                     /* Codes_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
-                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, item->seq_no);
+                                    clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
                                 }
 
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_048: [ If the item with the given key already exists in the list, clds_sorted_list_insert shall fail and return CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS. ]*/
