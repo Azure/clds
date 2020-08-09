@@ -1668,6 +1668,7 @@ static int seq_no_clean_thread(void* arg)
         {
             chaos_test_context->next_seq_no_to_ack++;
         }
+        LogInfo("Advanced indicated sequence number to %" PRId64 "", chaos_test_context->next_seq_no_to_ack);
         (void)InterlockedHL_WaitForValue(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
     }
 
