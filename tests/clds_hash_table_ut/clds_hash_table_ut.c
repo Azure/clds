@@ -1700,7 +1700,6 @@ TEST_FUNCTION(when_item_is_not_found_in_any_bucket_clds_hash_table_delete_key_va
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-
 /* Tests_SRS_CLDS_HASH_TABLE_42_011: [ For each delete the order of the operation shall be computed by passing sequence_number to clds_sorted_list_delete_item. ]*/
 TEST_FUNCTION(clds_hash_table_delete_key_value_deletes_the_key_and_stamps_the_sequence_no)
 {
@@ -2709,20 +2708,6 @@ TEST_FUNCTION(when_underlying_calls_fail_clds_hash_table_set_value_with_empty_ha
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 }
 
-TEST_FUNCTION(EXTRA)
-{
-    void* a[1000];
-    int i;
-    for (i = 0; i < sizeof(a) / sizeof(a[0]); i++)
-    {
-        a[i] = malloc(0x333);
-    }
-    for (i = 0; i < sizeof(a) / sizeof(a[0]); i++)
-    {
-        free(a[i]);
-    }
-}
-
 /* Tests_SRS_CLDS_HASH_TABLE_01_107: [ If there is no sorted list in the bucket identified by the hash of the key, clds_hash_table_set_value shall advance to the next level of buckets. ]*/
 TEST_FUNCTION(when_there_is_no_sorted_list_in_lower_level_bucket_no_find_is_done_by_clds_hash_table_set_value)
 {
@@ -2768,9 +2753,8 @@ TEST_FUNCTION(when_there_is_no_sorted_list_in_lower_level_bucket_no_find_is_done
     // cleanup
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
-    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 }
-#if 0 /*vld.h*/
+
 /* Tests_SRS_CLDS_HASH_TABLE_01_108: [ If there is a sorted list in the bucket identified by the hash of the key, clds_hash_table_set_value shall find the key in the list. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_109: [ If the key is not found, clds_hash_table_set_value shall advance to the next level of buckets. ]*/
 TEST_FUNCTION(clds_hash_table_set_value_with_an_existing_item_in_the_lower_level_bucket_looks_for_the_item_in_the_lower_levels)
@@ -3716,5 +3700,5 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_mult
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
-#endif
+
 END_TEST_SUITE(clds_hash_table_unittests)
