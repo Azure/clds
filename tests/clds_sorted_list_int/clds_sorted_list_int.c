@@ -1629,6 +1629,8 @@ TEST_FUNCTION(clds_sorted_list_chaos_knight_test)
 
     ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(seq_no_clean_thread_handle, &dont_care), "Sequence number clean thread handle join failed");
 
+    ASSERT_ARE_EQUAL(int64_t, InterlockedAdd64(&sequence_number, 0), InterlockedAdd64(&chaos_test_context->seq_no_count, 0));
+
     // cleanup
     free(chaos_thread_data);
     clds_sorted_list_destroy(chaos_test_context->sorted_list);
