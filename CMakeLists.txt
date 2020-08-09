@@ -43,6 +43,31 @@ if(WIN32)
     remove_definitions(/W2)
 endif(WIN32)
 
+#add mimalloc build
+if (
+    (NOT TARGET mimalloc-obj) AND 
+    (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/mimalloc/CMakeLists.txt)
+    )
+        set(MI_BUILD_SHARED OFF CACHE BOOL "Build shared library" FORCE) #not building a dll allows building on 32 bit, otherwise there's some errors on init.c about not finding a imported symbol
+        set(MI_BUILD_TESTS OFF CACHE BOOL "Build test executables" FORCE) 
+        #for mimalloc disable this warning: Warning C4459: declaration of 'os_page_size' hides global declaration
+        #for mimalloc disable this warning: Warning C4100: 'try_alignment': unreferenced formal parameter
+        #for mimalloc disable this warning: warning C4505: 'mi_os_get_aligned_hint': unreferenced local function has been removed
+
+        set(PREV_CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
+        set(PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+        if(WIN32)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4459 /wd4100 /wd4505")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4459 /wd4100 /wd4505")
+        endif()
+
+        add_subdirectory(deps/mimalloc)
+        include_directories(deps/mimalloc/include)
+        
+        set(CMAKE_C_FLAGS ${PREV_CMAKE_C_FLAGS})
+        set(CMAKE_CXX_FLAGS ${PREV_CMAKE_CXX_FLAGS})
+endif()
+
 if ((NOT TARGET azure_macro_utils_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/azure-macro-utils-c/CMakeLists.txt))
     add_subdirectory(deps/azure-macro-utils-c)
     include_directories(${MACRO_UTILS_INC_FOLDER})

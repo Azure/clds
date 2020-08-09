@@ -3,10 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "clds/lock_free_set.h"
-#include "azure_c_pal/threadapi.h"
+
 #include "azure_c_logging/xlogging.h"
+
+#include "azure_c_pal/threadapi.h"
 #include "azure_c_pal/timer.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
+
+#include "clds/lock_free_set.h"
 
 #define THREAD_COUNT 4
 #define INSERT_COUNT 1000000

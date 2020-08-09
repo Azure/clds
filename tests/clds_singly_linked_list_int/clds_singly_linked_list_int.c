@@ -21,6 +21,7 @@
 
 #include "azure_c_pal/timer.h"
 #include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
 #include "azure_c_pal/threadapi.h"
 
 #include "clds/clds_hazard_pointers.h"
