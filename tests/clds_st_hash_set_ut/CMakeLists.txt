@@ -14,4 +14,4 @@ set(${theseTestsName}_h_files
     ../../inc/clds/clds_st_hash_set.h
 )
 
-build_c_tests(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_pal_reals)
+build_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_pal_reals)

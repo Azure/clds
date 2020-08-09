@@ -4,10 +4,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "clds/clds_singly_linked_list.h"
+
+#include "azure_c_logging/xlogging.h"
+
 #include "azure_c_pal/threadapi.h"
 #include "azure_c_pal/timer.h"
-#include "azure_c_logging/xlogging.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
+
+#include "clds/clds_singly_linked_list.h"
 #include "clds_singly_linked_list_perf.h"
 
 #define THREAD_COUNT 10

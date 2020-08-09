@@ -4,14 +4,22 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "clds/clds_hash_table.h"
+
+#include "windows.h"
+
+#include "azure_c_logging/xlogging.h"
+
 #include "azure_c_pal/threadapi.h"
 #include "azure_c_pal/timer.h"
-#include "azure_c_logging/xlogging.h"
-#include "windows.h"
+#include "azure_c_pal/gballoc_hl.h"
+#include "azure_c_pal/gballoc_hl_redirect.h"
+
+#include "azure_c_util/uuid.h"
+
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"
-#include "azure_c_util/uuid.h"
+
+#include "clds/clds_hash_table.h"
 
 #define THREAD_COUNT 8
 #define INSERT_COUNT 100000
