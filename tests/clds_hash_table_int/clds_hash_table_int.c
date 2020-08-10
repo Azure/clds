@@ -1695,7 +1695,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
     }
 
     (void)InterlockedExchange64(&chaos_test_context->seq_no_count, 0);
-    (void)InterlockedExchange64(&chaos_test_context->next_seq_no_to_ack, 1);
+    chaos_test_context->next_seq_no_to_ack = 1;
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
