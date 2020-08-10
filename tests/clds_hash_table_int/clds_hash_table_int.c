@@ -1681,8 +1681,10 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     THREAD_HANDLE seq_no_clean_thread_handle;
-    volatile int64_t sequence_number = 0;
+    volatile int64_t sequence_number;
     size_t i;
+
+    (void)InterlockedExchange64(&sequence_number, 0);
 
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
     ASSERT_IS_NOT_NULL(chaos_test_context);
