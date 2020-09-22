@@ -47,7 +47,6 @@ static int insert_and_remove_thread(void* arg)
         ASSERT_ARE_EQUAL(int, 0, result, "lock_free_set_remove failed");
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
