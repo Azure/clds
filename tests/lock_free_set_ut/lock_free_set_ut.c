@@ -23,6 +23,7 @@ void real_free(void* ptr)
 
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_bool.h"
+#include "azure_c_pal/interlocked.h"
 
 #define ENABLE_MOCKS
 
