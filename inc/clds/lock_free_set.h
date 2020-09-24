@@ -4,7 +4,7 @@
 #define LOCK_FREE_SET_H
 
 #include "umock_c/umock_c_prod.h"
-#include "clds/clds_atomics.h"
+#include "azure_c_pal/interlocked.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,8 +14,8 @@ typedef struct LOCK_FREE_SET_TAG* LOCK_FREE_SET_HANDLE;
 
 typedef struct LOCK_FREE_SET_ITEM_TAG
 {
-    CLDS_ATOMIC(intptr_t) previous;
-    CLDS_ATOMIC(intptr_t) next;
+    void* volatile_atomic previous;
+    void* volatile_atomic next;
 } LOCK_FREE_SET_ITEM;
 
 typedef void(*NODE_CLEANUP_FUNC)(void* context, LOCK_FREE_SET_ITEM* item);
