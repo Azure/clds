@@ -120,7 +120,6 @@ endif()
 include_directories(${CMAKE_CURRENT_LIST_DIR}/inc)
 
 set(clds_h_files
-    ./inc/clds/clds_atomics.h
     ./inc/clds/lock_free_set.h
 )
 
