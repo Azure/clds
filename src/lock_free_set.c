@@ -25,7 +25,7 @@ static void internal_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, N
     /* Codes_SRS_LOCK_FREE_SET_01_007: [ If node_cleanup_callback is non-NULL, node_cleanup_callback shall be called for each item that exists in the set at the time lock_free_set_destroy is called. ]*/
     if (node_cleanup_callback != NULL)
     {
-        LOCK_FREE_SET_ITEM* current_item = (LOCK_FREE_SET_ITEM*)(void*)lock_free_set->head;
+        LOCK_FREE_SET_ITEM* current_item = interlocked_compare_exchange_pointer(&lock_free_set->head, NULL, NULL);
 
         // go through each of the nodes that are left and call the cleanup callback for it
         // no need to be thread safe
