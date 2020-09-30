@@ -284,7 +284,6 @@ static int delete_thread(void* arg)
     }
 
     result = 0;
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -385,7 +384,6 @@ static int single_insert_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -471,7 +469,6 @@ static int single_delete_item_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -563,7 +560,6 @@ static int single_delete_key_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -657,7 +653,6 @@ static int single_remove_key_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -755,7 +750,6 @@ static int single_set_value_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -856,7 +850,6 @@ static int lock_write_thread(void* arg)
         }
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -1541,7 +1534,6 @@ static int chaos_thread(void* arg)
     }
 
     result = 0;
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -1559,7 +1551,6 @@ static int seq_no_clean_thread(void* arg)
         (void)InterlockedHL_WaitForValue(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
     }
 
-    ThreadAPI_Exit(0);
     return 0;
 }
 

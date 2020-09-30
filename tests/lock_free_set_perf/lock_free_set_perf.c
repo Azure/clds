@@ -56,7 +56,6 @@ static int insert_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -87,7 +86,6 @@ static int remove_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -123,7 +121,6 @@ static int insert_and_remove_thread(void* arg)
         result = 0;
     }
 
-    ThreadAPI_Exit(result);
     return result;
 }
 
