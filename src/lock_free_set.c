@@ -8,8 +8,7 @@
 
 #include "azure_c_pal/gballoc_hl.h"
 #include "azure_c_pal/gballoc_hl_redirect.h"
-
-#include "clds/clds_atomics.h"
+#include "azure_c_pal/interlocked.h"
 
 #include "clds/lock_free_set.h"
 
@@ -17,7 +16,7 @@
 
 typedef struct LOCK_FREE_SET_TAG
 {
-    volatile CLDS_ATOMIC(intptr_t) head;
+    void* volatile_atomic head;
 } LOCK_FREE_SET;
 
 static void internal_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, NODE_CLEANUP_FUNC node_cleanup_callback, void* context)
@@ -26,7 +25,7 @@ static void internal_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, N
     /* Codes_SRS_LOCK_FREE_SET_01_007: [ If node_cleanup_callback is non-NULL, node_cleanup_callback shall be called for each item that exists in the set at the time lock_free_set_destroy is called. ]*/
     if (node_cleanup_callback != NULL)
     {
-        LOCK_FREE_SET_ITEM* current_item = (LOCK_FREE_SET_ITEM*)(void*)lock_free_set->head;
+        LOCK_FREE_SET_ITEM* current_item = interlocked_compare_exchange_pointer(&lock_free_set->head, NULL, NULL);
 
         // go through each of the nodes that are left and call the cleanup callback for it
         // no need to be thread safe
@@ -42,7 +41,7 @@ static void internal_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, N
         }
     }
 
-    lock_free_set->head = (CLDS_ATOMIC(intptr_t))NULL;
+    (void)interlocked_exchange_pointer(&lock_free_set->head, NULL);
 }
 
 LOCK_FREE_SET_HANDLE lock_free_set_create(void)
@@ -57,7 +56,7 @@ LOCK_FREE_SET_HANDLE lock_free_set_create(void)
     else
     {
         /* Codes_SRS_LOCK_FREE_SET_01_002: [ On success, lock_free_set_create shall return a non-NULL handle to the newly created set. ]*/
-        lock_free_set->head = (CLDS_ATOMIC(intptr_t))NULL;
+        (void)interlocked_exchange_pointer(&lock_free_set->head, NULL);
     }
 
     return lock_free_set;
@@ -104,14 +103,14 @@ int lock_free_set_insert(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
         /* Codes_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
         do
         {
-            LOCK_FREE_SET_ITEM* current_head = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head);
+            LOCK_FREE_SET_ITEM* current_head = interlocked_compare_exchange_pointer(&lock_free_set->head, NULL, NULL);
 
-            item->previous = (CLDS_ATOMIC(intptr_t))NULL;
-            item->next = (CLDS_ATOMIC(intptr_t))current_head;
+            (void)interlocked_exchange_pointer(&item->previous, NULL);
+            (void)interlocked_exchange_pointer(&item->next, current_head);
 
             // insert our new item as the head
             LOCK_FREE_SET_ITEM* expected_head = current_head;
-            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_head, (CLDS_ATOMIC(intptr_t))(void*)item))
+            if (interlocked_compare_exchange_pointer(&lock_free_set->head, item, expected_head) != expected_head)
             {
                 // unable to lock the head, it has already changed, restart
                 restart_needed = true;
@@ -146,7 +145,7 @@ int lock_free_set_insert(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                     do
                     {
                         LOCK_FREE_SET_ITEM* expected_current_head_previous = NULL;
-                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&current_head->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_current_head_previous, (CLDS_ATOMIC(intptr_t))(void*)item))
+                        if (interlocked_compare_exchange_pointer(&current_head->previous, item, expected_current_head_previous) != expected_current_head_previous)
                         {
                             // if the current_head->previous is not NULL, it can only mean that a remove is in progress, we'll wait
                             wait_for_next_node = true;
@@ -196,19 +195,19 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
         do
         {
             // first get the head so that we know whether we are removing the head
-            LOCK_FREE_SET_ITEM* current_head = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head);
+            LOCK_FREE_SET_ITEM* current_head = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&lock_free_set->head, NULL, NULL);
 
             if (current_head == item)
             {
                 // we locked the left side, a node that tries to insert would wait because it would see a non NULL value, so that means that the node to the left will not be able to be deleted immediately
                 // we are removing the head. we can definitely update the memory for our current item, so we will mark the next link as to be removed, so that any node that comes in will not try to change that
-                LOCK_FREE_SET_ITEM* item_next = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next);
+                LOCK_FREE_SET_ITEM* item_next = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item->next, NULL, NULL);
                 if (item_next == NULL)
                 {
                     //LogInfo("Delete head, NULL previous and next, TID=%lu", GetCurrentThreadId());
 
                     // mark the left link for deletion, even though it is NULL, just in case some other node inserts exactly at this time
-                    LOCK_FREE_SET_ITEM* item_previous = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous);
+                    LOCK_FREE_SET_ITEM* item_previous = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item->previous, NULL, NULL);
                     if (item_previous != NULL)
                     {
                         // since we are the head, but the previous item is non NULL, we must wait as some other node is being removed at our left
@@ -218,7 +217,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                     {
                         // now "lock" the previous node
                         LOCK_FREE_SET_ITEM* expected_item_previous = item_previous;
-                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))((intptr_t)item_previous | 0x1)))
+                        if (interlocked_compare_exchange_pointer(&item->previous, (void*)((intptr_t)item_previous | 0x1), expected_item_previous) != expected_item_previous)
                         {
                             // we could not mark the next link as to be deleted because someone else came and modified it, this is most likely due to a node being inserted,
                             // so we must restart
@@ -228,11 +227,11 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                         {
                             // there is no next node, we just have to NULL the head if it has not changed
                             LOCK_FREE_SET_ITEM* expected_head = item;
-                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_head, (CLDS_ATOMIC(intptr_t))NULL))
+                            if (interlocked_compare_exchange_pointer(&lock_free_set->head, NULL, expected_head) != expected_head)
                             {
                                 // unlock the previous node
                                 expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                 {
                                     LogError("Unexpected change of locked item->previous");
                                     result = MU_FAILURE;
@@ -261,7 +260,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                     //LogInfo("Delete head, has next items, TID=%lu", GetCurrentThreadId());
 
                     // mark the left link for deletion, even though it is NULL
-                    LOCK_FREE_SET_ITEM* item_previous = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous);
+                    LOCK_FREE_SET_ITEM* item_previous = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item->previous, NULL, NULL);
                     if (item_previous != NULL)
                     {
                         // since we are the head, but the previous item is non NULL, we must wait as some other node is being removed at our left
@@ -271,7 +270,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                     {
                         // now "lock" the previous node
                         LOCK_FREE_SET_ITEM* expected_item_previous = item_previous;
-                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))((intptr_t)item_previous | 0x1)))
+                        if (interlocked_compare_exchange_pointer(&item->previous, (void*)((intptr_t)item_previous | 0x1), expected_item_previous) != expected_item_previous)
                         {
                             // we could not mark the next link as to be deleted because someone else came and modified it, this is most likely due to a node being inserted,
                             // so we must restart
@@ -281,11 +280,11 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                         {
                             // there is a next node, we need to mark the next link for deletion and proceed with changing the next node
                             LOCK_FREE_SET_ITEM* expected_item_next = item_next;
-                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))((intptr_t)item_next | 0x1)))
+                            if (interlocked_compare_exchange_pointer(&item->next, (void*)((intptr_t)item_next | 0x1), expected_item_next) != expected_item_next)
                             {
                                 // unlock the previous node
                                 expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                 {
                                     LogError("Unexpected change of locked item->previous");
                                     result = MU_FAILURE;
@@ -303,13 +302,13 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                 // first thing, we need to change the head to point to the next item. This is because it is much harder to unwind changes
                                 // if we would first change the item->next->previous
                                 LOCK_FREE_SET_ITEM* expected_head = item;
-                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_head, (CLDS_ATOMIC(intptr_t))item_next))
+                                if (interlocked_compare_exchange_pointer(&lock_free_set->head, item_next, expected_head) != expected_head)
                                 {
                                     // head has changed
                                     // someone is inserting, we should not go further, as it is more likely that we will not be the head very soon
                                     // unlock previous and next link and restart
                                     expected_item_next = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_next | 0x1);
-                                    if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
+                                    if (interlocked_compare_exchange_pointer(&item->next, item_next, expected_item_next) != expected_item_next)
                                     {
                                         LogError("Unexpected change of locked item->next");
                                         result = MU_FAILURE;
@@ -318,7 +317,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     else
                                     {
                                         expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                        if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                         {
                                             LogError("Unexpected change of locked item->previous");
                                             result = MU_FAILURE;
@@ -344,7 +343,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     do
                                     {
                                         LOCK_FREE_SET_ITEM* expected_item_next_previous = (LOCK_FREE_SET_ITEM*)(void*)item;
-                                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_next->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next_previous, (CLDS_ATOMIC(intptr_t))NULL))
+                                        if (interlocked_compare_exchange_pointer(&item_next->previous, NULL, expected_item_next_previous) != expected_item_next_previous)
                                         {
                                             // could not change the previous on the "current head", because the value has changed
                                             // It could have changed because:
@@ -370,7 +369,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
             {
                 // we are not the head node
                 // we need to mark the previous node for deletion
-                LOCK_FREE_SET_ITEM* item_previous = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous);
+                LOCK_FREE_SET_ITEM* item_previous = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item->previous, NULL, NULL);
                 if (item_previous == NULL)
                 {
                     // somehow the previous value is now NULL, that means that by this time some other thread got to remove the node that was our previous, so it looks like
@@ -380,7 +379,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                 else
                 {
                     LOCK_FREE_SET_ITEM* expected_item_previous = item_previous;
-                    if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))((intptr_t)item_previous | 0x1)))
+                    if (interlocked_compare_exchange_pointer(&item->previous, (void*)((intptr_t)item_previous | 0x1), expected_item_previous) != expected_item_previous)
                     {
                         // item_previous has changed, we will need to restart, as we might be now the head of the list
                         restart_needed = true;
@@ -390,20 +389,18 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                         // we were able to mark the previous link for deletion
                         // we now want to mark the next link
                         // get the item->next value
-                        LOCK_FREE_SET_ITEM* item_next = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next);
+                        LOCK_FREE_SET_ITEM* item_next = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item->next, NULL, NULL);
                         // If that is the case then the next node will back off when it will see
                         if (item_next == NULL)
                         {
-                            //LogInfo("Delete tail, TID=%lu", GetCurrentThreadId());
-
                             // check if we somehow became head, if we did we need to bail out as the left node was removed already and we cannot compensate for that
                             LOCK_FREE_SET_ITEM* expected_item = item;
-                            if (clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item, (CLDS_ATOMIC(intptr_t))((intptr_t)item)))
+                            if (interlocked_compare_exchange_pointer(&lock_free_set->head, item, expected_item) == expected_item)
                             {
                                 // we are the head node, restart
                                 // we have to back off, as the previous node wins, unlock previous link
                                 expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                 {
                                     LogError("Unexpected change of locked item->previous");
                                     result = MU_FAILURE;
@@ -425,14 +422,14 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
 
                                 // now change the previous->next to point to next (which is NULL)
                                 LOCK_FREE_SET_ITEM* expected_item_previous_next = item;
-                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_previous->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous_next, (CLDS_ATOMIC(intptr_t))NULL))
+                                if (interlocked_compare_exchange_pointer(&item_previous->next, NULL, expected_item_previous_next) != expected_item_previous_next)
                                 {
                                     // item->previous->next changed, probably item->previous it is being deleted, we need to backoff since previous nodes have priority
                                     // by our convention
 
                                     // we simply unmark for deletion the previous link
                                     expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                    if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                    if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                     {
                                         // this is an error, someone modified the previous link and they should not
                                         LogError("item->previous modified unexpectedly");
@@ -467,11 +464,11 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                             // non NULL next
                             // mark the item->next for deletion
                             LOCK_FREE_SET_ITEM* expected_item_next = item_next;
-                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))((intptr_t)item_next | 0x1)))
+                            if (interlocked_compare_exchange_pointer(&item->next, (void*)((intptr_t)item_next | 0x1), expected_item_next) != expected_item_next)
                             {
                                 // could not mark the next link as to be removed because it changed, try again
                                 expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                 {
                                     // this is an error, someone modified the previous link and they should not
                                     LogError("item->previous modified unexpectedly");
@@ -488,12 +485,12 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                             {
                                 // check if we somehow became head, if we did we need to bail out as the left node was removed already and we cannot compensate for that
                                 LOCK_FREE_SET_ITEM* expected_item = item;
-                                if (clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&lock_free_set->head, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item, (CLDS_ATOMIC(intptr_t))((intptr_t)item)))
+                                if (interlocked_compare_exchange_pointer(&lock_free_set->head, item, expected_item) == expected_item)
                                 {
                                     // we are the head node, restart
                                     // we have to back off, as the previous node wins, unlock previous link
                                     expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                    if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                    if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                     {
                                         LogError("Unexpected change of locked item->previous");
                                         result = MU_FAILURE;
@@ -503,7 +500,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     {
                                         // unlock next link and restart
                                         expected_item_next = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_next | 0x1);
-                                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
+                                        if (interlocked_compare_exchange_pointer(&item->next, item_next, expected_item_next) != expected_item_next)
                                         {
                                             LogError("Unexpected change of locked item->next");
                                             result = MU_FAILURE;
@@ -529,13 +526,13 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                     // [NULL, ...]   [...,  item]    [{previous,del}, {next,del}]    [item, ...]
 
                                     // now we attempt to change the previous->next to be next
-                                    LOCK_FREE_SET_ITEM* item_previous_next = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_previous->next);
+                                    LOCK_FREE_SET_ITEM* item_previous_next = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item_previous->next, NULL, NULL);
                                     if (((uintptr_t)item_previous_next & 0x1) != 0)
                                     {
                                         // the previous->next link is marked for deletion, this means that previous is being deleted
                                         // we have to back off, as the previous node wins, unlock previous link
                                         expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                        if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                        if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                         {
                                             LogError("Unexpected change of locked item->previous");
                                             result = MU_FAILURE;
@@ -545,7 +542,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                         {
                                             // unlock next link and restart
                                             expected_item_next = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_next | 0x1);
-                                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
+                                            if (interlocked_compare_exchange_pointer(&item->next, item_next, expected_item_next) != expected_item_next)
                                             {
                                                 LogError("Unexpected change of locked item->next");
                                                 result = MU_FAILURE;
@@ -564,7 +561,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                         {
                                             // we have to back off, as the previous node wins, unlock previous link
                                             expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                            if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                             {
                                                 LogError("Unexpected change of locked item->previous");
                                                 result = MU_FAILURE;
@@ -574,7 +571,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                             {
                                                 // unlock next link and restart
                                                 expected_item_next = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_next | 0x1);
-                                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
+                                                if (interlocked_compare_exchange_pointer(&item->next, item_next, expected_item_next) != expected_item_next)
                                                 {
                                                     LogError("Unexpected change of locked item->next");
                                                     result = MU_FAILURE;
@@ -592,12 +589,12 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                             // previous->next is unlocked, change it
                                             // now change the previous->next to point to next
                                             LOCK_FREE_SET_ITEM* expected_item_previous_next = item;
-                                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_previous->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous_next, (CLDS_ATOMIC(intptr_t))item_next))
+                                            if (interlocked_compare_exchange_pointer(&item_previous->next, item_next, expected_item_previous_next) != expected_item_previous_next)
                                             {
                                                 // previous->next has changed (probably locked now), so
                                                 // we have to back off, as the previous node wins, unlock previous link
                                                 expected_item_previous = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_previous | 0x1);
-                                                if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                                if (interlocked_compare_exchange_pointer(&item->previous, item_previous, expected_item_previous) != expected_item_previous)
                                                 {
                                                     LogError("Unexpected change of locked item->previous");
                                                     result = MU_FAILURE;
@@ -607,7 +604,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                 {
                                                     // unlock next link and restart
                                                     expected_item_next = (LOCK_FREE_SET_ITEM*)(void*)((intptr_t)item_next | 0x1);
-                                                    if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item->next, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next, (CLDS_ATOMIC(intptr_t))item_next))
+                                                    if (interlocked_compare_exchange_pointer(&item->next, item_next, expected_item_next) != expected_item_next)
                                                     {
                                                         LogError("Unexpected change of locked item->next");
                                                         result = MU_FAILURE;
@@ -634,7 +631,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                 do
                                                 {
                                                     // first get the next->previous and check if it is locked
-                                                    LOCK_FREE_SET_ITEM* item_next_previous = (LOCK_FREE_SET_ITEM*)(void*)clds_atomic_load_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_next->previous);
+                                                    LOCK_FREE_SET_ITEM* item_next_previous = (LOCK_FREE_SET_ITEM*)interlocked_compare_exchange_pointer(&item_next->previous, NULL, NULL);
                                                     if (((intptr_t)item_next_previous & 0x1) != 0)
                                                     {
                                                         // the next->previous is locked, we'll have to insist, since it has to unlock
@@ -663,7 +660,7 @@ int lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM*
                                                         {
                                                             // the next->previous is not marked for deletion, we should proceed with our delete
                                                             LOCK_FREE_SET_ITEM* expected_item_next_previous = item_next_previous;
-                                                            if (!clds_atomic_compare_exchange_strong_intptr_t((volatile CLDS_ATOMIC(intptr_t)*)(volatile void*)&item_next->previous, (CLDS_ATOMIC(intptr_t)*)(void*)&expected_item_next_previous, (CLDS_ATOMIC(intptr_t))item_previous))
+                                                            if (interlocked_compare_exchange_pointer(&item_next->previous, item_previous, expected_item_next_previous) != expected_item_next_previous)
                                                             {
                                                                 // Clearly someone messed with the item->next->previous link, we shall not allow that
                                                                 // our rule is that previous node wins, so in this case insist by retrying the set of item->next->previous
