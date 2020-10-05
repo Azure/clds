@@ -14,8 +14,6 @@
 #include "azure_macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"
 
-#include "windows.h"
-
 #include "azure_c_pal/interlocked_hl.h"
 #include "azure_c_logging/xlogging.h"
 
@@ -23,6 +21,7 @@
 #include "azure_c_pal/gballoc_hl.h"
 #include "azure_c_pal/gballoc_hl_redirect.h"
 #include "azure_c_pal/threadapi.h"
+#include "azure_c_pal/interlocked.h"
 
 #include "clds/clds_hazard_pointers.h"
 
@@ -133,24 +132,24 @@ typedef struct LOCK_WRITE_THREAD_DATA_TAG
 {
     CLDS_SORTED_LIST_HANDLE sorted_list;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
-    volatile LONG lock_should_be_unblocked;
+    volatile_atomic int32_t lock_should_be_unblocked;
 } LOCK_WRITE_THREAD_DATA;
 
 typedef struct CHAOS_TEST_ITEM_DATA_TAG
 {
     CLDS_SORTED_LIST_ITEM* item;
-    volatile LONG item_state;
+    volatile_atomic int32_t item_state;
 } CHAOS_TEST_ITEM_DATA;
 
 #define TEST_SEQ_NO_QUEUE_SIZE (1024 * 1024)
 
 typedef struct CHAOS_TEST_CONTEXT_TAG
 {
-    volatile LONG done;
+    volatile_atomic int32_t done;
     CLDS_SORTED_LIST_HANDLE sorted_list;
     volatile LONG64 seq_no_count;
     int64_t next_seq_no_to_ack;
-    volatile LONG seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
+    volatile_atomic int32_t seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
     CHAOS_TEST_ITEM_DATA items[];
 } CHAOS_TEST_CONTEXT;
 
@@ -830,7 +829,7 @@ static int lock_write_thread(void* arg)
     LOCK_WRITE_THREAD_DATA* thread_data = (LOCK_WRITE_THREAD_DATA*)arg;
     int result;
 
-    if (InterlockedAdd(&thread_data->lock_should_be_unblocked, 0) != 0)
+    if (interlocked_add(&thread_data->lock_should_be_unblocked, 0) != 0)
     {
         LogError("Test error, lock_writes should be blocked before the lock call is made");
         result = MU_FAILURE;
@@ -839,7 +838,7 @@ static int lock_write_thread(void* arg)
     {
         clds_sorted_list_lock_writes(thread_data->sorted_list);
 
-        if (InterlockedAdd(&thread_data->lock_should_be_unblocked, 0) == 0)
+        if (interlocked_add(&thread_data->lock_should_be_unblocked, 0) == 0)
         {
             LogError("Test error, lock_writes should be unblocked when clds_sorted_list_lock_writes returns");
             result = MU_FAILURE;
@@ -884,7 +883,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_in
     LOCK_WRITE_THREAD_DATA thread_data_lock;
     THREAD_HANDLE thread_lock;
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 0);
+    (void)interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 0);
     thread_data_lock.sorted_list = list;
     thread_data_lock.clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(thread_data_lock.clds_hazard_pointers_thread);
@@ -907,7 +906,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_in
     // Wait longer to make sure lock call is blocked still, but insert has not completed
     ThreadAPI_Sleep(3000);
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 1);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 1);
 
     int thread_result;
     (void)ThreadAPI_Join(thread_insert, &thread_result);
@@ -958,7 +957,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_de
     LOCK_WRITE_THREAD_DATA thread_data_lock;
     THREAD_HANDLE thread_lock;
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 0);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 0);
     thread_data_lock.sorted_list = list;
     thread_data_lock.clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(thread_data_lock.clds_hazard_pointers_thread);
@@ -981,7 +980,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_de
     // Wait longer to make sure lock call is blocked still, but delete has not completed
     ThreadAPI_Sleep(3000);
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 1);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 1);
 
     int thread_result;
     (void)ThreadAPI_Join(thread_delete, &thread_result);
@@ -1032,7 +1031,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_de
     LOCK_WRITE_THREAD_DATA thread_data_lock;
     THREAD_HANDLE thread_lock;
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 0);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 0);
     thread_data_lock.sorted_list = list;
     thread_data_lock.clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(thread_data_lock.clds_hazard_pointers_thread);
@@ -1055,7 +1054,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_de
     // Wait longer to make sure lock call is blocked still, but delete has not completed
     ThreadAPI_Sleep(3000);
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 1);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 1);
 
     int thread_result;
     (void)ThreadAPI_Join(thread_delete, &thread_result);
@@ -1105,7 +1104,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_re
     LOCK_WRITE_THREAD_DATA thread_data_lock;
     THREAD_HANDLE thread_lock;
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 0);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 0);
     thread_data_lock.sorted_list = list;
     thread_data_lock.clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(thread_data_lock.clds_hazard_pointers_thread);
@@ -1131,7 +1130,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_re
     // Wait longer to make sure lock call is blocked still, but remove has not completed
     ThreadAPI_Sleep(3000);
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 1);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 1);
 
     int thread_result;
     (void)ThreadAPI_Join(thread_delete, &thread_result);
@@ -1181,7 +1180,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_se
     LOCK_WRITE_THREAD_DATA thread_data_lock;
     THREAD_HANDLE thread_lock;
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 0);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 0);
     thread_data_lock.sorted_list = list;
     thread_data_lock.clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(thread_data_lock.clds_hazard_pointers_thread);
@@ -1207,7 +1206,7 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_waits_for_pending_clds_sorted_list_se
     // Wait longer to make sure lock call is blocked still, but set value has not completed
     ThreadAPI_Sleep(3000);
 
-    InterlockedExchange(&thread_data_lock.lock_should_be_unblocked, 1);
+    interlocked_exchange(&thread_data_lock.lock_should_be_unblocked, 1);
 
     int thread_result;
     (void)ThreadAPI_Join(thread_set, &thread_result);
@@ -1263,7 +1262,7 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 
     do
     {
-        if (InterlockedCompareExchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
+        if (interlocked_compare_exchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
         {
             *selected_item_index = item_index;
             result = true;
@@ -1291,7 +1290,7 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t seq_no)
 {
     (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
-    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)InterlockedCompareExchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
+    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)interlocked_compare_exchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
     ASSERT_ARE_EQUAL(SEQ_NO_STATE, SEQ_NO_NOT_USED, seq_no_state, "sequence number already used at %" PRId64 "", seq_no);
     WakeByAddressSingle((PVOID)&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
 }
@@ -1310,7 +1309,7 @@ static int chaos_thread(void* arg)
 
     srand((unsigned int)time(NULL));
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
         CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
@@ -1334,7 +1333,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -1345,7 +1344,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
 
@@ -1356,7 +1355,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
 
@@ -1371,7 +1370,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, removed_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
 
@@ -1387,7 +1386,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -1396,7 +1395,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_NOT_FOUND, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
 
@@ -1406,7 +1405,7 @@ static int chaos_thread(void* arg)
                 CLDS_SORTED_LIST_ITEM* removed_item;
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_NOT_FOUND, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
 
@@ -1418,7 +1417,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, found_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -1428,7 +1427,7 @@ static int chaos_thread(void* arg)
                 CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NULL(found_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
 
@@ -1446,7 +1445,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -1462,7 +1461,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
         case CHAOS_TEST_ACTION_REMOVE_AND_SET:
@@ -1481,7 +1480,7 @@ static int chaos_thread(void* arg)
             
                 ASSERT_IS_NULL(old_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -1495,7 +1494,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_OK, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, removed_item, &seq_no));
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -1511,7 +1510,7 @@ static int chaos_thread(void* arg)
                 ASSERT_IS_NOT_NULL(old_item);
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
         case CHAOS_TEST_ACTION_SET_VALUE_ONLY_IF_EXISTS_WHEN_NODE_NOT_THERE:
@@ -1527,7 +1526,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
         }
@@ -1541,14 +1540,14 @@ static int seq_no_clean_thread(void* arg)
 {
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)arg;
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
-        while (InterlockedCompareExchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
+        while (interlocked_compare_exchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
         {
             chaos_test_context->next_seq_no_to_ack++;
         }
         LogInfo("Advanced indicated sequence number to %" PRId64 "", chaos_test_context->next_seq_no_to_ack);
-        (void)InterlockedHL_WaitForValue(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
+        (void)InterlockedHL_WaitForValue((volatile LONG*)&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
     }
 
     return 0;
@@ -1569,7 +1568,7 @@ TEST_FUNCTION(clds_sorted_list_chaos_knight_test)
 
     for (i = 0; i < TEST_SEQ_NO_QUEUE_SIZE; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
     }
 
     (void)InterlockedExchange64(&chaos_test_context->seq_no_count, 0);
@@ -1577,13 +1576,13 @@ TEST_FUNCTION(clds_sorted_list_chaos_knight_test)
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_LIST_ITEM_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->items[i].item_state, TEST_LIST_ITEM_NOT_USED);
     }
 
     chaos_test_context->sorted_list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_chaos, chaos_test_context);
     ASSERT_IS_NOT_NULL(chaos_test_context->sorted_list);
 
-    (void)InterlockedExchange(&chaos_test_context->done, 0);
+    (void)interlocked_exchange(&chaos_test_context->done, 0);
 
     // start threads doing random things on the list
     CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
@@ -1610,7 +1609,7 @@ TEST_FUNCTION(clds_sorted_list_chaos_knight_test)
         ThreadAPI_Sleep(1000);
     }
 
-    (void)InterlockedExchange(&chaos_test_context->done, 1);
+    (void)interlocked_exchange(&chaos_test_context->done, 1);
 
     int dont_care;
 

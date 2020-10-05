@@ -3160,8 +3160,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
 
     for (uint32_t i = 0; i < number_of_items; i++)
     {
-        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)((20 * i) + 1), original_items[i], NULL);
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)((20 * i) + 1), original_items[i], NULL);
         found_originals[i] = false;
     }
     umock_c_reset_all_calls();
@@ -3251,8 +3251,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
 
     for (uint32_t i = 0; i < number_of_items; i++)
     {
-        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL);
         found_originals[i] = false;
     }
     umock_c_reset_all_calls();
@@ -3348,11 +3348,11 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
 
     for (uint32_t i = 0; i < number_of_items; i++)
     {
-        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
 
-        STRICT_EXPECTED_CALL(test_compute_hash((void*)(INT_PTR)(0x1 + i)))
+        STRICT_EXPECTED_CALL(test_compute_hash((void*)(uintptr_t)(0x1 + i)))
             .SetReturn(i);
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL);
         found_originals[i] = false;
         umock_c_reset_all_calls();
     }
@@ -3436,8 +3436,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
 
     for (uint32_t i = 0; i < 10; i++)
     {
-        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + (20 * i)), original_items[i], NULL);
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + (20 * i)), original_items[i], NULL);
         found_originals[i] = false;
     }
     umock_c_reset_all_calls();
@@ -3493,8 +3493,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
 
     for (uint32_t i = 0; i < 10; i++)
     {
-        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL);
         found_originals[i] = false;
     }
     umock_c_reset_all_calls();
@@ -3557,11 +3557,11 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
 
     for (uint32_t i = 0; i < number_of_items; i++)
     {
-        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(INT_PTR)(0x4242 + i));
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
 
-        STRICT_EXPECTED_CALL(test_compute_hash((void*)(INT_PTR)(0x1 + i)))
+        STRICT_EXPECTED_CALL(test_compute_hash((void*)(uintptr_t)(0x1 + i)))
             .SetReturn(i);
-        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(0x1 + i), original_items[i], NULL);
+        (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL);
         found_originals[i] = false;
         umock_c_reset_all_calls();
     }

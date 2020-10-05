@@ -10,9 +10,8 @@
 #include <stdbool.h>
 #endif
 
-#include "windows.h"
-
 #include "azure_macro_utils/macro_utils.h"
+#include "azure_c_pal/interlocked.h"
 #include "clds_hazard_pointers.h"
 
 #include "umock_c/umock_c_prod.h"
@@ -35,10 +34,10 @@ typedef void(*SORTED_LIST_SKIPPED_SEQ_NO_CB)(void* context, int64_t skipped_sequ
 typedef struct CLDS_SORTED_LIST_ITEM_TAG
 {
     // these are internal variables used by the sorted list
-    volatile LONG ref_count;
+    volatile_atomic int32_t ref_count;
     SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
-    volatile struct CLDS_SORTED_LIST_ITEM_TAG* next;
+    volatile_atomic struct CLDS_SORTED_LIST_ITEM_TAG* next;
 } CLDS_SORTED_LIST_ITEM;
 
 // these are macros that help declaring a type that can be stored in the sorted list

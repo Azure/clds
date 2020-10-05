@@ -10,6 +10,7 @@
 
 #include "azure_c_pal/gballoc_hl.h"
 #include "azure_c_pal/gballoc_hl_redirect.h"
+#include "azure_c_pal/interlocked.h"
 
 #include "clds/clds_hazard_pointers.h"
 
@@ -26,18 +27,18 @@ MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_V
 typedef struct CLDS_SORTED_LIST_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
-    volatile CLDS_SORTED_LIST_ITEM* head;
+    volatile_atomic CLDS_SORTED_LIST_ITEM* head;
     SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb;
     void* get_item_key_cb_context;
     SORTED_LIST_KEY_COMPARE_CB key_compare_cb;
     void* key_compare_cb_context;
-    volatile LONG64* sequence_number;
+    volatile_atomic int64_t* sequence_number;
     SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb;
     void* skipped_seq_no_cb_context;
 
     // Support for locking the list for writes
-    volatile LONG locked_for_write;
-    volatile LONG pending_write_operations;
+    volatile_atomic int32_t locked_for_write;
+    volatile_atomic int32_t pending_write_operations;
 } CLDS_SORTED_LIST;
 
 typedef int(*SORTED_LIST_ITEM_COMPARE_CB)(void* context, CLDS_SORTED_LIST_ITEM* item1, void* item_compare_target);
@@ -70,7 +71,7 @@ static int compare_item_by_key(void* context, CLDS_SORTED_LIST_ITEM* item, void*
 
 static void internal_node_destroy(CLDS_SORTED_LIST_ITEM* item)
 {
-    if (InterlockedDecrement(&item->ref_count) == 0)
+    if (interlocked_decrement(&item->ref_count) == 0)
     {
         /* Codes_SRS_CLDS_SORTED_LIST_01_044: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the reclaimed item. ]*/
         if (item->item_cleanup_callback != NULL)
@@ -90,16 +91,16 @@ static void reclaim_list_node(void* node)
 
 static void check_lock_and_begin_write_operation(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
 {
-    ULONG locked_for_write;
+    int32_t locked_for_write;
     do
     {
-        (void)InterlockedIncrement(&clds_sorted_list->pending_write_operations);
-        locked_for_write = InterlockedAdd(&clds_sorted_list->locked_for_write, 0);
+        (void)interlocked_increment(&clds_sorted_list->pending_write_operations);
+        locked_for_write = interlocked_add(&clds_sorted_list->locked_for_write, 0);
         if (locked_for_write != 0)
         {
-            (void)InterlockedDecrement(&clds_sorted_list->pending_write_operations);
+            (void)interlocked_decrement(&clds_sorted_list->pending_write_operations);
             WakeByAddressAll((void*)&clds_sorted_list->pending_write_operations);
-
+    
             // Wait for unlock
             (void)WaitOnAddress(&clds_sorted_list->locked_for_write, &locked_for_write, sizeof(locked_for_write), INFINITE);
         }
@@ -108,20 +109,20 @@ static void check_lock_and_begin_write_operation(CLDS_SORTED_LIST_HANDLE clds_so
 
 static void end_write_operation(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
 {
-    (void)InterlockedDecrement(&clds_sorted_list->pending_write_operations);
+    (void)interlocked_decrement(&clds_sorted_list->pending_write_operations);
     WakeByAddressAll((void*)&clds_sorted_list->pending_write_operations);
 }
 
 static void internal_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
 {
     /*Codes_SRS_CLDS_SORTED_LIST_42_031: [ clds_sorted_list_lock_writes shall increment a counter to lock the list for writes. ]*/
-    (void)InterlockedIncrement(&clds_sorted_list->locked_for_write);
-
+    (void)interlocked_increment(&clds_sorted_list->locked_for_write);
+    
     /*Codes_SRS_CLDS_SORTED_LIST_42_032: [ clds_sorted_list_lock_writes shall wait for all pending write operations to complete. ]*/
-    ULONG pending_writes;
+    int32_t pending_writes;
     do
     {
-        pending_writes = InterlockedAdd(&clds_sorted_list->pending_write_operations, 0);
+        pending_writes = interlocked_add(&clds_sorted_list->pending_write_operations, 0);
         if (pending_writes != 0)
         {
             // Wait for writes
@@ -133,7 +134,7 @@ static void internal_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
 static void internal_unlock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
 {
     /*Codes_SRS_CLDS_SORTED_LIST_42_034: [ clds_sorted_list_lock_writes shall decrement a counter to unlock the list for writes. ]*/
-    (void)InterlockedDecrement(&clds_sorted_list->locked_for_write);
+    (void)interlocked_decrement(&clds_sorted_list->locked_for_write);
     WakeByAddressAll((void*)&clds_sorted_list->locked_for_write);
 }
 
@@ -153,17 +154,17 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
         }
 
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
-        volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
+        volatile_atomic CLDS_SORTED_LIST_ITEM* previous_item = NULL;
         // start at the head of the list and scan through all nodes until we find the one we are looking for
-        volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
+        CLDS_SORTED_LIST_ITEM* volatile_atomic* current_item_address = (CLDS_SORTED_LIST_ITEM * volatile_atomic*)&clds_sorted_list->head;
 
         do
         {
             // get the current_item value
-            volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+            volatile_atomic CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer(current_item_address, NULL, NULL);
 
             // clear any delete lock bit from what we read
-            current_item = (volatile CLDS_SORTED_LIST_ITEM*)((uintptr_t)current_item & ~0x1);
+            current_item = (volatile_atomic CLDS_SORTED_LIST_ITEM*)((uintptr_t)current_item & ~0x1);
 
             // if the current item is NULL (do not look at the lock bit), we are done.
             if (current_item == NULL)
@@ -201,7 +202,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                 else
                 {
                     // now make sure the item has not changed (if it has changed, then it means we can not touch the memory)
-                    if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL) != (volatile PVOID*)current_item)
+                    if (interlocked_compare_exchange_pointer(current_item_address, NULL, NULL) != current_item)
                     {
                         if (previous_hp != NULL)
                         {
@@ -221,13 +222,13 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                         {
                             // mark the node as deleted
                             // get the next pointer as this is the only place where we keep information
-                            volatile CLDS_SORTED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                            volatile_atomic CLDS_SORTED_LIST_ITEM* current_next = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL);
 
                             // clear any delete lock bit from what we read
                             current_next = (volatile CLDS_SORTED_LIST_ITEM*)((uintptr_t)current_next & ~0x1);
 
                             // mark that the node is deleted by setting the lock delete bit
-                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 0x1), (PVOID)current_next) != (PVOID)current_next)
+                            if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)((uintptr_t)current_next | 0x1), (void*)current_next) != (void*)current_next)
                             {
                                 // could not set the lock delete bit (some other thread modified the next value, we shall restart)
                                 if (previous_hp != NULL)
@@ -250,7 +251,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_071: [ If no start sequence number was provided in clds_sorted_list_create and sequence_number is NULL, no sequence number computations shall be done. ]*/
                                 if (clds_sorted_list->sequence_number != NULL)
                                 {
-                                    local_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+                                    local_seq_no = interlocked_increment_64(clds_sorted_list->sequence_number);
                                 }
 
                                 // the current node is marked for deletion, now try to change the previous link to the next value
@@ -263,10 +264,10 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                 if (previous_item == NULL)
                                 {
                                     // we are removing the head, special case
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, (void*)current_next, (void*)current_item) != (void*)current_item)
                                     {
                                         // head changed, restart, but make sure we unlock the delete bit for current node
-                                        (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                        (void)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 1));
 
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
@@ -314,10 +315,10 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
                                 else
                                 {
                                     // not removing the head, set Prev->next to current_next, but clear the lock delete bit from the next pointer!
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)current_next, (void*)current_item) != (void*)current_item)
                                     {
                                         // someone is deleting our left node, restart, but first unlock our own delete mark
-                                        (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                        (void)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 1));
 
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -378,7 +379,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
 
                             previous_hp = current_item_hp;
                             previous_item = current_item;
-                            current_item_address = (volatile CLDS_SORTED_LIST_ITEM**)&current_item->next;
+                            current_item_address = (CLDS_SORTED_LIST_ITEM* volatile_atomic*)&current_item->next;
                         }
                     }
                 }
@@ -406,13 +407,13 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
         }
 
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
-        volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
-        volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
+        volatile_atomic CLDS_SORTED_LIST_ITEM* previous_item = NULL;
+        CLDS_SORTED_LIST_ITEM* volatile_atomic* current_item_address = (CLDS_SORTED_LIST_ITEM* volatile_atomic*)&clds_sorted_list->head;
 
         do
         {
             // get the current_item value
-            volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+            volatile_atomic CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer(current_item_address, NULL, NULL);
 
             // clear any delete lock bit from what we read
             current_item = (void*)((uintptr_t)current_item & ~0x1);
@@ -450,7 +451,7 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                 else
                 {
                     // now make sure the item has not changed
-                    if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)current_item)
+                    if (interlocked_compare_exchange_pointer(current_item_address, (void*)current_item, (void*)current_item) != (void*)current_item)
                     {
                         if (previous_hp != NULL)
                         {
@@ -470,13 +471,13 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                         {
                             // mark the node as deleted
                             // get the next pointer as this is the only place where we keep information
-                            volatile CLDS_SORTED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                            volatile_atomic CLDS_SORTED_LIST_ITEM* current_next = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL);
 
                             // clear any delete lock bit from what we read
                             current_next = (void*)((uintptr_t)current_next & ~0x1);
 
                             // mark that the node is deleted
-                            if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 1), (PVOID)current_next) != (PVOID)current_next)
+                            if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)((uintptr_t)current_next | 1), (void*)current_next) != (void*)current_next)
                             {
                                 if (previous_hp != NULL)
                                 {
@@ -498,7 +499,7 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                 if (clds_sorted_list->sequence_number != NULL)
                                 {
                                     /* Codes_SRS_CLDS_SORTED_LIST_01_074: [ If the sequence_number argument passed to clds_sorted_list_remove_key is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
-                                    local_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+                                    local_seq_no = interlocked_increment_64(clds_sorted_list->sequence_number);
                                 }
 
                                 // the current node is marked for deletion, now try to change the previous link to the next value
@@ -509,10 +510,10 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                 if (previous_item == NULL)
                                 {
                                     // we are removing the head
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, (void*)current_next, (void*)current_item) != (void*)current_item)
                                     {
                                         // head changed, restart
-                                        (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                        (void)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 1));
 
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
@@ -559,10 +560,10 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
                                 }
                                 else
                                 {
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)current_next, (PVOID)current_item) != (PVOID)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)current_next, (void*)current_item) != (void*)current_item)
                                     {
                                         // someone is deleting our left node, restart, but first unlock our own delete mark
-                                        (void)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 1));
+                                        (void)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 1));
 
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -622,7 +623,7 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
 
                             previous_hp = current_item_hp;
                             previous_item = current_item;
-                            current_item_address = (volatile CLDS_SORTED_LIST_ITEM**)&current_item->next;
+                            current_item_address = (CLDS_SORTED_LIST_ITEM* volatile_atomic*)&current_item->next;
                         }
                     }
                 }
@@ -633,7 +634,7 @@ static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE cl
     return result;
 }
 
-CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile int64_t* start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context)
+CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile_atomic int64_t* start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context)
 {
     CLDS_SORTED_LIST_HANDLE clds_sorted_list;
 
@@ -655,7 +656,7 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
         ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL))
         )
     {
-        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb=%p, void* get_item_key_cb_context=%p, SORTED_LIST_KEY_COMPARE_CB key_compare_cb=%p, void* key_compare_cb_context=%p, volatile int64_t* start_sequence_number=%p, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb=%p, void* skipped_seq_no_cb_context=%p",
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb=%p, void* get_item_key_cb_context=%p, SORTED_LIST_KEY_COMPARE_CB key_compare_cb=%p, void* key_compare_cb_context=%p, volatile_atomic int64_t* start_sequence_number=%p, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb=%p, void* skipped_seq_no_cb_context=%p",
             clds_hazard_pointers, get_item_key_cb, get_item_key_cb_context, key_compare_cb, key_compare_cb_context, start_sequence_number, skipped_seq_no_cb, skipped_seq_no_cb_context);
         clds_sorted_list = NULL;
     }
@@ -679,13 +680,13 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             clds_sorted_list->skipped_seq_no_cb = skipped_seq_no_cb;
             clds_sorted_list->skipped_seq_no_cb_context = skipped_seq_no_cb_context;
 
-            (void)InterlockedExchange(&clds_sorted_list->locked_for_write, 0);
-            (void)InterlockedExchange(&clds_sorted_list->pending_write_operations, 0);
+            (void)interlocked_exchange(&clds_sorted_list->locked_for_write, 0);
+            (void)interlocked_exchange(&clds_sorted_list->pending_write_operations, 0);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ start_sequence_number shall be used by the sorted list to compute the sequence number of each operation. ]*/
             clds_sorted_list->sequence_number = start_sequence_number;
 
-            (void)InterlockedExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL);
+            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, NULL);
         }
     }
 
@@ -701,13 +702,13 @@ void clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
     }
     else
     {
-        CLDS_SORTED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL, NULL);
+        CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, NULL, NULL);
 
         /* Codes_SRS_CLDS_SORTED_LIST_01_039: [ Any items still present in the list shall be freed. ]*/
         // go through all the items and free them
         while (current_item != NULL)
         {
-            CLDS_SORTED_LIST_ITEM* next_item = (CLDS_SORTED_LIST_ITEM*)((uintptr_t)InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL) & ~0x1);
+            CLDS_SORTED_LIST_ITEM* next_item = (CLDS_SORTED_LIST_ITEM*)((uintptr_t)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL) & ~0x1);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_040: [ For each item that is freed, the callback item_cleanup_callback passed to clds_sorted_list_node_create shall be called, while passing item_cleanup_callback_context and the freed item as arguments. ]*/
             /* Codes_SRS_CLDS_SORTED_LIST_01_041: [ If item_cleanup_callback is NULL, no user callback shall be triggered for the freed items. ]*/
@@ -756,7 +757,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
         if (clds_sorted_list->sequence_number != NULL)
         {
             /* Codes_SRS_CLDS_SORTED_LIST_01_060: [ For each insert the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
-            local_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+            local_seq_no = interlocked_increment_64(clds_sorted_list->sequence_number);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_061: [ If the sequence_number argument passed to clds_sorted_list_insert is NULL, the computed sequence number for the insert shall still be computed but it shall not be provided to the user. ]*/
             if (sequence_number != NULL)
@@ -770,8 +771,8 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
         do
         {
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
-            volatile CLDS_SORTED_LIST_ITEM* previous_item = NULL;
-            volatile CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
+            volatile_atomic CLDS_SORTED_LIST_ITEM* previous_item = NULL;
+            CLDS_SORTED_LIST_ITEM* volatile_atomic* current_item_address = (CLDS_SORTED_LIST_ITEM* volatile_atomic*)&clds_sorted_list->head;
             result = CLDS_SORTED_LIST_INSERT_ERROR;
             uint64_t iteration_count = 0;
 
@@ -784,7 +785,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                 }
 
                 // get the current_item value
-                volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+                volatile_atomic CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, NULL, NULL);
 
                 // clear any delete lock bit from what we read
                 current_item = (volatile CLDS_SORTED_LIST_ITEM*)((uintptr_t)current_item & ~0x1);
@@ -799,7 +800,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                     {
                         // have a previous item, try to replace the NULL with the new item
                         // if there is something else than NULL there, restart, there were some major changes
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)item, (PVOID)current_item) != NULL)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)item, (void*)current_item) != NULL)
                         {
                             // let go of previous hazard pointer
                             clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -819,7 +820,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                     else
                     {
                         // no previous item, replace the head, make sure it is a "clean" NULL, no lock bit set
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, item, NULL) != NULL)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, item, NULL) != NULL)
                         {
                             restart_needed = true;
                             break;
@@ -863,7 +864,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                     else
                     {
                         // now make sure the item has not changed. This also takes care of checking that the delete lock bit is not set
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL) != (PVOID)current_item)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, NULL, NULL) != (void*)current_item)
                         {
                             if (previous_hp != NULL)
                             {
@@ -913,7 +914,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                 if (previous_item != NULL)
                                 {
                                     // have a previous item
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)item, (PVOID)current_item) != (PVOID)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)item, (void*)current_item) != (void*)current_item)
                                     {
                                         // let go of both hazard pointers
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -935,7 +936,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                 }
                                 else
                                 {
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)item, (PVOID)current_item) != current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, (void*)item, (void*)current_item) != current_item)
                                     {
                                         // let go of the hazard pointer
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -965,7 +966,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
 
                                 previous_hp = current_item_hp;
                                 previous_item = current_item;
-                                current_item_address = (volatile CLDS_SORTED_LIST_ITEM**)&current_item->next;
+                                current_item_address = (CLDS_SORTED_LIST_ITEM* volatile_atomic*)&current_item->next;
                             }
                         }
                     }
@@ -1134,7 +1135,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
             do
             {
                 // get the current_item value
-                volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+                volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, NULL, NULL);
 
                 // clear any delete lock bit from what we read
                 current_item = (void*)((uintptr_t)current_item & ~0x1);
@@ -1175,7 +1176,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
                     else
                     {
                         // now make sure the item has not changed
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)current_item)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, (void*)current_item, (void*)current_item) != (void*)current_item)
                         {
                             if (previous_hp != NULL)
                             {
@@ -1202,7 +1203,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
 
                                 // found it
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_034: [ clds_sorted_list_find_key shall return a pointer to the item with the reference count already incremented so that it can be safely used by the caller. ]*/
-                                (void)InterlockedIncrement(&current_item->ref_count);
+                                (void)interlocked_increment(&current_item->ref_count);
                                 clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_029: [ On success clds_sorted_list_find shall return a non-NULL pointer to the found linked list item. ]*/
@@ -1273,7 +1274,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
         if (clds_sorted_list->sequence_number != NULL)
         {
             /* Codes_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
-            insert_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+            insert_seq_no = interlocked_increment_64(clds_sorted_list->sequence_number);
 
             /* Codes_SRS_CLDS_SORTED_LIST_01_092: [ If the sequence_number argument passed to clds_sorted_list_set_value is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
             if (sequence_number != NULL)
@@ -1300,7 +1301,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
             do
             {
                 // get the current_item value
-                volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, NULL, NULL);
+                volatile CLDS_SORTED_LIST_ITEM* current_item = (volatile CLDS_SORTED_LIST_ITEM*)interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, NULL, NULL);
 
                 // clear any delete lock bit from what we read
                 current_item = (void*)((uintptr_t)current_item & ~0x1);
@@ -1327,7 +1328,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                     {
                         // have a previous item
                         /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, NULL) != NULL)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)new_item, NULL) != NULL)
                         {
                             // let go of previous hazard pointer
                             clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -1352,7 +1353,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                     {
                         // no previous item, replace the head
                         /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, new_item, NULL) != NULL)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, new_item, NULL) != NULL)
                         {
                             restart_needed = true;
                             break;
@@ -1393,7 +1394,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                     else
                     {
                         // now make sure the item has not changed
-                        if (InterlockedCompareExchangePointer((volatile PVOID*)current_item_address, (PVOID)current_item, (PVOID)current_item) != (PVOID)current_item)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, (void*)current_item, (void*)current_item) != (void*)current_item)
                         {
                             if (previous_hp != NULL)
                             {
@@ -1416,12 +1417,12 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             {
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_088: [ If the key entry exists in the list, its value shall be replaced with new_item. ]*/
 
-                                volatile CLDS_SORTED_LIST_ITEM* current_next = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                                volatile CLDS_SORTED_LIST_ITEM* current_next = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL);
 
                                 // clear any delete lock bit from what we read
                                 current_next = (void*)((uintptr_t)current_next & ~0x1);
 
-                                if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)((uintptr_t)current_next | 0x1), (PVOID)current_next) != (PVOID)current_next)
+                                if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)((uintptr_t)current_next | 0x1), (void*)current_next) != (void*)current_next)
                                 {
                                     if (previous_item != NULL)
                                     {
@@ -1435,7 +1436,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
                                 if (clds_sorted_list->sequence_number != NULL)
                                 {
-                                    if (InterlockedAdd64(clds_sorted_list->sequence_number, 0) != insert_seq_no)
+                                    if (interlocked_add_64(clds_sorted_list->sequence_number, 0) != insert_seq_no)
                                     {
                                         if (clds_sorted_list->skipped_seq_no_cb != NULL)
                                         {
@@ -1443,7 +1444,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                         }
 
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_090: [ For each set value the order of the operation shall be computed based on the start sequence number passed to clds_sorted_list_create. ]*/
-                                        insert_seq_no = InterlockedIncrement64(clds_sorted_list->sequence_number);
+                                        insert_seq_no = interlocked_increment_64(clds_sorted_list->sequence_number);
 
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_092: [ If the sequence_number argument passed to clds_sorted_list_set_value is NULL, the computed sequence number for the remove shall still be computed but it shall not be provided to the user. ]*/
                                         if (sequence_number != NULL)
@@ -1456,7 +1457,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                 // same item!, locked, noone changes it now, so we can set the seq no.
                                 if (current_item == new_item)
                                 {
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 0x1)) != (PVOID)((uintptr_t)current_next | 0x1))
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 0x1)) != (void*)((uintptr_t)current_next | 0x1))
                                     {
                                         LogError("This should not happen");
                                         if (previous_item != NULL)
@@ -1501,9 +1502,9 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                 if (previous_item != NULL)
                                 {
                                     // have a previous item
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)new_item, (void*)current_item) != current_item)
                                     {
-                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 0x1)) != (PVOID)((uintptr_t)current_next | 0x1))
+                                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 0x1)) != (void*)((uintptr_t)current_next | 0x1))
                                         {
                                             LogError("This should not happen");
                                             clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -1540,9 +1541,9 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                 }
                                 else
                                 {
-                                    if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, (void*)new_item, (void*)current_item) != current_item)
                                     {
-                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, (PVOID)current_next, (PVOID)((uintptr_t)current_next | 0x1)) != (PVOID)((uintptr_t)current_next | 0x1))
+                                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 0x1)) != (void*)((uintptr_t)current_next | 0x1))
                                         {
                                             LogError("This should not happen");
                                             clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -1603,7 +1604,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                     {
                                         // have a previous item
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
-                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&previous_item->next, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)new_item, (void*)current_item) != current_item)
                                         {
                                             // let go of previous hazard pointer
                                             clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
@@ -1628,7 +1629,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                     else
                                     {
                                         /* Codes_SRS_CLDS_SORTED_LIST_01_087: [ If the key entry does not exist in the list and only_if_exists is false, new_item shall be inserted at the key position. ]*/
-                                        if (InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, (PVOID)new_item, (PVOID)current_item) != current_item)
+                                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, (void*)new_item, (void*)current_item) != current_item)
                                         {
                                             // let go of previous hazard pointer
                                             clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
@@ -1731,7 +1732,7 @@ CLDS_SORTED_LIST_GET_COUNT_RESULT clds_sorted_list_get_count(CLDS_SORTED_LIST_HA
     }
     else
     {
-        if (InterlockedAdd(&clds_sorted_list->locked_for_write, 0) == 0)
+        if (interlocked_add(&clds_sorted_list->locked_for_write, 0) == 0)
         {
             /*Codes_SRS_CLDS_SORTED_LIST_42_038: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_count shall fail and return CLDS_SORTED_LIST_GET_COUNT_NOT_LOCKED. ]*/
             LogError("Must lock the list before getting the count of items");
@@ -1741,12 +1742,12 @@ CLDS_SORTED_LIST_GET_COUNT_RESULT clds_sorted_list_get_count(CLDS_SORTED_LIST_HA
         {
             /*Codes_SRS_CLDS_SORTED_LIST_42_039: [ clds_sorted_list_get_count shall iterate over the items in the list and count them in item_count. ]*/
             uint64_t count = 0;
-            CLDS_SORTED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL, NULL);
+            CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, NULL, NULL);
 
             while (current_item != NULL)
             {
                 count++;
-                CLDS_SORTED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                CLDS_SORTED_LIST_ITEM* next_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL);
                 current_item = next_item;
             }
 
@@ -1782,7 +1783,7 @@ CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE
     }
     else
     {
-        if (InterlockedAdd(&clds_sorted_list->locked_for_write, 0) == 0)
+        if (interlocked_add(&clds_sorted_list->locked_for_write, 0) == 0)
         {
             /*Codes_SRS_CLDS_SORTED_LIST_42_045: [ If the counter to lock the list for writes is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED. ]*/
             LogError("Must lock the list before getting all items");
@@ -1794,11 +1795,11 @@ CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE
 
             /*Codes_SRS_CLDS_SORTED_LIST_42_046: [ For each item in the list: ]*/
             uint64_t current_index = 0;
-            CLDS_SORTED_LIST_ITEM* current_item = InterlockedCompareExchangePointer((volatile PVOID*)&clds_sorted_list->head, NULL, NULL);
+            CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, NULL, NULL);
 
             while (current_item != NULL)
             {
-                CLDS_SORTED_LIST_ITEM* next_item = InterlockedCompareExchangePointer((volatile PVOID*)&current_item->next, NULL, NULL);
+                CLDS_SORTED_LIST_ITEM* next_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL);
 
                 if (current_index + 1 > item_count)
                 {
@@ -1860,8 +1861,8 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_node_create(size_t node_size, SORTED_LIS
         volatile CLDS_SORTED_LIST_ITEM* item = (volatile CLDS_SORTED_LIST_ITEM*)((unsigned char*)result);
         item->item_cleanup_callback = item_cleanup_callback;
         item->item_cleanup_callback_context = item_cleanup_callback_context;
-        (void)InterlockedExchange(&item->ref_count, 1);
-        (void)InterlockedExchangePointer((volatile PVOID*)&item->next, NULL);
+        (void)interlocked_exchange(&item->ref_count, 1);
+        (void)interlocked_exchange_pointer((void* volatile_atomic*)&item->next, NULL);
     }
 
     return result;
@@ -1878,7 +1879,7 @@ int clds_sorted_list_node_inc_ref(CLDS_SORTED_LIST_ITEM* item)
     }
     else
     {
-        (void)InterlockedIncrement(&item->ref_count);
+        (void)interlocked_increment(&item->ref_count);
         result = 0;
     }
 

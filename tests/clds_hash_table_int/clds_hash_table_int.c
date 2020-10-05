@@ -11,11 +11,11 @@
 #include <time.h>
 #endif
 
-#include "windows.h"
 #include "testrunnerswitcher.h"
 
 #include "azure_macro_utils/macro_utils.h"
 
+#include "azure_c_pal/interlocked.h"
 #include "azure_c_pal/interlocked_hl.h"
 
 #include "azure_c_logging/xlogging.h"
@@ -61,16 +61,16 @@ DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
 typedef struct CHAOS_TEST_ITEM_DATA_TAG
 {
     CLDS_HASH_TABLE_ITEM* item;
-    volatile LONG item_state;
+    volatile_atomic int32_t item_state;
 } CHAOS_TEST_ITEM_DATA;
 
 typedef struct CHAOS_TEST_CONTEXT_TAG
 {
-    volatile LONG done;
+    volatile_atomic int32_t done;
     CLDS_HASH_TABLE_HANDLE hash_table;
     volatile LONG64 seq_no_count;
     int64_t next_seq_no_to_ack;
-    volatile LONG seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
+    volatile_atomic int32_t seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
     CHAOS_TEST_ITEM_DATA items[];
 } CHAOS_TEST_CONTEXT;
 
@@ -107,7 +107,7 @@ static int test_key_compare(void* key1, void* key2)
 static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t seq_no)
 {
     (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
-    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)InterlockedCompareExchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
+    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)interlocked_compare_exchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
     ASSERT_ARE_EQUAL(SEQ_NO_STATE, SEQ_NO_NOT_USED, seq_no_state, "sequence number already used at %" PRId64 "", seq_no);
     WakeByAddressSingle((PVOID)&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
 }
@@ -132,14 +132,14 @@ static void test_item_cleanup_func(void* context, struct CLDS_HASH_TABLE_ITEM_TA
 
 typedef struct SHARED_KEY_INFO_TAG
 {
-    volatile LONG last_written_key;
+    volatile_atomic int32_t last_written_key;
 } SHARED_KEY_INFO;
 
 typedef struct THREAD_DATA_TAG
 {
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
-    volatile LONG stop;
+    volatile_atomic int32_t stop;
     uint32_t key;
     uint32_t increment;
     SHARED_KEY_INFO* shared;
@@ -152,7 +152,7 @@ static void initialize_thread_data(THREAD_DATA* thread_data, SHARED_KEY_INFO* sh
     ASSERT_IS_NOT_NULL(thread_data->clds_hazard_pointers_thread);
     thread_data->key = starting_key;
     thread_data->increment = increment;
-    (void)InterlockedExchange(&thread_data->stop, 0);
+    (void)interlocked_exchange(&thread_data->stop, 0);
     thread_data->shared = shared;
 }
 
@@ -173,10 +173,10 @@ static int continuous_insert_thread(void* arg)
         insert_result = clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1), item, &insert_seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, insert_result);
 
-        (void)InterlockedExchange(&thread_data->shared->last_written_key, (LONG)i);
+        (void)interlocked_exchange(&thread_data->shared->last_written_key, (LONG)i);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
 
@@ -192,9 +192,9 @@ static int continuous_delete_thread(void* arg)
 
     do
     {
-        while ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        while ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
-            if (InterlockedAdd(&thread_data->stop, 0) != 0)
+            if (interlocked_add(&thread_data->stop, 0) != 0)
             {
                 // Don't wait forever if the insert thread isn't running any more
                 break;
@@ -202,7 +202,7 @@ static int continuous_delete_thread(void* arg)
             // Spin
         }
 
-        if (InterlockedAdd(&thread_data->stop, 0) != 0)
+        if (interlocked_add(&thread_data->stop, 0) != 0)
         {
             break;
         }
@@ -213,7 +213,7 @@ static int continuous_delete_thread(void* arg)
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -228,9 +228,9 @@ static int continuous_delete_key_value_thread(void* arg)
 
     do
     {
-        while ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        while ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
-            if (InterlockedAdd(&thread_data->stop, 0) != 0)
+            if (interlocked_add(&thread_data->stop, 0) != 0)
             {
                 // Don't wait forever if the insert thread isn't running any more
                 break;
@@ -238,7 +238,7 @@ static int continuous_delete_key_value_thread(void* arg)
             // Spin
         }
 
-        if (InterlockedAdd(&thread_data->stop, 0) != 0)
+        if (interlocked_add(&thread_data->stop, 0) != 0)
         {
             break;
         }
@@ -257,7 +257,7 @@ static int continuous_delete_key_value_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -272,9 +272,9 @@ static int continuous_remove_thread(void* arg)
 
     do
     {
-        while ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        while ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
-            if (InterlockedAdd(&thread_data->stop, 0) != 0)
+            if (interlocked_add(&thread_data->stop, 0) != 0)
             {
                 // Don't wait forever if the insert thread isn't running any more
                 break;
@@ -282,7 +282,7 @@ static int continuous_remove_thread(void* arg)
             // Spin
         }
 
-        if (InterlockedAdd(&thread_data->stop, 0) != 0)
+        if (interlocked_add(&thread_data->stop, 0) != 0)
         {
             break;
         }
@@ -296,7 +296,7 @@ static int continuous_remove_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -313,7 +313,7 @@ static int continuous_set_value_thread(void* arg)
     do
     {
         // Just loop over everything forever, re-setting the values
-        if ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        if ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
             i = thread_data->key;
             appendix++;
@@ -333,7 +333,7 @@ static int continuous_set_value_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -349,7 +349,7 @@ static int continuous_find_thread(void* arg)
     do
     {
         // Just loop over everything forever
-        if ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        if ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
             i = thread_data->key;
         }
@@ -360,7 +360,7 @@ static int continuous_find_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
 
@@ -818,7 +818,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     THREAD_HANDLE thread;
     SHARED_KEY_INFO shared;
 
-    (void)InterlockedExchange(&shared.last_written_key, original_count - 1);
+    (void)interlocked_exchange(&shared.last_written_key, original_count - 1);
     initialize_thread_data(&thread_data, &shared, hash_table, hazard_pointers, original_count, 1);
 
     if (ThreadAPI_Create(&thread, continuous_insert_thread, &thread_data) != THREADAPI_OK)
@@ -839,7 +839,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     ThreadAPI_Sleep(1000);
 
     // Stop inserts
-    (void)InterlockedExchange(&thread_data.stop, 1);
+    (void)interlocked_exchange(&thread_data.stop, 1);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
@@ -876,7 +876,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, original_count - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
 
         initialize_thread_data(&thread_data[i], &shared[i], hash_table, hazard_pointers, original_count + i, THREAD_COUNT);
 
@@ -901,7 +901,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&thread_data[i].stop, 1);
+        (void)interlocked_exchange(&thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(thread[i], &thread_result);
@@ -951,7 +951,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, next_insert - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, next_insert - 1);
 
         initialize_thread_data(&insert_thread_data[i], &shared[i], hash_table, hazard_pointers, next_insert + i, THREAD_COUNT);
 
@@ -983,8 +983,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&delete_thread_data[i].stop, 1);
-        (void)InterlockedExchange(&insert_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&delete_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&insert_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(delete_thread[i], &thread_result);
@@ -1037,7 +1037,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, next_insert - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, next_insert - 1);
 
         initialize_thread_data(&insert_thread_data[i], &shared[i], hash_table, hazard_pointers, next_insert + i, THREAD_COUNT);
 
@@ -1069,8 +1069,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&delete_thread_data[i].stop, 1);
-        (void)InterlockedExchange(&insert_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&delete_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&insert_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(delete_thread[i], &thread_result);
@@ -1123,7 +1123,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, next_insert - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, next_insert - 1);
 
         initialize_thread_data(&insert_thread_data[i], &shared[i], hash_table, hazard_pointers, next_insert + i, THREAD_COUNT);
 
@@ -1155,8 +1155,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&delete_thread_data[i].stop, 1);
-        (void)InterlockedExchange(&insert_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&delete_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&insert_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(delete_thread[i], &thread_result);
@@ -1204,7 +1204,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, original_count - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
 
         initialize_thread_data(&set_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
 
@@ -1229,7 +1229,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
     // Stop set value
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&set_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&set_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(set_thread[i], &thread_result);
@@ -1268,7 +1268,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, original_count - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
 
         initialize_thread_data(&find_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
 
@@ -1293,7 +1293,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     // Stop find threads
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&find_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&find_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(find_thread[i], &thread_result);
@@ -1436,7 +1436,7 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 
     do
     {
-        if (InterlockedCompareExchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
+        if (interlocked_compare_exchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
         {
             *selected_item_index = item_index;
             result = true;
@@ -1469,7 +1469,7 @@ static int chaos_thread(void* arg)
 
     srand((unsigned int)time(NULL));
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
         CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
@@ -1493,7 +1493,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
@@ -1504,7 +1504,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1515,7 +1515,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1530,7 +1530,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1545,7 +1545,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
@@ -1560,7 +1560,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1569,7 +1569,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_NOT_FOUND, clds_hash_table_delete(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1579,7 +1579,7 @@ static int chaos_thread(void* arg)
                 CLDS_HASH_TABLE_ITEM* removed_item;
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_NOT_FOUND, clds_hash_table_remove(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
         
@@ -1591,7 +1591,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
         
@@ -1601,7 +1601,7 @@ static int chaos_thread(void* arg)
                 CLDS_HASH_TABLE_ITEM* found_item = clds_hash_table_find(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NULL(found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1620,7 +1620,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
@@ -1637,7 +1637,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
         }
@@ -1651,14 +1651,14 @@ static int seq_no_clean_thread(void* arg)
 {
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)arg;
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
-        while (InterlockedCompareExchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
+        while (interlocked_compare_exchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
         {
             chaos_test_context->next_seq_no_to_ack++;
         }
         LogInfo("Advanced indicated sequence number to %" PRId64 "", chaos_test_context->next_seq_no_to_ack);
-        (void)InterlockedHL_WaitForValue(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
+        (void)InterlockedHL_WaitForValue((volatile LONG*)&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, 1000);
     }
 
     return 0;
@@ -1679,7 +1679,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
 
     for (i = 0; i < TEST_SEQ_NO_QUEUE_SIZE; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
     }
 
     (void)InterlockedExchange64(&chaos_test_context->seq_no_count, 0);
@@ -1687,13 +1687,13 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
     }
 
     chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, hazard_pointers, &sequence_number, test_skipped_seq_chaos, chaos_test_context);
     ASSERT_IS_NOT_NULL(chaos_test_context->hash_table);
 
-    (void)InterlockedExchange(&chaos_test_context->done, 0);
+    (void)interlocked_exchange(&chaos_test_context->done, 0);
 
     // start threads doing random things on the list
     CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
@@ -1720,7 +1720,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
         ThreadAPI_Sleep(1000);
     }
 
-    (void)InterlockedExchange(&chaos_test_context->done, 1);
+    (void)interlocked_exchange(&chaos_test_context->done, 1);
 
     int dont_care;
 

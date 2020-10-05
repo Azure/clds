@@ -10,10 +10,9 @@
 #include <stdbool.h>
 #endif
 
-#include "windows.h"
-
 #include "azure_macro_utils/macro_utils.h"
-#include "clds_hazard_pointers.h"
+#include "azure_c_pal/interlocked.h"
+#include "clds/clds_hazard_pointers.h"
 
 #include "umock_c/umock_c_prod.h"
 #ifdef __cplusplus
@@ -33,7 +32,7 @@ typedef void(*SINGLY_LINKED_LIST_ITEM_CLEANUP_CB)(void* context, struct CLDS_SIN
 typedef struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG
 {
     // these are internal variables used by the singly linked list
-    volatile LONG ref_count;
+    volatile_atomic int32_t ref_count;
     SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
     volatile struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* next;
