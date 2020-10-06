@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 # canon way of using clds from another repo is below. It assumes the using repo has placed clds in "deps"
 
-#if ((NOT TARGET azure_c_util) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/clds/CMakeLists.txt))
+#if ((NOT TARGET clds) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/clds/CMakeLists.txt))
 #    add_subdirectory(deps/clds)
 #    include_directories(${CMAKE_CURRENT_LIST_DIR}/deps/clds/inc)
 #endif() 
