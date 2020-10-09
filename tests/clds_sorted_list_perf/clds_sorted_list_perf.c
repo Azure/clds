@@ -118,7 +118,7 @@ int clds_sorted_list_perf_main(void)
     THREAD_DATA* thread_data;
     size_t i;
     size_t j;
-    volatile int64_t sequence_number;
+    volatile_atomic int64_t sequence_number;
 
     clds_hazard_pointers = clds_hazard_pointers_create();
     if (clds_hazard_pointers == NULL)

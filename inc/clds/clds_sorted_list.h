@@ -10,9 +10,8 @@
 #include <stdbool.h>
 #endif
 
-#include "windows.h"
-
 #include "azure_macro_utils/macro_utils.h"
+#include "azure_c_pal/interlocked.h"
 #include "clds_hazard_pointers.h"
 
 #include "umock_c/umock_c_prod.h"
@@ -35,10 +34,10 @@ typedef void(*SORTED_LIST_SKIPPED_SEQ_NO_CB)(void* context, int64_t skipped_sequ
 typedef struct CLDS_SORTED_LIST_ITEM_TAG
 {
     // these are internal variables used by the sorted list
-    volatile LONG ref_count;
+    volatile_atomic int32_t ref_count;
     SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
-    volatile struct CLDS_SORTED_LIST_ITEM_TAG* next;
+    volatile_atomic struct CLDS_SORTED_LIST_ITEM_TAG* next;
 } CLDS_SORTED_LIST_ITEM;
 
 // these are macros that help declaring a type that can be stored in the sorted list
@@ -105,7 +104,7 @@ MU_DEFINE_ENUM(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RES
 MU_DEFINE_ENUM(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
 
 // sorted list API
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile int64_t*, start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_HANDLE, clds_sorted_list_create, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB, get_item_key_cb, void*, get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB, key_compare_cb, void*, key_compare_cb_context, volatile_atomic int64_t*, start_sequence_number, SORTED_LIST_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_destroy, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_INSERT_RESULT, clds_sorted_list_insert, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_SORTED_LIST_ITEM*, item, int64_t*, sequence_number);

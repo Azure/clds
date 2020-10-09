@@ -28,10 +28,10 @@ typedef void(*SINGLY_LINKED_LIST_ITEM_CLEANUP_CB)(void* context, struct CLDS_SIN
 typedef struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG
 {
     // these are internal variables used by the singly linked list
-    volatile LONG ref_count;
+    volatile_atomic int32_t ref_count;
     SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
-    volatile struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* next;
+    volatile_atomic struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* next;
 } CLDS_SINGLY_LINKED_LIST_ITEM;
 
 // these are macros that help declaring a type that can be stored in the singly linked list

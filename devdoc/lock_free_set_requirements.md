@@ -11,10 +11,10 @@ It also provides a purge functionality which is not intended to be thread safe.
 ```C
 typedef struct LOCK_FREE_SET_TAG* LOCK_FREE_SET_HANDLE;
 
-typedef volatile struct LOCK_FREE_SET_ITEM_TAG
+typedef volatile_atomic struct LOCK_FREE_SET_ITEM_TAG
 {
-    volatile struct LOCK_FREE_SET_ITEM_TAG* previous;
-    volatile struct LOCK_FREE_SET_ITEM_TAG* next;
+    volatile_atomic struct LOCK_FREE_SET_ITEM_TAG* previous;
+    volatile_atomic struct LOCK_FREE_SET_ITEM_TAG* next;
 } LOCK_FREE_SET_ITEM;
 
 typedef void(*NODE_CLEANUP_FUNC)(void* context, LOCK_FREE_SET_ITEM* item);

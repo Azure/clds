@@ -24,6 +24,7 @@ void real_free(void* ptr)
 
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_stdint.h"
+#include "azure_c_pal/interlocked.h"
 
 #define ENABLE_MOCKS
 
@@ -172,7 +173,7 @@ TEST_FUNCTION(clds_sorted_list_create_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
@@ -198,7 +199,7 @@ TEST_FUNCTION(clds_sorted_list_create_succeeds_with_NULL_skipped_seq_no_cb_and_c
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
-    volatile int64_t sequence_number = 44;
+    volatile_atomic int64_t sequence_number = 44;
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
@@ -384,7 +385,7 @@ TEST_FUNCTION(clds_sorted_list_create_with_non_NULL_sequence_number_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
-    volatile int64_t sequence_number;
+    volatile_atomic int64_t sequence_number;
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
@@ -430,7 +431,7 @@ TEST_FUNCTION(clds_sorted_list_destroy_frees_the_allocated_list_resources_for_a_
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_SORTED_LIST_HANDLE list;
-    volatile int64_t sequence_number;
+    volatile_atomic int64_t sequence_number;
     list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     umock_c_reset_all_calls();
 
@@ -768,7 +769,7 @@ TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_indicates_th
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result;
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4243);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -806,7 +807,7 @@ TEST_FUNCTION(clds_sorted_list_insert_provides_sequence_numbers)
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result_1;
     CLDS_SORTED_LIST_INSERT_RESULT result_2;
-    volatile int64_t sequence_number = 0x42;
+    volatile_atomic int64_t sequence_number = 0x42;
     int64_t insert_seq_no_1 = 0;
     int64_t insert_seq_no_2 = 0;
     list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
@@ -846,7 +847,7 @@ TEST_FUNCTION(clds_sorted_list_insert_with_NULL_sequence_number_still_computes_s
     CLDS_SORTED_LIST_HANDLE list;
     CLDS_SORTED_LIST_INSERT_RESULT result_1;
     CLDS_SORTED_LIST_INSERT_RESULT result_2;
-    volatile int64_t sequence_number = 0x42;
+    volatile_atomic int64_t sequence_number = 0x42;
     int64_t insert_seq_no_2 = 0;
     list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -1419,7 +1420,7 @@ TEST_FUNCTION(clds_sorted_list_delete_stamps_the_order)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
@@ -1470,7 +1471,7 @@ TEST_FUNCTION(clds_sorted_list_delete_with_no_start_seq_no_stamps_the_order)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, NULL, NULL);
@@ -1899,7 +1900,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_stamps_the_sequence_no)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
@@ -1952,7 +1953,7 @@ TEST_FUNCTION(clds_sorted_list_delete_key_with_NULL_sequence_no_and_non_NULL_sta
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
@@ -2392,7 +2393,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_stamps_the_sequence_numbers)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -2444,7 +2445,7 @@ TEST_FUNCTION(clds_sorted_list_remove_key_with_NULL_sequence_number_and_non_NULL
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number = 42;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* item_2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3564,7 +3565,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_clds_hazard_pointers_thread_f
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* old_item;
@@ -3592,7 +3593,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_key_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_ITEM* old_item;
@@ -3620,7 +3621,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_new_item_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* old_item;
     CLDS_SORTED_LIST_SET_VALUE_RESULT result;
@@ -3644,7 +3645,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_old_item_fails)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_SORTED_LIST_SET_VALUE_RESULT result;
@@ -3701,7 +3702,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_inserts
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3735,7 +3736,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_and_onl
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4244);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3771,7 +3772,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_with_on
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4244);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3812,7 +3813,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_not_in_the_list_insert_
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x4244);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3856,7 +3857,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3906,7 +3907,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_when_the_key_is_in_the_list_for_the_2nd
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -4005,7 +4006,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_NULL_sequence_number_still_increme
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
     CLDS_SORTED_LIST_ITEM* item_1 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -4060,7 +4061,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_the_same_item_succeeds)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     CLDS_SORTED_LIST_HANDLE list = clds_sorted_list_create(hazard_pointers, test_get_item_key, (void*)0x4242, test_key_compare, (void*)0x4243, &sequence_number, NULL, NULL);
