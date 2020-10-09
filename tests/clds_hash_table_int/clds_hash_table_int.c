@@ -11,12 +11,13 @@
 #include <time.h>
 #endif
 
-#include "windows.h"
 #include "testrunnerswitcher.h"
 
 #include "azure_macro_utils/macro_utils.h"
 
-#include "azure_c_pal/interlocked_hl.h"
+#include "azure_c_pal/interlocked.h"
+#include "azure_c_pal/sync.h"
+#include "azure_c_util/interlocked_hl.h"
 
 #include "azure_c_logging/xlogging.h"
 
@@ -61,16 +62,16 @@ DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
 typedef struct CHAOS_TEST_ITEM_DATA_TAG
 {
     CLDS_HASH_TABLE_ITEM* item;
-    volatile LONG item_state;
+    volatile_atomic int32_t item_state;
 } CHAOS_TEST_ITEM_DATA;
 
 typedef struct CHAOS_TEST_CONTEXT_TAG
 {
-    volatile LONG done;
+    volatile_atomic int32_t done;
     CLDS_HASH_TABLE_HANDLE hash_table;
-    volatile LONG64 seq_no_count;
+    volatile_atomic int64_t seq_no_count;
     int64_t next_seq_no_to_ack;
-    volatile LONG seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
+    volatile_atomic int32_t seq_numbers[TEST_SEQ_NO_QUEUE_SIZE];
     CHAOS_TEST_ITEM_DATA items[];
 } CHAOS_TEST_CONTEXT;
 
@@ -106,10 +107,10 @@ static int test_key_compare(void* key1, void* key2)
 
 static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t seq_no)
 {
-    (void)InterlockedIncrement64(&chaos_test_context->seq_no_count);
-    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)InterlockedCompareExchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
+    (void)interlocked_increment_64(&chaos_test_context->seq_no_count);
+    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)interlocked_compare_exchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
     ASSERT_ARE_EQUAL(SEQ_NO_STATE, SEQ_NO_NOT_USED, seq_no_state, "sequence number already used at %" PRId64 "", seq_no);
-    WakeByAddressSingle((PVOID)&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
+    wake_by_address_single(&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
 }
 
 static void test_skipped_seq_chaos(void* context, int64_t skipped_sequence_no)
@@ -132,14 +133,14 @@ static void test_item_cleanup_func(void* context, struct CLDS_HASH_TABLE_ITEM_TA
 
 typedef struct SHARED_KEY_INFO_TAG
 {
-    volatile LONG last_written_key;
+    volatile_atomic int32_t last_written_key;
 } SHARED_KEY_INFO;
 
 typedef struct THREAD_DATA_TAG
 {
     CLDS_HASH_TABLE_HANDLE hash_table;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
-    volatile LONG stop;
+    volatile_atomic int32_t stop;
     uint32_t key;
     uint32_t increment;
     SHARED_KEY_INFO* shared;
@@ -152,7 +153,7 @@ static void initialize_thread_data(THREAD_DATA* thread_data, SHARED_KEY_INFO* sh
     ASSERT_IS_NOT_NULL(thread_data->clds_hazard_pointers_thread);
     thread_data->key = starting_key;
     thread_data->increment = increment;
-    (void)InterlockedExchange(&thread_data->stop, 0);
+    (void)interlocked_exchange(&thread_data->stop, 0);
     thread_data->shared = shared;
 }
 
@@ -170,13 +171,13 @@ static int continuous_insert_thread(void* arg)
         TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
         test_item->key = i;
         int64_t insert_seq_no;
-        insert_result = clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1), item, &insert_seq_no);
+        insert_result = clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), item, &insert_seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, insert_result);
 
-        (void)InterlockedExchange(&thread_data->shared->last_written_key, (LONG)i);
+        (void)interlocked_exchange(&thread_data->shared->last_written_key, (int32_t)i);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
 
@@ -192,9 +193,9 @@ static int continuous_delete_thread(void* arg)
 
     do
     {
-        while ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        while ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
-            if (InterlockedAdd(&thread_data->stop, 0) != 0)
+            if (interlocked_add(&thread_data->stop, 0) != 0)
             {
                 // Don't wait forever if the insert thread isn't running any more
                 break;
@@ -202,18 +203,18 @@ static int continuous_delete_thread(void* arg)
             // Spin
         }
 
-        if (InterlockedAdd(&thread_data->stop, 0) != 0)
+        if (interlocked_add(&thread_data->stop, 0) != 0)
         {
             break;
         }
 
         CLDS_HASH_TABLE_DELETE_RESULT delete_result;
         int64_t seq_no;
-        delete_result = clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1), &seq_no);
+        delete_result = clds_hash_table_delete(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), &seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -228,9 +229,9 @@ static int continuous_delete_key_value_thread(void* arg)
 
     do
     {
-        while ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        while ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
-            if (InterlockedAdd(&thread_data->stop, 0) != 0)
+            if (interlocked_add(&thread_data->stop, 0) != 0)
             {
                 // Don't wait forever if the insert thread isn't running any more
                 break;
@@ -238,7 +239,7 @@ static int continuous_delete_key_value_thread(void* arg)
             // Spin
         }
 
-        if (InterlockedAdd(&thread_data->stop, 0) != 0)
+        if (interlocked_add(&thread_data->stop, 0) != 0)
         {
             break;
         }
@@ -246,18 +247,18 @@ static int continuous_delete_key_value_thread(void* arg)
         // To simplify a bit, we actually first do a find and then delete by the value we found
         // Otherwise, we would need to share the item pointers between the insert and delete threads which adds complexity
 
-        CLDS_HASH_TABLE_ITEM* item = clds_hash_table_find(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1));
+        CLDS_HASH_TABLE_ITEM* item = clds_hash_table_find(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1));
         ASSERT_IS_NOT_NULL(item);
 
         CLDS_HASH_TABLE_DELETE_RESULT delete_result;
         int64_t seq_no;
-        delete_result = clds_hash_table_delete_key_value(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1), item, &seq_no);
+        delete_result = clds_hash_table_delete_key_value(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), item, &seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result);
 
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -272,9 +273,9 @@ static int continuous_remove_thread(void* arg)
 
     do
     {
-        while ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        while ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
-            if (InterlockedAdd(&thread_data->stop, 0) != 0)
+            if (interlocked_add(&thread_data->stop, 0) != 0)
             {
                 // Don't wait forever if the insert thread isn't running any more
                 break;
@@ -282,7 +283,7 @@ static int continuous_remove_thread(void* arg)
             // Spin
         }
 
-        if (InterlockedAdd(&thread_data->stop, 0) != 0)
+        if (interlocked_add(&thread_data->stop, 0) != 0)
         {
             break;
         }
@@ -290,13 +291,13 @@ static int continuous_remove_thread(void* arg)
         CLDS_HASH_TABLE_ITEM* item;
         CLDS_HASH_TABLE_REMOVE_RESULT remove_result;
         int64_t seq_no;
-        remove_result = clds_hash_table_remove(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1), &item, &seq_no);
+        remove_result = clds_hash_table_remove(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), &item, &seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_OK, remove_result);
 
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -313,7 +314,7 @@ static int continuous_set_value_thread(void* arg)
     do
     {
         // Just loop over everything forever, re-setting the values
-        if ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        if ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
             i = thread_data->key;
             appendix++;
@@ -327,13 +328,13 @@ static int continuous_set_value_thread(void* arg)
         CLDS_HASH_TABLE_ITEM* old_item;
         CLDS_HASH_TABLE_SET_VALUE_RESULT set_result;
         int64_t seq_no;
-        set_result = clds_hash_table_set_value(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1), item, &old_item, &seq_no);
+        set_result = clds_hash_table_set_value(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), item, &old_item, &seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_result);
 
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
     return result;
@@ -349,18 +350,18 @@ static int continuous_find_thread(void* arg)
     do
     {
         // Just loop over everything forever
-        if ((uint32_t)InterlockedAdd(&thread_data->shared->last_written_key, 0) < i)
+        if ((uint32_t)interlocked_add(&thread_data->shared->last_written_key, 0) < i)
         {
             i = thread_data->key;
         }
 
-        CLDS_HASH_TABLE_ITEM* item = clds_hash_table_find(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(INT_PTR)(i + 1));
+        CLDS_HASH_TABLE_ITEM* item = clds_hash_table_find(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1));
         ASSERT_IS_NOT_NULL(item);
 
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
-    } while (InterlockedAdd(&thread_data->stop, 0) == 0);
+    } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
 
@@ -379,7 +380,7 @@ static void fill_hash_table_sequentially(CLDS_HASH_TABLE_HANDLE hash_table, CLDS
         test_item->key = i;
         test_item->appendix = 42;
         int64_t insert_seq_no;
-        result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(i + 1), item, &insert_seq_no);
+        result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(i + 1), item, &insert_seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, result);
     }
 }
@@ -551,7 +552,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
@@ -571,7 +572,7 @@ TEST_FUNCTION(clds_hash_table_insert_succeeds)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT result;
@@ -596,7 +597,7 @@ TEST_FUNCTION(clds_hash_table_delete_succeeds)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT insert_result;
@@ -626,7 +627,7 @@ TEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_alrea
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT insert_result;
@@ -666,7 +667,7 @@ TEST_FUNCTION(clds_hash_table_set_value_succeeds)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result;
@@ -692,7 +693,7 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_INSERT_RESULT insert_result;
@@ -736,7 +737,7 @@ TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result;
@@ -767,7 +768,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_10000_sequential_key_items)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -806,7 +807,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -818,7 +819,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     THREAD_HANDLE thread;
     SHARED_KEY_INFO shared;
 
-    (void)InterlockedExchange(&shared.last_written_key, original_count - 1);
+    (void)interlocked_exchange(&shared.last_written_key, original_count - 1);
     initialize_thread_data(&thread_data, &shared, hash_table, hazard_pointers, original_count, 1);
 
     if (ThreadAPI_Create(&thread, continuous_insert_thread, &thread_data) != THREADAPI_OK)
@@ -839,7 +840,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     ThreadAPI_Sleep(1000);
 
     // Stop inserts
-    (void)InterlockedExchange(&thread_data.stop, 1);
+    (void)interlocked_exchange(&thread_data.stop, 1);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
@@ -862,7 +863,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -876,7 +877,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, original_count - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
 
         initialize_thread_data(&thread_data[i], &shared[i], hash_table, hazard_pointers, original_count + i, THREAD_COUNT);
 
@@ -901,7 +902,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&thread_data[i].stop, 1);
+        (void)interlocked_exchange(&thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(thread[i], &thread_result);
@@ -931,7 +932,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -951,7 +952,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, next_insert - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, next_insert - 1);
 
         initialize_thread_data(&insert_thread_data[i], &shared[i], hash_table, hazard_pointers, next_insert + i, THREAD_COUNT);
 
@@ -983,8 +984,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&delete_thread_data[i].stop, 1);
-        (void)InterlockedExchange(&insert_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&delete_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&insert_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(delete_thread[i], &thread_result);
@@ -1017,7 +1018,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1037,7 +1038,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, next_insert - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, next_insert - 1);
 
         initialize_thread_data(&insert_thread_data[i], &shared[i], hash_table, hazard_pointers, next_insert + i, THREAD_COUNT);
 
@@ -1069,8 +1070,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&delete_thread_data[i].stop, 1);
-        (void)InterlockedExchange(&insert_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&delete_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&insert_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(delete_thread[i], &thread_result);
@@ -1103,7 +1104,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1123,7 +1124,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, next_insert - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, next_insert - 1);
 
         initialize_thread_data(&insert_thread_data[i], &shared[i], hash_table, hazard_pointers, next_insert + i, THREAD_COUNT);
 
@@ -1155,8 +1156,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
     // Stop inserts
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&delete_thread_data[i].stop, 1);
-        (void)InterlockedExchange(&insert_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&delete_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&insert_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(delete_thread[i], &thread_result);
@@ -1189,7 +1190,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore /*This is noisy with set_value*/, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1204,7 +1205,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, original_count - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
 
         initialize_thread_data(&set_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
 
@@ -1229,7 +1230,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
     // Stop set value
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&set_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&set_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(set_thread[i], &thread_result);
@@ -1253,7 +1254,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1268,7 +1269,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
 
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&shared[i].last_written_key, original_count - 1);
+        (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
 
         initialize_thread_data(&find_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
 
@@ -1293,7 +1294,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     // Stop find threads
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
-        (void)InterlockedExchange(&find_thread_data[i].stop, 1);
+        (void)interlocked_exchange(&find_thread_data[i].stop, 1);
 
         int thread_result;
         (void)ThreadAPI_Join(find_thread[i], &thread_result);
@@ -1317,7 +1318,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1328,13 +1329,13 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     test_item->appendix = 42;
 
     int64_t insert_seq_no;
-    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(1), item, &insert_seq_no);
+    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, &insert_seq_no);
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, result);
 
     CLDS_HASH_TABLE_ITEM* old_item;
 
     // act
-    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(1), item, &old_item, &insert_seq_no);
+    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, &old_item, &insert_seq_no);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result);
@@ -1351,7 +1352,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1024, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1362,13 +1363,13 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     test_item->appendix = 42;
 
     int64_t insert_seq_no;
-    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(1), item, &insert_seq_no);
+    result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, &insert_seq_no);
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, result);
 
     CLDS_HASH_TABLE_ITEM* old_item;
 
     // act
-    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(1), item, &old_item, &insert_seq_no);
+    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, &old_item, &insert_seq_no);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result);
@@ -1392,7 +1393,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_same_item_after_bucket_count_increa
     ASSERT_IS_NOT_NULL(hazard_pointers);
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     ASSERT_IS_NOT_NULL(hazard_pointers_thread);
-    volatile int64_t sequence_number = 45;
+    volatile_atomic int64_t sequence_number = 45;
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash_modulo_4, test_key_compare, 2, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
 
@@ -1412,23 +1413,23 @@ TEST_FUNCTION(clds_hash_table_set_value_with_same_item_after_bucket_count_increa
     test_item_3->appendix = 44;
 
     int64_t insert_seq_no;
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(1), item_1, &insert_seq_no));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item_1, &insert_seq_no));
     // second item, different key
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(2), item_2, &insert_seq_no));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(2), item_2, &insert_seq_no));
 
     CLDS_HASH_TABLE_ITEM* old_item;
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(1), item_1, &old_item, &insert_seq_no));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item_1, &old_item, &insert_seq_no));
 
     // act
     // assert
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(INT_PTR)(5), item_3, &insert_seq_no));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(5), item_3, &insert_seq_no));
 
     // cleanup
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, LONG new_item_state, LONG old_item_state, int* selected_item_index)
+static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, int32_t new_item_state, int32_t old_item_state, int* selected_item_index)
 {
     int item_index = (rand() * (item_count - 1)) / RAND_MAX;
     int start_item_index = item_index;
@@ -1436,7 +1437,7 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 
     do
     {
-        if (InterlockedCompareExchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
+        if (interlocked_compare_exchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
         {
             *selected_item_index = item_index;
             result = true;
@@ -1469,7 +1470,7 @@ static int chaos_thread(void* arg)
 
     srand((unsigned int)time(NULL));
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
         CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
@@ -1493,7 +1494,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
@@ -1504,7 +1505,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1515,7 +1516,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1530,7 +1531,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, removed_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1545,7 +1546,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
@@ -1560,7 +1561,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, new_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1569,7 +1570,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_NOT_FOUND, clds_hash_table_delete(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1579,7 +1580,7 @@ static int chaos_thread(void* arg)
                 CLDS_HASH_TABLE_ITEM* removed_item;
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_NOT_FOUND, clds_hash_table_remove(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
         
@@ -1591,7 +1592,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
         
@@ -1601,7 +1602,7 @@ static int chaos_thread(void* arg)
                 CLDS_HASH_TABLE_ITEM* found_item = clds_hash_table_find(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NULL(found_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
 
@@ -1620,7 +1621,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
@@ -1637,7 +1638,7 @@ static int chaos_thread(void* arg)
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
             
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
         }
@@ -1651,9 +1652,9 @@ static int seq_no_clean_thread(void* arg)
 {
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)arg;
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
-        while (InterlockedCompareExchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
+        while (interlocked_compare_exchange(&chaos_test_context->seq_numbers[chaos_test_context->next_seq_no_to_ack % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_NOT_USED, SEQ_NO_USED) == SEQ_NO_USED)
         {
             chaos_test_context->next_seq_no_to_ack++;
         }
@@ -1669,31 +1670,31 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     THREAD_HANDLE seq_no_clean_thread_handle;
-    volatile int64_t sequence_number;
+    volatile_atomic int64_t sequence_number;
     size_t i;
 
-    (void)InterlockedExchange64(&sequence_number, 0);
+    (void)interlocked_exchange_64(&sequence_number, 0);
 
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
     ASSERT_IS_NOT_NULL(chaos_test_context);
 
     for (i = 0; i < TEST_SEQ_NO_QUEUE_SIZE; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->seq_numbers[i], SEQ_NO_NOT_USED);
     }
 
-    (void)InterlockedExchange64(&chaos_test_context->seq_no_count, 0);
+    (void)interlocked_exchange_64(&chaos_test_context->seq_no_count, 0);
     chaos_test_context->next_seq_no_to_ack = 1;
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
     }
 
     chaos_test_context->hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, hazard_pointers, &sequence_number, test_skipped_seq_chaos, chaos_test_context);
     ASSERT_IS_NOT_NULL(chaos_test_context->hash_table);
 
-    (void)InterlockedExchange(&chaos_test_context->done, 0);
+    (void)interlocked_exchange(&chaos_test_context->done, 0);
 
     // start threads doing random things on the list
     CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
@@ -1720,7 +1721,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
         ThreadAPI_Sleep(1000);
     }
 
-    (void)InterlockedExchange(&chaos_test_context->done, 1);
+    (void)interlocked_exchange(&chaos_test_context->done, 1);
 
     int dont_care;
 
@@ -1732,7 +1733,7 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
 
     ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(seq_no_clean_thread_handle, &dont_care), "Sequence number clean thread handle join failed");
 
-    ASSERT_ARE_EQUAL(int64_t, InterlockedAdd64(&sequence_number, 0), InterlockedAdd64(&chaos_test_context->seq_no_count, 0));
+    ASSERT_ARE_EQUAL(int64_t, interlocked_add_64(&sequence_number, 0), interlocked_add_64(&chaos_test_context->seq_no_count, 0));
 
     // cleanup
     free(chaos_thread_data);

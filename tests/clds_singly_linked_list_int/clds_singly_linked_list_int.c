@@ -11,8 +11,6 @@
 #include <time.h>
 #endif
 
-#include "windows.h"
-
 #include "azure_macro_utils/macro_utils.h"
 
 #include "testrunnerswitcher.h"
@@ -22,6 +20,7 @@
 #include "azure_c_pal/timer.h"
 #include "azure_c_pal/gballoc_hl.h"
 #include "azure_c_pal/gballoc_hl_redirect.h"
+#include "azure_c_pal/interlocked.h"
 #include "azure_c_pal/threadapi.h"
 
 #include "clds/clds_hazard_pointers.h"
@@ -58,12 +57,12 @@ bool test_item_compare(void* item_compare_context, struct CLDS_SINGLY_LINKED_LIS
 typedef struct CHAOS_TEST_ITEM_DATA_TAG
 {
     CLDS_SINGLY_LINKED_LIST_ITEM* item;
-    volatile LONG item_state;
+    volatile_atomic int32_t item_state;
 } CHAOS_TEST_ITEM_DATA;
 
 typedef struct CHAOS_TEST_CONTEXT_TAG
 {
-    volatile LONG done;
+    volatile_atomic int32_t done;
     CLDS_SINGLY_LINKED_LIST_HANDLE singly_linked_list;
     CHAOS_TEST_ITEM_DATA items[];
 } CHAOS_TEST_CONTEXT;
@@ -146,7 +145,7 @@ TEST_FUNCTION(clds_singly_linked_list_create_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, LONG new_item_state, LONG old_item_state, int* selected_item_index)
+static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, int32_t new_item_state, int32_t old_item_state, int* selected_item_index)
 {
     int item_index = (rand() * (item_count - 1)) / RAND_MAX;
     int start_item_index = item_index;
@@ -154,7 +153,7 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 
     do
     {
-        if (InterlockedCompareExchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
+        if (interlocked_compare_exchange(&items[item_index].item_state, new_item_state, old_item_state) == old_item_state)
         {
             *selected_item_index = item_index;
             result = true;
@@ -187,7 +186,7 @@ static int chaos_thread(void* arg)
 
     srand((unsigned int)time(NULL));
 
-    while (InterlockedAdd(&chaos_test_context->done, 0) != 1)
+    while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
         CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
@@ -208,7 +207,7 @@ static int chaos_thread(void* arg)
 
                 ASSERT_ARE_EQUAL(int, 0, clds_singly_linked_list_insert(chaos_test_context->singly_linked_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item));
 
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
 
@@ -217,7 +216,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, clds_singly_linked_list_delete(chaos_test_context->singly_linked_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item));
         
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
         
@@ -226,7 +225,7 @@ static int chaos_thread(void* arg)
             {
                 ASSERT_ARE_EQUAL(CLDS_SINGLY_LINKED_LIST_DELETE_RESULT, CLDS_SINGLY_LINKED_LIST_DELETE_OK, clds_singly_linked_list_delete_if(chaos_test_context->singly_linked_list, chaos_thread_data->clds_hazard_pointers_thread, test_item_compare, (void*)(uintptr_t)(item_index + 1)));
         
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
         
@@ -241,7 +240,7 @@ static int chaos_thread(void* arg)
         
                 CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
         
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
         
@@ -253,7 +252,7 @@ static int chaos_thread(void* arg)
         
                 CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, found_item);
         
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
         
@@ -263,14 +262,13 @@ static int chaos_thread(void* arg)
                 CLDS_SINGLY_LINKED_LIST_ITEM* found_item = clds_singly_linked_list_find(chaos_test_context->singly_linked_list, chaos_thread_data->clds_hazard_pointers_thread, test_item_compare, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NULL(found_item);
         
-                (void)InterlockedExchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
+                (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
         }
     }
 
     result = 0;
-    ThreadAPI_Exit(result);
     return result;
 }
 
@@ -280,7 +278,7 @@ TEST_FUNCTION(clds_singly_linked_list_chaos_knight_test)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    volatile int64_t sequence_number = -1;
+    volatile_atomic int64_t sequence_number = -1;
     size_t i;
 
     CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
@@ -288,13 +286,13 @@ TEST_FUNCTION(clds_singly_linked_list_chaos_knight_test)
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
     {
-        (void)InterlockedExchange(&chaos_test_context->items[i].item_state, TEST_LIST_ITEM_NOT_USED);
+        (void)interlocked_exchange(&chaos_test_context->items[i].item_state, TEST_LIST_ITEM_NOT_USED);
     }
 
     chaos_test_context->singly_linked_list = clds_singly_linked_list_create(hazard_pointers);
     ASSERT_IS_NOT_NULL(chaos_test_context->singly_linked_list);
 
-    (void)InterlockedExchange(&chaos_test_context->done, 0);
+    (void)interlocked_exchange(&chaos_test_context->done, 0);
 
     // start threads doing random things on the list
     CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
@@ -323,7 +321,7 @@ TEST_FUNCTION(clds_singly_linked_list_chaos_knight_test)
         ThreadAPI_Sleep(1000);
     }
 
-    (void)InterlockedExchange(&chaos_test_context->done, 1);
+    (void)interlocked_exchange(&chaos_test_context->done, 1);
 
     // assert
     for (i = 0; i < CHAOS_THREAD_COUNT; i++)
