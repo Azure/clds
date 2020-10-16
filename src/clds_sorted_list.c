@@ -101,7 +101,7 @@ static void check_lock_and_begin_write_operation(CLDS_SORTED_LIST_HANDLE clds_so
             wake_by_address_all(&clds_sorted_list->pending_write_operations);
     
             // Wait for unlock
-            (void)wait_on_address(&clds_sorted_list->locked_for_write, &locked_for_write, UINT32_MAX);
+            (void)wait_on_address(&clds_sorted_list->locked_for_write, locked_for_write, UINT32_MAX);
         }
     } while (locked_for_write != 0);
 }
@@ -125,7 +125,7 @@ static void internal_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list)
         if (pending_writes != 0)
         {
             // Wait for writes
-            (void)wait_on_address(&clds_sorted_list->pending_write_operations, &pending_writes, UINT32_MAX);
+            (void)wait_on_address(&clds_sorted_list->pending_write_operations, pending_writes, UINT32_MAX);
         }
     } while (pending_writes != 0);
 }
