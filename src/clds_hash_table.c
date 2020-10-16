@@ -68,7 +68,7 @@ static void check_lock_and_begin_write_operation(CLDS_HASH_TABLE_HANDLE clds_has
             wake_by_address_all(&clds_hash_table->pending_write_operations);
 
             // Wait for unlock
-            (void)wait_on_address(&clds_hash_table->locked_for_write, &locked_for_write, UINT32_MAX);
+            (void)wait_on_address(&clds_hash_table->locked_for_write, locked_for_write, UINT32_MAX);
         }
     } while (locked_for_write != 0);
 }
@@ -92,7 +92,7 @@ static void internal_lock_writes(CLDS_HASH_TABLE_HANDLE clds_hash_table)
         if (pending_writes != 0)
         {
             // Wait for writes
-            (void)wait_on_address(&clds_hash_table->pending_write_operations, &pending_writes, UINT32_MAX);
+            (void)wait_on_address(&clds_hash_table->pending_write_operations, pending_writes, UINT32_MAX);
         }
     } while (pending_writes != 0);
 }
