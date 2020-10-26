@@ -1246,7 +1246,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_succeeds)
 
     CLDS_SORTED_LIST_ITEM* old_item;
     // act
-    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (const void*)(uintptr_t)item_payload->key, item, &old_item, &insert_seq_no, false);
+    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, item, &old_item, &insert_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, set_value_result);
