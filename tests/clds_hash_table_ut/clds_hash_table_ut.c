@@ -2461,7 +2461,8 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_clds_hazard_pointers_thread_fa
     CLDS_HASH_TABLE_ITEM* old_item;
     CLDS_HASH_TABLE_SET_VALUE_RESULT result;
     int64_t set_value_seq_no;
-    int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number;
+    (void)interlocked_exchange_64(&sequence_number, 42);
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
     umock_c_reset_all_calls();
 
@@ -2488,7 +2489,8 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_key_fails)
     CLDS_HASH_TABLE_ITEM* old_item;
     CLDS_HASH_TABLE_SET_VALUE_RESULT result;
     int64_t set_value_seq_no;
-    int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number;
+    (void)interlocked_exchange_64(&sequence_number, 42);
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
     umock_c_reset_all_calls();
 
@@ -2514,7 +2516,8 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_new_item_fails)
     CLDS_HASH_TABLE_ITEM* old_item;
     CLDS_HASH_TABLE_SET_VALUE_RESULT result;
     int64_t set_value_seq_no;
-    int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number;
+    (void)interlocked_exchange_64(&sequence_number, 42);
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
     umock_c_reset_all_calls();
 
@@ -2539,7 +2542,8 @@ TEST_FUNCTION(clds_hash_table_set_value_with_NULL_old_item_fails)
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     CLDS_HASH_TABLE_SET_VALUE_RESULT result;
     int64_t set_value_seq_no;
-    int64_t sequence_number = 42;
+    volatile_atomic int64_t sequence_number;
+    (void)interlocked_exchange_64(&sequence_number, 42);
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
     umock_c_reset_all_calls();
 
@@ -2887,7 +2891,8 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_with_NULL_returns)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     SORTED_LIST_SKIPPED_SEQ_NO_CB test_on_sorted_list_skipped_seq_no;
@@ -2918,7 +2923,8 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_calls_the_hash_table_skipped_seq_no)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     SORTED_LIST_SKIPPED_SEQ_NO_CB test_on_sorted_list_skipped_seq_no;
@@ -2976,7 +2982,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_clds_hazard_pointers_thread_fai
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
     umock_c_reset_all_calls();
 
@@ -3002,7 +3009,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_items_fails)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
     umock_c_reset_all_calls();
 
@@ -3027,7 +3035,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_item_count_fails)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
     umock_c_reset_all_calls();
 
@@ -3055,7 +3064,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_empty_table_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
     umock_c_reset_all_calls();
 
@@ -3094,7 +3104,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3153,7 +3164,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 20, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
@@ -3242,7 +3254,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
@@ -3339,7 +3352,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[100];
@@ -3430,7 +3444,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 20, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
@@ -3485,7 +3500,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
@@ -3548,7 +3564,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[20];
@@ -3616,7 +3633,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_overflow)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -3663,7 +3681,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_mult
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
     CLDS_HASH_TABLE_HANDLE hash_table;
-    int64_t start_seq_no;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);

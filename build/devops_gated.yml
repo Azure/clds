@@ -325,7 +325,7 @@ jobs:
     displayName: CMake
     inputs:
       workingDirectory: 'build_x64'
-      cmakeArgs: '.. -Drun_int_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 16 2019" -A x64'
+      cmakeArgs: '.. -Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 16 2019" -A x64'
 
   - task: VSBuild@1
     displayName: 'Build solution build_x64\*.sln'

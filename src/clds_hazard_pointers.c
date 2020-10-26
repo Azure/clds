@@ -18,7 +18,7 @@
 
 typedef struct CLDS_HAZARD_POINTER_RECORD_TAG
 {
-    void* node;
+    volatile_atomic void* node;
     struct CLDS_HAZARD_POINTER_RECORD_TAG* next;
 } CLDS_HAZARD_POINTER_RECORD;
 
@@ -96,7 +96,7 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                 while (clds_hazard_pointer != NULL)
                 {
                     CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_pointer = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer->next, NULL, NULL);
-                    void* node = interlocked_compare_exchange_pointer(&clds_hazard_pointer->node, NULL, NULL);
+                    void* node = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer->node, NULL, NULL);
                     if (node != NULL)
                     {
                         CLDS_ST_HASH_SET_INSERT_RESULT insert_result = clds_st_hash_set_insert(all_hps_set, node);
@@ -255,7 +255,7 @@ CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZ
         do
         {
             CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
-            clds_hazard_pointers_thread->next = current_threads_head;
+            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, current_threads_head);
             clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
             (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL);
             (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL);
@@ -389,7 +389,7 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hazard_pointer = NULL;
         CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
 
-        (void)interlocked_exchange_pointer(&clds_hazard_pointer_record->node, NULL);
+        (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer_record->node, NULL);
 
         while (clds_hazard_pointer != NULL)
         {
