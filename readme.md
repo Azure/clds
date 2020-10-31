@@ -16,8 +16,8 @@ The goals are:
 
 ## Dependencies
 
-`clds` uses `azure-c-shared-utility`, which is a C library providing common functionality for basic tasks (string manipulation, list manipulation, logging, etc.).
-`azure-c-shared-utility` is available here: https://github.com/Azure/azure-c-shared-utility and it is used as a submodule.
+`clds` uses `c-util`, which is a C library providing common functionality for basic tasks (string manipulation, list manipulation, etc.).
+`c-util` is available here: https://github.com/Azure/c-util and it is used as a submodule.
 
 `clds` uses `ctest` as a test runner.
 `clds` uses `umock-c` as mocking framework.

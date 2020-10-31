@@ -5,14 +5,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "azure_c_logging/xlogging.h"
+#include "c_logging/xlogging.h"
 
-#include "azure_c_pal/threadapi.h"
-#include "azure_c_pal/timer.h"
-#include "azure_c_pal/gballoc_hl.h"
-#include "azure_c_pal/gballoc_hl_redirect.h"
+#include "c_pal/threadapi.h"
+#include "c_pal/timer.h"
+#include "c_pal/gballoc_hl.h"
+#include "c_pal/gballoc_hl_redirect.h"
 
-#include "azure_c_util/uuid.h"
+#include "c_util/uuid.h"
 
 #include "clds_hash_table_perf.h"
 #include "MurmurHash2.h"

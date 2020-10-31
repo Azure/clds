@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #endif
 
-#include "azure_macro_utils/macro_utils.h"
+#include "macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"
 
 #include "real_gballoc_ll.h"
@@ -28,12 +28,12 @@ void real_free(void* ptr)
 #include "umock_c/umocktypes_bool.h"
 #include "umock_c/umock_c_negative_tests.h"
 
-#include "azure_c_pal/interlocked.h"
+#include "c_pal/interlocked.h"
 
 #define ENABLE_MOCKS
 
-#include "azure_c_pal/gballoc_hl.h"
-#include "azure_c_pal/gballoc_hl_redirect.h"
+#include "c_pal/gballoc_hl.h"
+#include "c_pal/gballoc_hl_redirect.h"
 
 #include "clds/clds_sorted_list.h"
 #include "clds/clds_st_hash_set.h"
