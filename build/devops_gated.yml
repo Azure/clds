@@ -198,7 +198,7 @@ jobs:
     displayName: 'Git submodule update'
     inputs:
       filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule update --init --force deps/azure-c-build-tools'
+      arguments: 'submodule update --init --force deps/c-build-tools'
 
   - task: BatchScript@1
     displayName: 'Git submodule clean'
@@ -237,7 +237,7 @@ jobs:
   - task: BatchScript@1
     displayName: 'Run traceability tool'
     inputs:
-      filename: 'build/deps/azure-c-build-tools/traceabilitytool/RelWithDebInfo/traceabilitytool.exe'
+      filename: 'build/deps/c-build-tools/traceabilitytool/RelWithDebInfo/traceabilitytool.exe'
       arguments: '-i $(Build.SourcesDirectory) -buildcheck -e $(Build.SourcesDirectory)\deps'
       modifyEnvironment: false
       workingFolder: '$(Build.SourcesDirectory)'

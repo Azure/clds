@@ -1,30 +1,30 @@
 [submodule "deps/umock-c"]
 	path = deps/umock-c
 	url = https://github.com/Azure/umock-c.git
-[submodule "deps/azure-ctest"]
-	path = deps/azure-ctest
-	url = https://github.com/Azure/azure-ctest.git
-[submodule "deps/azure-c-testrunnerswitcher"]
-	path = deps/azure-c-testrunnerswitcher
-	url = https://github.com/Azure/azure-c-testrunnerswitcher.git
-[submodule "deps/azure-macro-utils-c"]
-	path = deps/azure-macro-utils-c
-	url = https://github.com/Azure/azure-macro-utils-c.git
 [submodule "deps/smhasher"]
 	path = deps/smhasher
 	url = https://github.com/hcoona/smhasher.git
-[submodule "deps/azure-c-build-tools"]
-	path = deps/azure-c-build-tools
-	url = https://github.com/Azure/azure-c-build-tools.git
-[submodule "deps/azure-c-util"]
-	path = deps/azure-c-util
-	url = https://github.com/Azure/azure-c-util.git
-[submodule "deps/azure-c-logging"]
-	path = deps/azure-c-logging
-	url = https://github.com/Azure/azure-c-logging.git
-[submodule "deps/azure-c-pal"]
-	path = deps/azure-c-pal
-	url = https://github.com/azure/azure-c-pal
 [submodule "deps/mimalloc"]
 	path = deps/mimalloc
 	url = https://github.com/microsoft/mimalloc
+[submodule "deps/c-build-tools"]
+	path = deps/c-build-tools
+	url = https://github.com/Azure/c-build-tools
+[submodule "deps/macro-utils-c"]
+	path = deps/macro-utils-c
+	url = https://github.com/Azure/macro-utils-c
+[submodule "deps/c-logging"]
+	path = deps/c-logging
+	url = https://github.com/Azure/c-logging
+[submodule "deps/ctest"]
+	path = deps/ctest
+	url = https://github.com/Azure/ctest
+[submodule "deps/c-testrunnerswitcher"]
+	path = deps/c-testrunnerswitcher
+	url = https://github.com/Azure/c-testrunnerswitcher
+[submodule "deps/c-pal"]
+	path = deps/c-pal
+	url = https://github.com/Azure/c-pal
+[submodule "deps/c-util"]
+	path = deps/c-util
+	url = https://github.com/Azure/c-util

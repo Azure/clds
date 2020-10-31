@@ -22,4 +22,4 @@ set(${theseTestsName}_h_files
 ../reals/real_clds_sorted_list.h
 )
 
-build_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_pal_reals azure_c_pal)
+build_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS c_pal_reals c_pal)

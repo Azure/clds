@@ -3,7 +3,7 @@
 #ifndef REAL_CLDS_SINGLY_LINKED_LIST_H
 #define REAL_CLDS_SINGLY_LINKED_LIST_H
 
-#include "azure_macro_utils/macro_utils.h"
+#include "macro_utils/macro_utils.h"
 #include "clds/clds_singly_linked_list.h"
 
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);

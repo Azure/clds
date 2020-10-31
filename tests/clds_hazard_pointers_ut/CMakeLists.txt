@@ -15,4 +15,4 @@ set(${theseTestsName}_h_files
 ../../inc/clds/clds_hazard_pointers.h
 )
 
-build_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS azure_c_pal azure_c_pal_reals)
+build_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS c_pal c_pal_reals)
