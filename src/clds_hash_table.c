@@ -26,11 +26,11 @@ MU_DEFINE_ENUM_STRINGS(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT
 
 typedef struct BUCKET_ARRAY_TAG
 {
-    volatile_atomic struct BUCKET_ARRAY_TAG* next_bucket;
+    struct BUCKET_ARRAY_TAG* volatile_atomic next_bucket;
     volatile_atomic int32_t bucket_count;
     volatile_atomic int32_t item_count;
     volatile_atomic int32_t pending_insert_count;
-    volatile_atomic CLDS_SORTED_LIST_HANDLE hash_table[];
+    CLDS_SORTED_LIST_HANDLE volatile_atomic hash_table[];
 } BUCKET_ARRAY;
 
 typedef struct CLDS_HASH_TABLE_TAG

@@ -14,10 +14,10 @@
 
 #include "c_util/uuid.h"
 
-#include "clds_hash_table_perf.h"
-#include "MurmurHash2.h"
-
 #include "clds/clds_hash_table.h"
+
+#include "clds_hash_table_perf.h"
+#include "test_hash_func.h"
 
 #define THREAD_COUNT 8
 #define INSERT_COUNT 100000
@@ -47,7 +47,7 @@ static int insert_thread(void* arg)
     for (i = 0; i < INSERT_COUNT; i++)
     {
         TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, thread_data->items[i]);
-        if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i], NULL) != 0)
+        if (clds_hash_table_insert(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, test_item->key, thread_data->items[i], NULL) != CLDS_HASH_TABLE_INSERT_OK)
         {
             LogError("Error inserting");
             break;
@@ -135,12 +135,6 @@ static int find_thread(void* arg)
     return result;
 }
 
-static uint64_t test_compute_hash(void* key)
-{
-    const char* test_key = (const char*)key;
-    return (uint64_t)MurmurHash2(test_key, (int)strlen(test_key), 0);
-}
-
 static int key_compare_func(void* key_1, void* key_2)
 {
     return strcmp((const char*)key_1, (const char*)key_2);
@@ -162,7 +156,7 @@ int clds_hash_table_perf_main(void)
     }
     else
     {
-        int64_t sequence_number;
+        volatile_atomic int64_t sequence_number;
         hash_table = clds_hash_table_create(test_compute_hash, key_compare_func, 1024, clds_hazard_pointers, &sequence_number, NULL, NULL);
         if (hash_table == NULL)
         {

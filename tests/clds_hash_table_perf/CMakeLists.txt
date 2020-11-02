@@ -2,11 +2,13 @@
 
 set(clds_hash_table_perf_h_files
     clds_hash_table_perf.h
+    test_hash_func.h
 )
 
 set(clds_hash_table_perf_c_files
     main.c
-    clds_hash_table_perf.cpp
+    clds_hash_table_perf.c
+    test_hash_func.cpp
 )
 
 set(clds_hash_table_perf_rc_files
@@ -14,4 +16,4 @@ set(clds_hash_table_perf_rc_files
 )
 
 add_executable(clds_hash_table_perf ${clds_hash_table_perf_h_files} ${clds_hash_table_perf_c_files} ${clds_hash_table_perf_rc_files})
-target_link_libraries(clds_hash_table_perf clds SMHasherSupport)
+target_link_libraries(clds_hash_table_perf clds SMHasherSupport c_logging)

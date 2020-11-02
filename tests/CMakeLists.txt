@@ -14,22 +14,18 @@ if(${run_unittests})
     build_test_folder(clds_hash_table_ut)
 endif()
 
-if(${run_int_tests})
 #integration tests
+if(${run_int_tests})
     build_test_folder(lock_free_set_int)
-if(WIN32)
-    build_test_folder(clds_sorted_list_int)
     build_test_folder(clds_singly_linked_list_int)
     build_test_folder(clds_hash_table_int)
-endif()
+    build_test_folder(clds_sorted_list_int)
 endif()
 
+#perf tests
 if(${run_perf_tests})
-#perf tests only running on Windows for now
-if(WIN32)
     add_subdirectory(clds_hash_table_perf)
     add_subdirectory(clds_singly_linked_list_perf)
     add_subdirectory(clds_sorted_list_perf)
     add_subdirectory(lock_free_set_perf)
-endif()
 endif()

@@ -487,7 +487,14 @@ typedef struct CHAOS_THREAD_DATA_TAG
 
 #define CHAOS_THREAD_COUNT  16
 #define CHAOS_ITEM_COUNT    10000
-#define CHAOS_TEST_RUNTIME  30000
+
+#ifdef _MSC_VER
+// on Windows run for longer. Normally this should be passed as an argument, but this should also do for now.
+#define CHAOS_TEST_RUNTIME  300000
+#else
+// setting this way lower as we run with Helgrind on Linux and that is ... slow
+#define CHAOS_TEST_RUNTIME  10000
+#endif
 
 #define TEST_HASH_TABLE_ITEM_STATE_VALUES \
     TEST_HASH_TABLE_ITEM_NOT_USED, \
