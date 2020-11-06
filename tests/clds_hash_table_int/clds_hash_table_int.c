@@ -493,7 +493,7 @@ typedef struct CHAOS_THREAD_DATA_TAG
 #define CHAOS_TEST_RUNTIME  300000
 #else
 // setting this way lower as we run with Helgrind on Linux and that is ... slow
-#define CHAOS_TEST_RUNTIME  10000
+#define CHAOS_TEST_RUNTIME  1000
 #endif
 
 #define TEST_HASH_TABLE_ITEM_STATE_VALUES \
