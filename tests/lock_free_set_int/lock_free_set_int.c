@@ -17,7 +17,14 @@
 #include "clds/lock_free_set.h"
 
 #define THREAD_COUNT 4
+
+#ifdef _MSC_VER
+// on Windows run with more iterations. Normally this should be passed as an argument, but this should also do for now.
 #define INSERT_COUNT 1000000
+#else
+// setting this way lower as we run with Helgrind on Linux and that is ... slow
+#define INSERT_COUNT 10000
+#endif
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
 

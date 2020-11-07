@@ -31,6 +31,10 @@ set(run_int_tests OFF)
 set(run_traceability OFF)
 set(run_perf_tests OFF)
 
+if(WIN32)
+else()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+endif()
 
 if ((NOT TARGET c_build_tools) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-build-tools/CMakeLists.txt))
     add_subdirectory(deps/c-build-tools)

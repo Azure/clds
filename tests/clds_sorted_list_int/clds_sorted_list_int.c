@@ -164,7 +164,13 @@ typedef struct CHAOS_THREAD_DATA_TAG
 
 #define CHAOS_THREAD_COUNT  16
 #define CHAOS_ITEM_COUNT    10000
-#define CHAOS_TEST_RUNTIME  300000
+#ifdef USE_VALGRIND
+// when using Valgrind/Helgrind setting this way lower as that is ... slow
+#define CHAOS_TEST_RUNTIME  1000 // ms
+#else
+// Otherwise run for longer
+#define CHAOS_TEST_RUNTIME  300000 // ms
+#endif
 
 #define TEST_LIST_ITEM_STATE_VALUES \
     TEST_LIST_ITEM_NOT_USED, \

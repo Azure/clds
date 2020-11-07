@@ -177,6 +177,11 @@ static int continuous_insert_thread(void* arg)
         (void)interlocked_exchange(&thread_data->shared->last_written_key, (int32_t)i);
 
         i += thread_data->increment;
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
@@ -214,6 +219,11 @@ static int continuous_delete_thread(void* arg)
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result);
 
         i += thread_data->increment;
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
@@ -258,6 +268,11 @@ static int continuous_delete_key_value_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
@@ -297,6 +312,11 @@ static int continuous_remove_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
@@ -334,6 +354,11 @@ static int continuous_set_value_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 
         i += thread_data->increment;
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
@@ -361,6 +386,11 @@ static int continuous_find_thread(void* arg)
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
 
         i += thread_data->increment;
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     } while (interlocked_add(&thread_data->stop, 0) == 0);
 
     result = 0;
@@ -487,7 +517,14 @@ typedef struct CHAOS_THREAD_DATA_TAG
 
 #define CHAOS_THREAD_COUNT  16
 #define CHAOS_ITEM_COUNT    10000
-#define CHAOS_TEST_RUNTIME  30000
+
+#ifdef USE_VALGRIND
+// when using Valgrind/Helgrind setting this way lower as that is ... slow
+#define CHAOS_TEST_RUNTIME  10000 // ms
+#else
+// Otherwise run for longer
+#define CHAOS_TEST_RUNTIME  300000 // ms
+#endif
 
 #define TEST_HASH_TABLE_ITEM_STATE_VALUES \
     TEST_HASH_TABLE_ITEM_NOT_USED, \
@@ -1270,14 +1307,16 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
         (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
-
+    
         initialize_thread_data(&find_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
-
+    
         if (ThreadAPI_Create(&find_thread[i], continuous_find_thread, &find_thread_data[i]) != THREADAPI_OK)
         {
             ASSERT_FAIL("Error spawning find test thread %" PRIu32, i);
         }
     }
+
+    LogInfo("Threads created");
 
     // Make sure set value has started
     ThreadAPI_Sleep(1000);
@@ -1285,11 +1324,17 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     CLDS_HASH_TABLE_ITEM** items;
     uint64_t item_count;
 
+    LogInfo("Taking snapshot");
+
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
 
+    LogInfo("Taken snapshot");
+
     // Find threads continue to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
+
+    LogInfo("Stopping find threads");
 
     // Stop find threads
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
@@ -1300,6 +1345,8 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
         (void)ThreadAPI_Join(find_thread[i], &thread_result);
         ASSERT_ARE_EQUAL(int, 0, thread_result);
     }
+
+    LogInfo("Find threads stopped");
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
@@ -1713,6 +1760,8 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
     }
 
     double start_time = timer_global_get_elapsed_ms();
+
+    LogInfo("Running chaos test for %.02f seconds", (double)CHAOS_TEST_RUNTIME / 1000);
 
     // act
     while (timer_global_get_elapsed_ms() - start_time < CHAOS_TEST_RUNTIME)

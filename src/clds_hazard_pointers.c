@@ -18,8 +18,8 @@
 
 typedef struct CLDS_HAZARD_POINTER_RECORD_TAG
 {
-    volatile_atomic void* node;
-    struct CLDS_HAZARD_POINTER_RECORD_TAG* next;
+    void* volatile_atomic node;
+    struct CLDS_HAZARD_POINTER_RECORD_TAG* volatile_atomic next;
 } CLDS_HAZARD_POINTER_RECORD;
 
 typedef struct CLDS_RECLAIM_LIST_ENTRY_TAG
@@ -31,10 +31,10 @@ typedef struct CLDS_RECLAIM_LIST_ENTRY_TAG
 
 typedef struct CLDS_HAZARD_POINTERS_THREAD_TAG
 {
-    volatile_atomic struct CLDS_HAZARD_POINTERS_THREAD_TAG* next;
+    struct CLDS_HAZARD_POINTERS_THREAD_TAG* volatile_atomic next;
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
     CLDS_HAZARD_POINTER_RECORD* free_pointers;
-    CLDS_HAZARD_POINTER_RECORD* pointers;
+    CLDS_HAZARD_POINTER_RECORD* volatile_atomic pointers;
     CLDS_RECLAIM_LIST_ENTRY* reclaim_list;
     volatile_atomic int32_t active;
     size_t reclaim_list_entry_count;
@@ -43,7 +43,7 @@ typedef struct CLDS_HAZARD_POINTERS_THREAD_TAG
 typedef struct CLDS_HAZARD_POINTERS_TAG
 {
     size_t reclaim_threshold;
-    volatile_atomic CLDS_HAZARD_POINTERS_THREAD* head;
+    CLDS_HAZARD_POINTERS_THREAD* volatile_atomic head;
 } CLDS_HAZARD_POINTERS;
 
 static uint64_t hp_key_hash(void* key)
@@ -83,19 +83,19 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
     else
     {
         // go through all hazard pointers of all threads, no thread should be able to get a hazard pointer after this point
-        CLDS_HAZARD_POINTERS_THREAD_HANDLE current_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
+        CLDS_HAZARD_POINTERS_THREAD_HANDLE current_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
         while (current_thread != NULL)
         {
-            CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_thread->next, NULL, NULL);
+            CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_thread->next, NULL, NULL);
             if (interlocked_add(&current_thread->active, 0) == 1)
             {
                 // look at the pointers of this thread
                 // if it gets unregistered in the meanwhile we won't care
                 // if it gets registered again we also don't care as for sure it does not have our hazard pointer anymore
-                CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_thread->pointers, NULL, NULL);
+                CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_thread->pointers, NULL, NULL);
                 while (clds_hazard_pointer != NULL)
                 {
-                    CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_pointer = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer->next, NULL, NULL);
+                    CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer->next, NULL, NULL);
                     void* node = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer->node, NULL, NULL);
                     if (node != NULL)
                     {
@@ -204,30 +204,30 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
     }
     else
     {
-        CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
+        CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
         while (clds_hazard_pointers_thread != NULL)
         {
             internal_reclaim(clds_hazard_pointers_thread);
-            clds_hazard_pointers_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, NULL, NULL);
+            clds_hazard_pointers_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, NULL, NULL);
         }
 
         // free all thread data here
-        clds_hazard_pointers_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
+        clds_hazard_pointers_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
         while (clds_hazard_pointers_thread != NULL)
         {
-            CLDS_HAZARD_POINTERS_THREAD_HANDLE next_clds_hazard_pointers_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, NULL, NULL);
-            CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
+            CLDS_HAZARD_POINTERS_THREAD_HANDLE next_clds_hazard_pointers_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, NULL, NULL);
+            CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
             while (hazard_ptr != NULL)
             {
-                CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_ptr = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&hazard_ptr->next, NULL, NULL);
+                CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_ptr = interlocked_compare_exchange_pointer((void* volatile_atomic*)&hazard_ptr->next, NULL, NULL);
                 free(hazard_ptr);
                 hazard_ptr = next_hazard_ptr;
             }
 
-            hazard_ptr = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+            hazard_ptr = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
             while (hazard_ptr != NULL)
             {
-                CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_ptr = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&hazard_ptr->next, NULL, NULL);
+                CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_ptr = interlocked_compare_exchange_pointer((void* volatile_atomic*)&hazard_ptr->next, NULL, NULL);
                 free(hazard_ptr);
                 hazard_ptr = next_hazard_ptr;
             }
@@ -254,7 +254,7 @@ CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZ
         clds_hazard_pointers_thread->clds_hazard_pointers = clds_hazard_pointers;
         do
         {
-            CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
+            CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
             (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, current_threads_head);
             clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
             (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL);
@@ -309,7 +309,7 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
         // get a hazard pointer for the node from the free list
         do
         {
-            hazard_ptr = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+            hazard_ptr = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
             if (hazard_ptr != NULL)
             {
                 if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, hazard_ptr->next, hazard_ptr) != hazard_ptr)
@@ -344,9 +344,9 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
                 CLDS_HAZARD_POINTER_RECORD* current_list_head;
 
                 // add it to the hazard pointer list
-                current_list_head = (CLDS_HAZARD_POINTER_RECORD*)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
+                current_list_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
 
-                hazard_ptr->node = node;
+                (void)interlocked_exchange_pointer(&hazard_ptr->node, node);
                 hazard_ptr->next = current_list_head;
                 
                 (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, hazard_ptr);
@@ -360,9 +360,9 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
             CLDS_HAZARD_POINTER_RECORD* current_list_head;
 
             // add it to the hazard pointer list
-            current_list_head = (CLDS_HAZARD_POINTER_RECORD*)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
+            current_list_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
 
-            hazard_ptr->node = node;
+            (void)interlocked_exchange_pointer(&hazard_ptr->node, node);
             hazard_ptr->next = current_list_head;
 
             (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, hazard_ptr);
@@ -387,9 +387,9 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
         // remove it from the hazard pointers list for this thread, this thread is the only one removing
         // so no contention on the list
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hazard_pointer = NULL;
-        CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = (CLDS_HAZARD_POINTER_RECORD_HANDLE)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
+        CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL, NULL);
 
-        (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer_record->node, NULL);
+        (void)interlocked_exchange_pointer(&clds_hazard_pointer_record->node, NULL);
 
         while (clds_hazard_pointer != NULL)
         {
@@ -414,7 +414,7 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
         }
 
         // insert it in the free list
-        clds_hazard_pointer_record->next = (CLDS_HAZARD_POINTER_RECORD*)interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+        clds_hazard_pointer_record->next = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
         (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, clds_hazard_pointer_record);
     }
 }
