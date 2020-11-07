@@ -520,7 +520,7 @@ typedef struct CHAOS_THREAD_DATA_TAG
 
 #ifdef USE_VALGRIND
 // when using Valgrind/Helgrind setting this way lower as that is ... slow
-#define CHAOS_TEST_RUNTIME  1000 // ms
+#define CHAOS_TEST_RUNTIME  10000 // ms
 #else
 // Otherwise run for longer
 #define CHAOS_TEST_RUNTIME  300000 // ms
