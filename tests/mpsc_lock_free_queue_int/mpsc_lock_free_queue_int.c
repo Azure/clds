@@ -14,7 +14,11 @@
 #include "clds/mpsc_lock_free_queue.h"
 
 #define THREAD_COUNT 4
+#ifdef USE_VALGRIND
+#define INSERT_COUNT 10000
+#else
 #define INSERT_COUNT 1000000
+#endif
 
 typedef struct TEST_MPSC_QUEUE_ITEM_TAG
 {
