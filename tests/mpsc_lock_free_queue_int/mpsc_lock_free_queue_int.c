@@ -15,7 +15,7 @@
 
 #define THREAD_COUNT 4
 #ifdef USE_VALGRIND
-#define INSERT_COUNT 10000
+#define INSERT_COUNT 100000
 #else
 #define INSERT_COUNT 1000000
 #endif
@@ -35,15 +35,13 @@ static int enqueue_thread(void* arg)
 {
     size_t i;
     THREAD_DATA* thread_data = (THREAD_DATA*)arg;
-    int result;
 
     for (i = 0; i < INSERT_COUNT; i++)
     {
-        result = mpsc_lock_free_queue_enqueue(thread_data->queue, &thread_data->items[i]->item);
-        ASSERT_ARE_EQUAL(int, 0, result, "mpsc_lock_free_queue_enqueue failed");
+        ASSERT_ARE_EQUAL(int, 0, mpsc_lock_free_queue_enqueue(thread_data->queue, &thread_data->items[i]->item), "mpsc_lock_free_queue_enqueue failed");
     }
 
-    return result;
+    return 0;
 }
 
 static int dequeue_thread(void* arg)
@@ -57,6 +55,11 @@ static int dequeue_thread(void* arg)
         if (dequeued != NULL)
         {
             dequeued_count++;
+        }
+        else
+        {
+            // yield
+            ThreadAPI_Sleep(0);
         }
     }
 
