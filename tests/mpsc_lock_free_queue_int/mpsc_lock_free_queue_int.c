@@ -9,8 +9,9 @@
 
 #include "testrunnerswitcher.h"
 #include "c_pal/gballoc_hl.h"
-#include "zrpc/mpsc_lock_free_queue.h"
 #include "c_pal/threadapi.h"
+
+#include "clds/mpsc_lock_free_queue.h"
 
 #define THREAD_COUNT 4
 #define INSERT_COUNT 1000000

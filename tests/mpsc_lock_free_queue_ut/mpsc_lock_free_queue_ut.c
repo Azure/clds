@@ -33,7 +33,7 @@ void real_free(void* ptr)
 
 #include "real_gballoc_hl.h"
 
-#include "zrpc/mpsc_lock_free_queue.h"
+#include "clds/mpsc_lock_free_queue.h"
 
 static TEST_MUTEX_HANDLE test_serialize_mutex;
 

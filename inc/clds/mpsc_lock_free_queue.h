@@ -10,6 +10,8 @@
 
 #include "umock_c/umock_c_prod.h"
 
+#include "c_pal/interlocked.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,7 +20,7 @@ typedef struct MPSC_LOCK_FREE_QUEUE_TAG* MPSC_LOCK_FREE_QUEUE_HANDLE;
 
 typedef struct MPSC_LOCK_FREE_QUEUE_ITEM_TAG
 {
-    volatile struct MPSC_LOCK_FREE_QUEUE_ITEM_TAG* next;
+    struct MPSC_LOCK_FREE_QUEUE_ITEM_TAG* volatile_atomic next;
 } MPSC_LOCK_FREE_QUEUE_ITEM;
 
 MOCKABLE_FUNCTION(, MPSC_LOCK_FREE_QUEUE_HANDLE, mpsc_lock_free_queue_create);
