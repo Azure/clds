@@ -12,4 +12,4 @@ set(${theseTestsName}_c_files
 set(${theseTestsName}_h_files
 )
 
-build_test_artifacts(${theseTestsName} ON "tests/clds_tests" ADDITIONAL_LIBS clds)
+build_test_artifacts(${theseTestsName} ON "tests/clds" ADDITIONAL_LIBS clds)
