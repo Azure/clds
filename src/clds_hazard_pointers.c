@@ -414,7 +414,8 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
         }
 
         // insert it in the free list
-        clds_hazard_pointer_record->next = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+        struct CLDS_HAZARD_POINTER_RECORD_TAG* current_free_pointers = interlocked_compare_exchange_pointer((void* volatile_atomic*) & clds_hazard_pointers_thread->free_pointers, NULL, NULL);
+        (void)interlocked_exchange_pointer(&clds_hazard_pointer_record->next, current_free_pointers);
         (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, clds_hazard_pointer_record);
     }
 }
