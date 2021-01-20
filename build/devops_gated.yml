@@ -175,7 +175,7 @@ jobs:
       filename: ctest
       arguments: '-C "Debug" -V --output-on-failure'
       workingFolder: 'build_x86'
-      
+
 - job: Traceability
   pool:
     name: Azure-MessagingStore
@@ -232,7 +232,7 @@ jobs:
       arguments: '-i $(Build.SourcesDirectory) -buildcheck -e $(Build.SourcesDirectory)\deps'
       modifyEnvironment: false
       workingFolder: '$(Build.SourcesDirectory)'
-      
+
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64)'
   pool:
@@ -284,17 +284,17 @@ jobs:
 
   - script: |
      echo Running Hash table perf test
-     $(Build.Repository.LocalPath)/build_x64/tests/clds_hash_table_perf/RelWithDebInfo/clds_hash_table_perf.exe
-     
+     $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_hash_table_perf.exe
+
      echo Running Singly linked list perf test
-     $(Build.Repository.LocalPath)/build_x64/tests/clds_singly_linked_list_perf/RelWithDebInfo/clds_singly_linked_list_perf.exe
-     
+     $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_singly_linked_list_perf.exe
+
      echo Running Sorted list perf test
-     $(Build.Repository.LocalPath)/build_x64/tests/clds_sorted_list_perf/RelWithDebInfo/clds_sorted_list_perf.exe
+     $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_sorted_list_perf.exe
 
      echo Running Lock free set perf test
-     $(Build.Repository.LocalPath)/build_x64/tests/lock_free_set_perf/RelWithDebInfo/lock_free_set_perf.exe
-     
+     $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/lock_free_set_perf.exe
+
     workingDirectory: 'build_x64'
     displayName: 'Run perf tests'
 
