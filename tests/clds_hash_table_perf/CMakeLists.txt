@@ -15,5 +15,10 @@ set(clds_hash_table_perf_rc_files
     ${LOGGING_RC_FILE}
 )
 
-add_executable(clds_hash_table_perf ${clds_hash_table_perf_h_files} ${clds_hash_table_perf_c_files} ${clds_hash_table_perf_rc_files})
-target_link_libraries(clds_hash_table_perf clds SMHasherSupport c_logging)
+if (TARGET SMHasherSupport)
+    add_executable(clds_hash_table_perf ${clds_hash_table_perf_h_files} ${clds_hash_table_perf_c_files} ${clds_hash_table_perf_rc_files})
+    target_link_libraries(clds_hash_table_perf clds SMHasherSupport c_logging)
+else()
+    # if we don't have SMHasher, just add a lib so that we compile (for the purposes of Ninja+iwyu)
+    add_library(clds_hash_table_perf ${clds_hash_table_perf_h_files} ${clds_hash_table_perf_c_files} ${clds_hash_table_perf_rc_files})
+endif()

@@ -132,7 +132,9 @@ if(WIN32)
 endif(WIN32)
 
 if ((NOT TARGET SMHasherSupport) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src/CMakeLists.txt))
-    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
+    if(NOT (CMAKE_GENERATOR MATCHES "Ninja"))
+        add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
+    endif()
     include_directories(${CMAKE_CURRENT_LIST_DIR}/deps/smhasher/src)
 endif()
 

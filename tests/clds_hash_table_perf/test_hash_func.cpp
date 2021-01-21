@@ -1,7 +1,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include <stdint.h>
-#include <string.h>
+#include <cstring>
 
 #include "MurmurHash2.h"
 #include "test_hash_func.h"

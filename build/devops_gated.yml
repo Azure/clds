@@ -372,4 +372,4 @@ jobs:
       targetType: 'inline'
       script: |
           cmake --build . | tee build.log
-          if ((Select-String -Path "./build.log" -Pattern "Warning:") -ne $null) { throw "include check failed" }
+          if ((Select-String -Path "./build.log" -Pattern "Warning: include-what-you-use") -ne $null) { throw "include check failed" }
