@@ -146,7 +146,7 @@ set(run_int_tests ${original_run_int_tests})
 set(run_traceability ${original_run_traceability})
 set(run_perf_tests ${original_run_perf_tests})
 
-if((WIN32) AND (${run_traceability}))
+if((CMAKE_GENERATOR MATCHES "Visual Studio") AND (${run_traceability}))
     #add traceability custom target
     add_custom_target(clds_traceability ALL
         COMMAND traceabilitytool -buildcheck -e ${CMAKE_CURRENT_LIST_DIR}/deps -i ${CMAKE_CURRENT_LIST_DIR})
