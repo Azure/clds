@@ -1,7 +1,5 @@
 #Copyright (c) Microsoft. All rights reserved.
 
-cmake_minimum_required(VERSION 2.8.11)
-
 set(theseTestsName lock_free_set_ut)
 
 set(${theseTestsName}_test_files

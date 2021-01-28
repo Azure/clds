@@ -1,6 +1,8 @@
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-cmake_minimum_required(VERSION 2.8.11)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+    cmake_minimum_required(VERSION 3.18)
+endif()
 
 # canon way of using clds from another repo is below. It assumes the using repo has placed clds in "deps"
 
