@@ -1,6 +1,8 @@
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-cmake_minimum_required(VERSION 2.8.11)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+    cmake_minimum_required(VERSION 3.18)
+endif()
 
 # canon way of using clds from another repo is below. It assumes the using repo has placed clds in "deps"
 
@@ -15,6 +17,7 @@ include(CTest)
 
 option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)" OFF)
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
+option(run_perf_tests "set run_perf_tests to ON to build performance tests (default is OFF)." OFF)
 option(run_traceability "run traceability tool (default is ON)" ON)
 
 #bring in dependencies
