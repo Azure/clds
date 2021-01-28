@@ -17,6 +17,7 @@ include(CTest)
 
 option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)" OFF)
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
+option(run_perf_tests "set run_perf_tests to ON to build performance tests (default is OFF)." OFF)
 option(run_traceability "run traceability tool (default is ON)" ON)
 
 #bring in dependencies
