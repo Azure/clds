@@ -19,6 +19,7 @@ option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)"
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
 option(run_perf_tests "set run_perf_tests to ON to build performance tests (default is OFF)." OFF)
 option(run_traceability "run traceability tool (default is ON)" ON)
+option(use_cppunittest "set use_cppunittest to ON to build CppUnitTest tests on Windows (default is OFF)" OFF)
 
 #bring in dependencies
 #do not add or build any tests of the dependencies
