@@ -57,7 +57,7 @@ MOCK_FUNCTION_WITH_CODE(, int, test_key_compare, void*, key1, void*, key2)
     (void)key2;
 MOCK_FUNCTION_END(0)
 
-BEGIN_TEST_SUITE(clds_st_hash_set_unittests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -321,4 +321,4 @@ TEST_FUNCTION(clds_st_hash_set_insert_with_NULL_key_fails)
     clds_st_hash_set_destroy(st_hash_set);
 }
 
-END_TEST_SUITE(clds_st_hash_set_unittests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

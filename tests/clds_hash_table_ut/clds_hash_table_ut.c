@@ -119,7 +119,7 @@ typedef struct TEST_ITEM_TAG
 
 DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
 
-BEGIN_TEST_SUITE(clds_hash_table_unittests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -3722,4 +3722,4 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_mult
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-END_TEST_SUITE(clds_hash_table_unittests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

@@ -45,7 +45,7 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 MOCK_FUNCTION_WITH_CODE(, void, test_reclaim_func, void*, node)
 MOCK_FUNCTION_END()
 
-BEGIN_TEST_SUITE(clds_hazard_pointers_unittests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -245,4 +245,4 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_r
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 }
 
-END_TEST_SUITE(clds_hazard_pointers_unittests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

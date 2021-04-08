@@ -70,7 +70,7 @@ static TEST_MUTEX_HANDLE test_serialize_mutex;
 
 TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
 
-BEGIN_TEST_SUITE(mpsc_lock_free_queue_inttests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -162,4 +162,4 @@ TEST_FUNCTION(multiple_threads_adding_and_one_consuming_succeeds)
     free(thread_data);
 }
 
-END_TEST_SUITE(mpsc_lock_free_queue_inttests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
