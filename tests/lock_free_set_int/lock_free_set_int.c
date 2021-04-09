@@ -59,7 +59,7 @@ static int insert_and_remove_thread(void* arg)
 
 TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
 
-BEGIN_TEST_SUITE(lock_free_set_inttests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -145,4 +145,4 @@ TEST_FUNCTION(lock_free_set_insert_remove_succeeds)
     free(thread_data);
 }
 
-END_TEST_SUITE(lock_free_set_inttests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

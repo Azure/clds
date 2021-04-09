@@ -103,7 +103,7 @@ static int test_key_compare(void* context, void* key1, void* key2)
     return result;
 }
 
-BEGIN_TEST_SUITE(clds_sorted_list_unittests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -4101,4 +4101,4 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_the_same_item_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-END_TEST_SUITE(clds_sorted_list_unittests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

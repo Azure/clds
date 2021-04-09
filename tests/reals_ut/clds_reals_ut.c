@@ -24,7 +24,7 @@
 #include "../tests/reals/real_lock_free_set.h"
 #include "../tests/reals/real_mpsc_lock_free_queue.h"
 
-BEGIN_TEST_SUITE(clds_reals_ut)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 // this test makes sure that the mappings work
 // (there is a real_ function corresponding to the original)
@@ -45,4 +45,4 @@ TEST_FUNCTION(check_all_clds_reals)
     // no explicit assert, if it builds it works
 }
 
-END_TEST_SUITE(clds_reals_ut)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

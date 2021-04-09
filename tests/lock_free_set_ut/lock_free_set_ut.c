@@ -48,7 +48,7 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 MOCK_FUNCTION_WITH_CODE(, void, test_node_cleanup, void*, context, struct LOCK_FREE_SET_ITEM_TAG*, item)
 MOCK_FUNCTION_END()
 
-BEGIN_TEST_SUITE(lock_free_set_unittests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -1044,4 +1044,4 @@ TEST_FUNCTION(lock_free_set_purge_not_thread_safe_with_1_item_and_NULL_callback_
     lock_free_set_destroy(set, NULL, NULL);
 }
 
-END_TEST_SUITE(lock_free_set_unittests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

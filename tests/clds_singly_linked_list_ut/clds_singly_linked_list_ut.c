@@ -83,7 +83,7 @@ typedef struct TEST_ITEM_TAG
 
 DECLARE_SINGLY_LINKED_LIST_NODE_TYPE(TEST_ITEM)
 
-BEGIN_TEST_SUITE(clds_singly_linked_list_unittests)
+BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
@@ -1655,4 +1655,4 @@ TEST_FUNCTION(clds_singly_linked_list_insert_with_NULL_item_cleanup_callback_con
     CLDS_SINGLY_LINKED_LIST_NODE_RELEASE(TEST_ITEM, item);
 }
 
-END_TEST_SUITE(clds_singly_linked_list_unittests)
+END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
