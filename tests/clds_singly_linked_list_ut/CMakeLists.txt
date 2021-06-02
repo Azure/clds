@@ -20,4 +20,4 @@ set(${theseTestsName}_h_files
 ../reals/real_clds_hazard_pointers_renames.h
 )
 
-build_test_artifacts(${theseTestsName} ON "tests/clds" ADDITIONAL_LIBS c_pal c_pal_reals)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal c_pal_reals)
