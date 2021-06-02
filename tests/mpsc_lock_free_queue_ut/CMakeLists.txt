@@ -15,4 +15,4 @@ set(${theseTestsName}_h_files
 ../../inc/clds/mpsc_lock_free_queue.h
 )
 
-build_test_artifacts(${theseTestsName} ON "tests/clds" ADDITIONAL_LIBS c_pal c_pal_reals)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal c_pal_reals)
