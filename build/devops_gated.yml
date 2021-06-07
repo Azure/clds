@@ -305,6 +305,7 @@ jobs:
 
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu 18.04'
+  timeoutInMinutes: 120
   pool:
     name: Azure-MessagingStore
     demands:
