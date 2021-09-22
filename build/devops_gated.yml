@@ -304,9 +304,9 @@ jobs:
     displayName: 'Run perf tests'
 
 - job: linuxubuntu
-  displayName: 'Build Linux Ubuntu 18.04'
+  displayName: 'Build Linux Ubuntu'
   pool:
-    name: Azure-MessagingStore
+    name: Azure-MessagingStore-LinuxBuildMachinePool
     demands:
       - linux
 
