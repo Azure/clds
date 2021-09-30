@@ -744,7 +744,7 @@ static int single_set_value_thread(void* arg)
 
     int64_t set_seq_no;
     CLDS_SORTED_LIST_ITEM* old_item;
-    CLDS_SORTED_LIST_SET_VALUE_RESULT set_result = clds_sorted_list_set_value(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, new_item, &old_item, &set_seq_no, false);
+    CLDS_SORTED_LIST_SET_VALUE_RESULT set_result = clds_sorted_list_set_value(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, new_item, NULL, NULL, &old_item, &set_seq_no, false);
 
     if (set_result != CLDS_SORTED_LIST_SET_VALUE_OK)
     {
@@ -1252,7 +1252,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_succeeds)
 
     CLDS_SORTED_LIST_ITEM* old_item;
     // act
-    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, item, &old_item, &insert_seq_no, false);
+    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, item, NULL, NULL, &old_item, &insert_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, set_value_result);
@@ -1447,7 +1447,7 @@ static int chaos_thread(void* arg)
                 TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
                 item_payload->key = item_index + 1;
             
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no, false));
+                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no, false));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
@@ -1463,7 +1463,7 @@ static int chaos_thread(void* arg)
                 CLDS_SORTED_LIST_ITEM* old_item;
                 CLDS_SORTED_LIST_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
             
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no, false));
+                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no, false));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
@@ -1482,7 +1482,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), removed_item, &old_item, &seq_no, false));
+                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), removed_item, NULL, NULL, &old_item, &seq_no, false));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
@@ -1512,7 +1512,7 @@ static int chaos_thread(void* arg)
                 CLDS_SORTED_LIST_ITEM* old_item;
                 CLDS_SORTED_LIST_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
             
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no, true));
+                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no, true));
                 mark_seq_no_as_used(chaos_test_context, seq_no);
             
                 ASSERT_IS_NOT_NULL(old_item);
@@ -1530,7 +1530,7 @@ static int chaos_thread(void* arg)
                 TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, new_item);
                 item_payload->key = item_index + 1;
             
-                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), new_item, &old_item, &seq_no, true));
+                ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), new_item, NULL, NULL, &old_item, &seq_no, true));
             
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
             

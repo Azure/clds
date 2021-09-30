@@ -41,7 +41,7 @@ CLDS_HASH_TABLE_DELETE_RESULT real_clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE
 CLDS_HASH_TABLE_DELETE_RESULT real_clds_hash_table_delete_key_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t* sequence_number);
 CLDS_HASH_TABLE_REMOVE_RESULT real_clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM** item, int64_t* sequence_number);
 CLDS_HASH_TABLE_ITEM* real_clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key);
-CLDS_HASH_TABLE_SET_VALUE_RESULT real_clds_hash_table_set_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* new_item, CLDS_HASH_TABLE_ITEM** old_item, int64_t* sequence_number);
+CLDS_HASH_TABLE_SET_VALUE_RESULT real_clds_hash_table_set_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* new_item, CONDITION_CHECK_CB condition_check_func, void* condition_check_context, CLDS_HASH_TABLE_ITEM** old_item, int64_t* sequence_number);
 CLDS_HASH_TABLE_SNAPSHOT_RESULT real_clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM*** items, uint64_t* item_count);
 
 // helper APIs for creating/destroying a hash table node

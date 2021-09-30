@@ -1233,7 +1233,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
     return result;
 }
 
-CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_SORTED_LIST_ITEM* new_item, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number, bool only_if_exists)
+CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_SORTED_LIST_ITEM* new_item, CONDITION_CHECK_CB condition_check_func, void* condition_check_context, CLDS_SORTED_LIST_ITEM** old_item, int64_t* sequence_number, bool only_if_exists)
 {
     CLDS_SORTED_LIST_SET_VALUE_RESULT result;
 
@@ -1252,8 +1252,8 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
         ((sequence_number != NULL) && (clds_sorted_list->sequence_number == NULL))
         )
     {
-        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_SORTED_LIST_ITEM* new_item=%p, CLDS_SORTED_LIST_ITEM** old_item=%p, int64_t* sequence_number=%p",
-            clds_sorted_list, clds_hazard_pointers_thread, key, new_item, old_item, sequence_number);
+        LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_SORTED_LIST_ITEM* new_item=%p, CONDITION_CHECK_CB condition_check_func=%p, void* condition_check_context=%p, CLDS_SORTED_LIST_ITEM** old_item=%p, int64_t* sequence_number=%p",
+            clds_sorted_list, clds_hazard_pointers_thread, key, new_item, condition_check_func, condition_check_context, old_item, sequence_number);
         result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
     }
     else
@@ -1410,6 +1410,62 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                         {
                             // we are in a stable state, compare the current item key to our key
                             void* current_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, (struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
+
+                            if (condition_check_func != NULL)
+                            {
+                                /* Codes_SRS_CLDS_SORTED_LIST_04_001: [ If condition_check_func is not NULL it shall be called passing condition_check_context and the new and old keys. ]*/
+                                CLDS_CONDITION_CHECK_RESULT condition_check_result = condition_check_func(condition_check_context, new_item_key, current_item_key);
+                                switch (condition_check_result)
+                                {
+                                    case CLDS_CONDITION_CHECK_ERROR:
+                                    {
+                                        LogError("Condition check failed");
+                                        if (previous_hp != NULL)
+                                        {
+                                            // let go of previous hazard pointer
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        }
+
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                        /* Codes_SRS_CLDS_SORTED_LIST_04_002: [ If condition_check_func returns CLDS_CONDITION_CHECK_ERROR then clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
+                                        result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+
+                                        break;
+                                    }
+
+                                    case CLDS_CONDITION_CHECK_NOT_MET:
+                                    {
+                                        LogError("Condition check not met");
+                                        if (previous_hp != NULL)
+                                        {
+                                            // let go of previous hazard pointer
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                        }
+
+                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                        /* Codes_SRS_CLDS_SORTED_LIST_04_003: [ If condition_check_func returns CLDS_CONDITION_CHECK_NOT_MET then clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET. ]*/
+                                        result = CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET;
+                                        
+                                        break;
+                                    }
+
+                                    case CLDS_CONDITION_CHECK_OK:
+                                    {
+                                        /* Nothing to do. Life continues like normal. */
+                                        break;
+                                    }
+                                }
+
+                                /* Codes_SRS_CLDS_SORTED_LIST_04_004: [ If condition_check_func returns CLDS_CONDITION_CHECK_OK then clds_sorted_list_set_value continues. ]*/
+                                if (condition_check_result != CLDS_CONDITION_CHECK_OK)
+                                {
+                                    restart_needed = false;
+                                    break;
+                                }
+                            }
+
                             int compare_result = clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, new_item_key, current_item_key);
 
                             if (compare_result == 0)

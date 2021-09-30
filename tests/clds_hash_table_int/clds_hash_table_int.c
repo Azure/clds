@@ -348,7 +348,7 @@ static int continuous_set_value_thread(void* arg)
         CLDS_HASH_TABLE_ITEM* old_item;
         CLDS_HASH_TABLE_SET_VALUE_RESULT set_result;
         int64_t seq_no;
-        set_result = clds_hash_table_set_value(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), item, &old_item, &seq_no);
+        set_result = clds_hash_table_set_value(thread_data->hash_table, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(i + 1), item, NULL, NULL, &old_item, &seq_no);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_result);
 
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
@@ -713,7 +713,7 @@ TEST_FUNCTION(clds_hash_table_set_value_succeeds)
     int64_t set_value_seq_no;
 
     // act
-    set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item, &old_item, &set_value_seq_no);
+    set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item, NULL, NULL, &old_item, &set_value_seq_no);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
@@ -755,7 +755,7 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, delete_result);
 
     // act
-    set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item_3, &old_item, &set_value_seq_no);
+    set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item_3, NULL, NULL, &old_item, &set_value_seq_no);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
@@ -784,7 +784,7 @@ TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
     int64_t set_value_seq_no;
     int64_t delete_seq_no;
 
-    set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item, &old_item, &set_value_seq_no);
+    set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)0x42, item, NULL, NULL, &old_item, &set_value_seq_no);
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result, "item set value failed");
 
     // act
@@ -1382,7 +1382,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     CLDS_HASH_TABLE_ITEM* old_item;
 
     // act
-    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, &old_item, &insert_seq_no);
+    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, NULL, NULL, &old_item, &insert_seq_no);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result);
@@ -1416,7 +1416,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     CLDS_HASH_TABLE_ITEM* old_item;
 
     // act
-    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, &old_item, &insert_seq_no);
+    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item, NULL, NULL, &old_item, &insert_seq_no);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, set_value_result);
@@ -1465,7 +1465,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_same_item_after_bucket_count_increa
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(2), item_2, &insert_seq_no));
 
     CLDS_HASH_TABLE_ITEM* old_item;
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item_1, &old_item, &insert_seq_no));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(1), item_1, NULL, NULL, &old_item, &insert_seq_no));
 
     // act
     // assert
@@ -1662,7 +1662,7 @@ static int chaos_thread(void* arg)
                 TEST_ITEM* item_payload = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
                 item_payload->key = item_index + 1;
 
-                ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
+                ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
@@ -1679,7 +1679,7 @@ static int chaos_thread(void* arg)
             
                 CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
             
-                ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, &old_item, &seq_no));
+                ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
