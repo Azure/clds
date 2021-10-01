@@ -390,7 +390,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 
 **SRS_CLDS_HASH_TABLE_01_102: [** If the key is not found in any of the non top level buckets arrays, `clds_hash_table_set_value`: **]**
 
-- **SRS_CLDS_HASH_TABLE_01_103: [** `clds_hash_table_set_value` shall obtain the sorted list at the bucked corresponding to the hash of the key. **]**
+- **SRS_CLDS_HASH_TABLE_01_103: [** `clds_hash_table_set_value` shall obtain the sorted list at the bucket corresponding to the hash of the key. **]**
 
 - **SRS_CLDS_HASH_TABLE_01_104: [**  If no list exists at the designated bucket, one shall be created. **]**
 

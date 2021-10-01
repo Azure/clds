@@ -404,6 +404,12 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORT
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
 ```
 
+The `condition_check_func` callback can be used by callers to influence whether an existing value will be replaced or not based on some arbitrary user defined condition. The user supplied callback is provided with the existing key in the hash table and the key that was passed in to this function. The callback must return one of:
+
+- `CLDS_CONDITION_CHECK_OK` - The hash table must go ahead with trying to replace the value.
+- `CLDS_CONDITION_CHECK_ERROR` - Something failed during condition check. Hash table must fail with an error code.
+- `CLDS_CONDITION_CHECK_NOT_MET` - Condition check failed. Hash table must fail with an error code that indicates that condition check failed.
+
 **SRS_CLDS_SORTED_LIST_01_080: [** `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_081: [** If `clds_sorted_list` is NULL, `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**

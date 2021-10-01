@@ -978,13 +978,13 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                 if (sorted_list_set_value == CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_04_002: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET. ]*/
-                    LogError("Condition not met during set value");
+                    LogError("Condition not met during set value - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_set_value));
                     result = CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET;
                 }
                 else if (sorted_list_set_value != CLDS_SORTED_LIST_SET_VALUE_OK)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_100: [ If clds_sorted_list_set_value returns any other value, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
-                    LogError("Cannot set key in sorted list");
+                    LogError("Cannot set key in sorted list - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_set_value));
                     result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
                 }
                 else

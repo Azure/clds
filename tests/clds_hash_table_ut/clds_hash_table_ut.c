@@ -2598,7 +2598,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_non_NULL_sequence_number_when_a_sta
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_085: [ clds_hash_table_set_value shall go through all non top level bucket arrays and: ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_102: [ If the key is not found in any of the non top level buckets arrays, clds_hash_table_set_value: ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucked corresponding to the hash of the key. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucket corresponding to the hash of the key. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_104: [  If no list exists at the designated bucket, one shall be created. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_105: [ clds_hash_table_set_value shall call clds_hash_table_set_value on the top level bucket array, passing key, new_item, condition_check_func, condition_check_context, old_item and only_if_exists set to false. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_099: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_OK, clds_hash_table_set_value shall succeed and return CLDS_HASH_TABLE_SET_VALUE_OK. ]*/
@@ -2635,7 +2635,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_empty_hash_table_sets_the_value_on_
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_085: [ clds_hash_table_set_value shall go through all non top level bucket arrays and: ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_102: [ If the key is not found in any of the non top level buckets arrays, clds_hash_table_set_value: ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucked corresponding to the hash of the key. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucket corresponding to the hash of the key. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_104: [  If no list exists at the designated bucket, one shall be created. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_105: [ clds_hash_table_set_value shall call clds_hash_table_set_value on the top level bucket array, passing key, new_item, condition_check_func, condition_check_context, old_item and only_if_exists set to false. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_099: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_OK, clds_hash_table_set_value shall succeed and return CLDS_HASH_TABLE_SET_VALUE_OK. ]*/

@@ -20,6 +20,7 @@
 MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RESULT_VALUES);
 MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
 MU_DEFINE_ENUM_STRINGS(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
+MU_DEFINE_ENUM_STRINGS(CLDS_CONDITION_CHECK_RESULT, CLDS_CONDITION_CHECK_RESULT_VALUES);
 
 /* this is a lock free sorted list implementation */
 
@@ -1411,65 +1412,64 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                             // we are in a stable state, compare the current item key to our key
                             void* current_item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, (struct CLDS_SORTED_LIST_ITEM_TAG*)current_item);
 
-                            if (condition_check_func != NULL)
-                            {
-                                /* Codes_SRS_CLDS_SORTED_LIST_04_001: [ If condition_check_func is not NULL it shall be called passing condition_check_context and the new and old keys. ]*/
-                                CLDS_CONDITION_CHECK_RESULT condition_check_result = condition_check_func(condition_check_context, new_item_key, current_item_key);
-                                switch (condition_check_result)
-                                {
-                                    case CLDS_CONDITION_CHECK_ERROR:
-                                    {
-                                        LogError("Condition check failed");
-                                        if (previous_hp != NULL)
-                                        {
-                                            // let go of previous hazard pointer
-                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                        }
-
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-
-                                        /* Codes_SRS_CLDS_SORTED_LIST_04_002: [ If condition_check_func returns CLDS_CONDITION_CHECK_ERROR then clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
-                                        result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
-
-                                        break;
-                                    }
-
-                                    case CLDS_CONDITION_CHECK_NOT_MET:
-                                    {
-                                        LogError("Condition check not met");
-                                        if (previous_hp != NULL)
-                                        {
-                                            // let go of previous hazard pointer
-                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
-                                        }
-
-                                        clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
-
-                                        /* Codes_SRS_CLDS_SORTED_LIST_04_003: [ If condition_check_func returns CLDS_CONDITION_CHECK_NOT_MET then clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET. ]*/
-                                        result = CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET;
-                                        
-                                        break;
-                                    }
-
-                                    case CLDS_CONDITION_CHECK_OK:
-                                    {
-                                        /* Nothing to do. Life continues like normal. */
-                                        break;
-                                    }
-                                }
-
-                                /* Codes_SRS_CLDS_SORTED_LIST_04_004: [ If condition_check_func returns CLDS_CONDITION_CHECK_OK then clds_sorted_list_set_value continues. ]*/
-                                if (condition_check_result != CLDS_CONDITION_CHECK_OK)
-                                {
-                                    restart_needed = false;
-                                    break;
-                                }
-                            }
-
                             int compare_result = clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, new_item_key, current_item_key);
-
                             if (compare_result == 0)
                             {
+                                if (condition_check_func != NULL)
+                                {
+                                    /* Codes_SRS_CLDS_SORTED_LIST_04_001: [ If condition_check_func is not NULL it shall be called passing condition_check_context and the new and old keys. ]*/
+                                    CLDS_CONDITION_CHECK_RESULT condition_check_result = condition_check_func(condition_check_context, new_item_key, current_item_key);
+                                    switch (condition_check_result)
+                                    {
+                                        case CLDS_CONDITION_CHECK_ERROR:
+                                        {
+                                            LogError("Condition check failed - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_CONDITION_CHECK_RESULT, condition_check_result));
+                                            if (previous_hp != NULL)
+                                            {
+                                                // let go of previous hazard pointer
+                                                clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                            }
+
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                            /* Codes_SRS_CLDS_SORTED_LIST_04_002: [ If condition_check_func returns CLDS_CONDITION_CHECK_ERROR then clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_ERROR. ]*/
+                                            result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
+
+                                            break;
+                                        }
+
+                                        case CLDS_CONDITION_CHECK_NOT_MET:
+                                        {
+                                            LogError("Condition check not met - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_CONDITION_CHECK_RESULT, condition_check_result));
+                                            if (previous_hp != NULL)
+                                            {
+                                                // let go of previous hazard pointer
+                                                clds_hazard_pointers_release(clds_hazard_pointers_thread, previous_hp);
+                                            }
+
+                                            clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
+
+                                            /* Codes_SRS_CLDS_SORTED_LIST_04_003: [ If condition_check_func returns CLDS_CONDITION_CHECK_NOT_MET then clds_sorted_list_set_value shall fail and return CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET. ]*/
+                                            result = CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET;
+
+                                            break;
+                                        }
+
+                                        case CLDS_CONDITION_CHECK_OK:
+                                        {
+                                            /* Nothing to do. Life continues like normal. */
+                                            break;
+                                        }
+                                    }
+
+                                    /* Codes_SRS_CLDS_SORTED_LIST_04_004: [ If condition_check_func returns CLDS_CONDITION_CHECK_OK then clds_sorted_list_set_value continues. ]*/
+                                    if (condition_check_result != CLDS_CONDITION_CHECK_OK)
+                                    {
+                                        restart_needed = false;
+                                        break;
+                                    }
+                                }
+
                                 /* Codes_SRS_CLDS_SORTED_LIST_01_088: [ If the key entry exists in the list, its value shall be replaced with new_item. ]*/
 
                                 CLDS_SORTED_LIST_ITEM* volatile_atomic current_next = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, NULL, NULL);
