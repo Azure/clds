@@ -651,7 +651,7 @@ static int single_remove_key_thread(void* arg)
 
     int64_t remove_seq_no;
     CLDS_SORTED_LIST_ITEM* removed_item;
-    CLDS_SORTED_LIST_REMOVE_RESULT remove_result = clds_sorted_list_remove_key(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, &removed_item , &remove_seq_no);
+    CLDS_SORTED_LIST_REMOVE_RESULT remove_result = clds_sorted_list_remove_key(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)item_payload->key, &removed_item, &remove_seq_no);
 
     if (remove_result != CLDS_SORTED_LIST_REMOVE_OK)
     {
@@ -1360,7 +1360,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_fails_when_condition_che
 
     CLDS_SORTED_LIST_ITEM* old_item;
     // act
-    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)&item_payload2->key, item2, etag_condition_check, (void *)0x42, &old_item, &insert_seq_no, false);
+    CLDS_SORTED_LIST_SET_VALUE_RESULT set_value_result = clds_sorted_list_set_value(list, hazard_pointers_thread, (void*)&item_payload2->key, item2, etag_condition_check, (void*)0x42, &old_item, &insert_seq_no, false);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, set_value_result);
@@ -1406,6 +1406,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_succeeds_when_condition_
     // cleanup
     clds_sorted_list_destroy(list);
     clds_hazard_pointers_destroy(hazard_pointers);
+    CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM2, old_item);
 }
 
 static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, int32_t new_item_state, int32_t old_item_state, int* selected_item_index)
@@ -1524,7 +1525,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_OK, clds_sorted_list_delete_item(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1535,7 +1536,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_OK, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1544,13 +1545,13 @@ static int chaos_thread(void* arg)
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED, &item_index))
             {
                 CLDS_SORTED_LIST_ITEM* removed_item;
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_OK, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, removed_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1562,11 +1563,11 @@ static int chaos_thread(void* arg)
                 new_item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, new_item);
                 item_payload->key = item_index + 1;
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, chaos_test_context->items[item_index].item, &seq_no));
-            
+
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1575,7 +1576,7 @@ static int chaos_thread(void* arg)
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_NOT_USED, &item_index))
             {
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_DELETE_RESULT, CLDS_SORTED_LIST_DELETE_NOT_FOUND, clds_sorted_list_delete_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &seq_no));
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1585,7 +1586,7 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* removed_item;
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_NOT_FOUND, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1595,9 +1596,9 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NOT_NULL(found_item);
-            
+
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, found_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1607,7 +1608,7 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* found_item = clds_sorted_list_find_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1));
                 ASSERT_IS_NULL(found_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1619,13 +1620,13 @@ static int chaos_thread(void* arg)
                 chaos_test_context->items[item_index].item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, chaos_test_context->items[item_index].item);
                 item_payload->key = item_index + 1;
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no, false));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1635,13 +1636,13 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* old_item;
                 CLDS_SORTED_LIST_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no, false));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1650,17 +1651,17 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* removed_item;
                 CLDS_SORTED_LIST_ITEM* old_item;
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_OK, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), removed_item, NULL, NULL, &old_item, &seq_no, false));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 ASSERT_IS_NULL(old_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1669,12 +1670,12 @@ static int chaos_thread(void* arg)
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_LIST_ITEM_DELETING, TEST_LIST_ITEM_USED, &item_index))
             {
                 CLDS_SORTED_LIST_ITEM* removed_item;
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_OK, clds_sorted_list_remove_key(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), &removed_item, &seq_no));
                 mark_seq_no_as_used(chaos_test_context, seq_no);
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_INSERT_RESULT, CLDS_SORTED_LIST_INSERT_OK, clds_sorted_list_insert(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, removed_item, &seq_no));
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1684,13 +1685,13 @@ static int chaos_thread(void* arg)
             {
                 CLDS_SORTED_LIST_ITEM* old_item;
                 CLDS_SORTED_LIST_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_OK, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no, true));
                 mark_seq_no_as_used(chaos_test_context, seq_no);
-            
+
                 ASSERT_IS_NOT_NULL(old_item);
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, old_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
             break;
@@ -1702,11 +1703,11 @@ static int chaos_thread(void* arg)
                 new_item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
                 TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, new_item);
                 item_payload->key = item_index + 1;
-            
+
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), new_item, NULL, NULL, &old_item, &seq_no, true));
-            
+
                 CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, new_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_NOT_USED);
             }
             break;
@@ -1732,7 +1733,7 @@ static int chaos_thread(void* arg)
                 CLDS_SORTED_LIST_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
 
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, condition_check_not_met, (void*)0x42, &old_item, &seq_no, true));
- 
+
                 ASSERT_IS_NULL(old_item);
 
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
