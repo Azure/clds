@@ -1871,7 +1871,7 @@ static int chaos_thread(void* arg)
             }
             break;
 
-        case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_NOT_MET:
+            case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_NOT_MET:
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* old_item;
@@ -1881,11 +1881,13 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, condition_check_not_met, (void*)0x42, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
 
+                CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, chaos_test_context->items[item_index].item);
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
 
-        case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_ERROR:
+            case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_ERROR:
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* old_item;
@@ -1894,6 +1896,8 @@ static int chaos_thread(void* arg)
 
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_SET_VALUE_ERROR, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, condition_check_error, (void*)0x42, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
+
+                CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, chaos_test_context->items[item_index].item);
 
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }

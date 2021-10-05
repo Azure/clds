@@ -1735,6 +1735,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, condition_check_not_met, (void*)0x42, &old_item, &seq_no, true));
 
                 ASSERT_IS_NULL(old_item);
+                CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, chaos_test_context->items[item_index].item);
 
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
@@ -1748,6 +1749,7 @@ static int chaos_thread(void* arg)
                 ASSERT_ARE_EQUAL(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_ERROR, clds_sorted_list_set_value(chaos_test_context->sorted_list, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, condition_check_error, (void*)0x42, &old_item, &seq_no, true));
 
                 ASSERT_IS_NULL(old_item);
+                CLDS_SORTED_LIST_NODE_RELEASE(TEST_ITEM, chaos_test_context->items[item_index].item);
 
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_LIST_ITEM_USED);
             }
