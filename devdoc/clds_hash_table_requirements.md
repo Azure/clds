@@ -84,7 +84,8 @@ MU_DEFINE_ENUM(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT_VALU
 
 #define CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES \
     CLDS_HASH_TABLE_SET_VALUE_OK, \
-    CLDS_HASH_TABLE_SET_VALUE_ERROR
+    CLDS_HASH_TABLE_SET_VALUE_ERROR, \
+    CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET
 
 MU_DEFINE_ENUM(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 
@@ -100,7 +101,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_INSERT_RESULT, clds_hash_table_insert, CLDS_
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_DELETE_RESULT, clds_hash_table_delete_key_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM**, item, int64_t*, sequence_number);
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM***, items, uint64_t*, item_count);
@@ -342,7 +343,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 ### clds_hash_table_set_value
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
 ```
 
 **S_R_S_CLDS_HASH_TABLE_01_077: [** `clds_hash_table_set_value` shall set a key value in the hash table and on success it shall return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
@@ -379,21 +380,25 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value,
 
 - **SRS_CLDS_HASH_TABLE_01_109: [** If the key is not found, `clds_hash_table_set_value` shall advance to the next level of buckets. **]**
 
-- **SRS_CLDS_HASH_TABLE_01_110: [** If the key is found, `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` with the `key`, `new_item` and `old_item` and `only_if_exists` set to `true`. **]**
+- **SRS_CLDS_HASH_TABLE_01_110: [** If the key is found, `clds_hash_table_set_value` shall call `clds_sorted_list_set_value` with the `key`, `new_item`, `condition_check_func`, `condition_check_context` and `old_item` and `only_if_exists` set to `true`. **]**
 
   - **SRS_CLDS_HASH_TABLE_01_111: [** If `clds_sorted_list_set_value` fails, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
+
+  - **SRS_CLDS_HASH_TABLE_04_001: [** If `clds_sorted_list_set_value` returns `CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET`. **]**
 
   - **SRS_CLDS_HASH_TABLE_01_112: [** If `clds_sorted_list_set_value` succeeds, `clds_hash_table_set_value` shall return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
 
 **SRS_CLDS_HASH_TABLE_01_102: [** If the key is not found in any of the non top level buckets arrays, `clds_hash_table_set_value`: **]**
 
-- **SRS_CLDS_HASH_TABLE_01_103: [** `clds_hash_table_set_value` shall obtain the sorted list at the bucked corresponding to the hash of the key. **]**
+- **SRS_CLDS_HASH_TABLE_01_103: [** `clds_hash_table_set_value` shall obtain the sorted list at the bucket corresponding to the hash of the key. **]**
 
 - **SRS_CLDS_HASH_TABLE_01_104: [**  If no list exists at the designated bucket, one shall be created. **]**
 
-- **SRS_CLDS_HASH_TABLE_01_105: [** `clds_hash_table_set_value` shall call `clds_hash_table_set_value` on the top level bucket array, passing `key`, `new_item`, `old_item` and `only_if_exists` set to `false`. **]**
+- **SRS_CLDS_HASH_TABLE_01_105: [** `clds_hash_table_set_value` shall call `clds_hash_table_set_value` on the top level bucket array, passing `key`, `new_item`, `condition_check_func`, `condition_check_context`, `old_item` and `only_if_exists` set to `false`. **]**
 
 - **SRS_CLDS_HASH_TABLE_01_099: [** If `clds_sorted_list_set_value` returns `CLDS_SORTED_LIST_SET_VALUE_OK`, `clds_hash_table_set_value` shall succeed and return `CLDS_HASH_TABLE_SET_VALUE_OK`. **]**
+
+- **SRS_CLDS_HASH_TABLE_04_002: [** If `clds_sorted_list_set_value` returns `CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET`, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET`. **]**
 
 - **SRS_CLDS_HASH_TABLE_01_100: [** If `clds_sorted_list_set_value` returns any other value, `clds_hash_table_set_value` shall fail and return `CLDS_HASH_TABLE_SET_VALUE_ERROR`. **]**
 

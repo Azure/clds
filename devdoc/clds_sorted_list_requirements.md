@@ -61,10 +61,18 @@ typedef struct CLDS_SORTED_LIST_TAG* CLDS_SORTED_LIST_HANDLE;
 
 struct CLDS_SORTED_LIST_ITEM_TAG;
 
+#define CLDS_CONDITION_CHECK_RESULT_VALUES \
+    CLDS_CONDITION_CHECK_OK, \
+    CLDS_CONDITION_CHECK_ERROR, \
+    CLDS_CONDITION_CHECK_NOT_MET
+
+MU_DEFINE_ENUM(CLDS_CONDITION_CHECK_RESULT, CLDS_CONDITION_CHECK_RESULT_VALUES);
+
 typedef void*(*SORTED_LIST_GET_ITEM_KEY_CB)(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 typedef int(*SORTED_LIST_KEY_COMPARE_CB)(void* context, void* key1, void* key2);
 typedef void(*SORTED_LIST_ITEM_CLEANUP_CB)(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 typedef void(*SORTED_LIST_SKIPPED_SEQ_NO_CB)(void* context, int64_t skipped_sequence_no);
+typedef CLDS_CONDITION_CHECK_RESULT (*CONDITION_CHECK_CB)(void* context, void* new_key, void* old_key);
 
 // this is the structure needed for one sorted list item
 // it contains information like ref count, next pointer, etc.
@@ -74,8 +82,7 @@ typedef struct CLDS_SORTED_LIST_ITEM_TAG
     volatile_atomic int32_t ref_count;
     SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
-    volatile_atomic struct CLDS_SORTED_LIST_ITEM_TAG* next;
-    int64_t seq_no;
+    struct CLDS_SORTED_LIST_ITEM_TAG* volatile_atomic next;
 } CLDS_SORTED_LIST_ITEM;
 
 // these are macros that help declaring a type that can be stored in the sorted list
@@ -121,7 +128,9 @@ MU_DEFINE_ENUM(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VA
 
 #define CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES \
     CLDS_SORTED_LIST_SET_VALUE_OK, \
-    CLDS_SORTED_LIST_SET_VALUE_ERROR
+    CLDS_SORTED_LIST_SET_VALUE_ERROR, \
+    CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, \
+    CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET
 
 MU_DEFINE_ENUM(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
 
@@ -149,7 +158,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM**, item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
 
 // Helpers to take a snapshot of the list
 MOCKABLE_FUNCTION(, void, clds_sorted_list_lock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
@@ -392,8 +401,14 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORT
 ### clds_sorted_list_set_value
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
 ```
+
+The `condition_check_func` callback can be used by callers to influence whether an existing value will be replaced or not based on some arbitrary user defined condition. The user supplied callback is provided with the existing key in the hash table and the key that was passed in to this function. The callback must return one of:
+
+- `CLDS_CONDITION_CHECK_OK` - The hash table must go ahead with trying to replace the value.
+- `CLDS_CONDITION_CHECK_ERROR` - Something failed during condition check. Hash table must fail with an error code.
+- `CLDS_CONDITION_CHECK_NOT_MET` - Condition check failed. Hash table must fail with an error code that indicates that condition check failed.
 
 **SRS_CLDS_SORTED_LIST_01_080: [** `clds_sorted_list_set_value` shall replace in the list the item that matches the criteria given by the compare function passed to `clds_sorted_list_create` with `new_item` and on success it shall return `CLDS_SORTED_LIST_SET_VALUE_OK`. **]**
 
@@ -424,6 +439,14 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_valu
 **SRS_CLDS_SORTED_LIST_01_093: [** If the `key` entry does not exist and `only_if_exists` is `true`, `clds_sorted_list_set_value` shall return `CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND`. **]**
 
 **SRS_CLDS_SORTED_LIST_01_088: [** If the `key` entry exists in the list, its value shall be replaced with `new_item`. **]**
+
+**SRS_CLDS_SORTED_LIST_04_001: [** If `condition_check_func` is not `NULL` it shall be called passing `condition_check_context` and the new and old keys. **]**
+
+ - **SRS_CLDS_SORTED_LIST_04_002: [** If `condition_check_func` returns `CLDS_CONDITION_CHECK_ERROR` then `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_ERROR`. **]**
+
+ - **SRS_CLDS_SORTED_LIST_04_003: [** If `condition_check_func` returns `CLDS_CONDITION_CHECK_NOT_MET` then `clds_sorted_list_set_value` shall fail and return `CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET`. **]**
+
+ - **SRS_CLDS_SORTED_LIST_04_004: [** If `condition_check_func` returns `CLDS_CONDITION_CHECK_OK` then `clds_sorted_list_set_value` continues. **]**
 
 **SRS_CLDS_SORTED_LIST_01_089: [** The previous value shall be returned in `old_item`. **]**
 

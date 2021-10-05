@@ -24,10 +24,18 @@ typedef struct CLDS_SORTED_LIST_TAG* CLDS_SORTED_LIST_HANDLE;
 
 struct CLDS_SORTED_LIST_ITEM_TAG;
 
+#define CLDS_CONDITION_CHECK_RESULT_VALUES \
+    CLDS_CONDITION_CHECK_OK, \
+    CLDS_CONDITION_CHECK_ERROR, \
+    CLDS_CONDITION_CHECK_NOT_MET
+
+MU_DEFINE_ENUM(CLDS_CONDITION_CHECK_RESULT, CLDS_CONDITION_CHECK_RESULT_VALUES);
+
 typedef void*(*SORTED_LIST_GET_ITEM_KEY_CB)(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 typedef int(*SORTED_LIST_KEY_COMPARE_CB)(void* context, void* key1, void* key2);
 typedef void(*SORTED_LIST_ITEM_CLEANUP_CB)(void* context, struct CLDS_SORTED_LIST_ITEM_TAG* item);
 typedef void(*SORTED_LIST_SKIPPED_SEQ_NO_CB)(void* context, int64_t skipped_sequence_no);
+typedef CLDS_CONDITION_CHECK_RESULT (*CONDITION_CHECK_CB)(void* context, void* new_key, void* old_key);
 
 // this is the structure needed for one sorted list item
 // it contains information like ref count, next pointer, etc.
@@ -84,7 +92,8 @@ MU_DEFINE_ENUM(CLDS_SORTED_LIST_REMOVE_RESULT, CLDS_SORTED_LIST_REMOVE_RESULT_VA
 #define CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES \
     CLDS_SORTED_LIST_SET_VALUE_OK, \
     CLDS_SORTED_LIST_SET_VALUE_ERROR, \
-    CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND
+    CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, \
+    CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET
 
 MU_DEFINE_ENUM(CLDS_SORTED_LIST_SET_VALUE_RESULT, CLDS_SORTED_LIST_SET_VALUE_RESULT_VALUES);
 
@@ -112,7 +121,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_item
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_DELETE_RESULT, clds_sorted_list_delete_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_REMOVE_RESULT, clds_sorted_list_remove_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM**, item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_find_key, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_value, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_SORTED_LIST_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_SORTED_LIST_ITEM**, old_item, int64_t*, sequence_number, bool, only_if_exists);
 
 // Helpers to take a snapshot of the list
 MOCKABLE_FUNCTION(, void, clds_sorted_list_lock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);

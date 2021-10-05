@@ -797,7 +797,7 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
     return result;
 }
 
-CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* new_item, CLDS_HASH_TABLE_ITEM** old_item, int64_t* sequence_number)
+CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* new_item, CONDITION_CHECK_CB condition_check_func, void* condition_check_context, CLDS_HASH_TABLE_ITEM** old_item, int64_t* sequence_number)
 {
     CLDS_HASH_TABLE_SET_VALUE_RESULT result;
 
@@ -816,8 +816,8 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         ((sequence_number != NULL) && (clds_hash_table->sequence_number == NULL))
         )
     {
-        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* new_item=%p, CLDS_HASH_TABLE_ITEM** old_item=%p, int64_t* sequence_number=%p",
-            clds_hash_table, key, clds_hazard_pointers_thread, new_item, old_item, sequence_number);
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* new_item=%p, CONDITION_CHECK_CB condition_check_func=%p, void* condition_check_context=%p, CLDS_HASH_TABLE_ITEM** old_item=%p, int64_t* sequence_number=%p",
+            clds_hash_table, key, clds_hazard_pointers_thread, new_item, condition_check_func, condition_check_context, old_item, sequence_number);
         result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
     }
     else
@@ -877,8 +877,8 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, new_item);
                     hash_table_item->key = key;
 
-                    /* Codes_SRS_CLDS_HASH_TABLE_01_110: [ If the key is found, clds_hash_table_set_value shall call clds_sorted_list_set_value with the key, new_item and old_item and only_if_exists set to true. ]*/
-                    CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value_result = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number, true);
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_110: [ If the key is found, clds_hash_table_set_value shall call clds_sorted_list_set_value with the key, new_item, condition_check_func, condition_check_context and old_item and only_if_exists set to true. ]*/
+                    CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value_result = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, condition_check_func, condition_check_context, (void*)old_item, sequence_number, true);
                     switch (sorted_list_set_value_result)
                     {
                     default:
@@ -891,6 +891,12 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     case CLDS_SORTED_LIST_SET_VALUE_OK:
                         /* Codes_SRS_CLDS_HASH_TABLE_01_112: [ If clds_sorted_list_set_value succeeds, clds_hash_table_set_value shall return CLDS_HASH_TABLE_SET_VALUE_OK. ]*/
                         result = CLDS_HASH_TABLE_SET_VALUE_OK;
+                        set_value_in_top_level = false;
+                        break;
+                    
+                    case CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET:
+                        /* Codes_SRS_CLDS_HASH_TABLE_04_001: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET. ]*/
+                        result = CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET;
                         set_value_in_top_level = false;
                         break;
 
@@ -920,7 +926,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 
             do
             {
-                /* Codes_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucked corresponding to the hash of the key. ]*/
+                /* Codes_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucket corresponding to the hash of the key. ]*/
                 // do we have a list here or do we create one?
                 bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
@@ -967,12 +973,18 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
 
                 hash_table_item->key = key;
 
-                /* Codes_SRS_CLDS_HASH_TABLE_01_105: [ clds_hash_table_set_value shall call clds_hash_table_set_value on the top level bucket array, passing key, new_item, old_item and only_if_exists set to false. ]*/
-                CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, (void*)old_item, sequence_number, false);
-                if (sorted_list_set_value != CLDS_SORTED_LIST_SET_VALUE_OK)
+                /* Codes_SRS_CLDS_HASH_TABLE_01_105: [ clds_hash_table_set_value shall call clds_hash_table_set_value on the top level bucket array, passing key, new_item, condition_check_func, condition_check_context, old_item and only_if_exists set to false. ]*/
+                CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_set_value = clds_sorted_list_set_value(bucket_list, clds_hazard_pointers_thread, key, (void*)new_item, condition_check_func, condition_check_context, (void*)old_item, sequence_number, false);
+                if (sorted_list_set_value == CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET)
+                {
+                    /* Codes_SRS_CLDS_HASH_TABLE_04_002: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET. ]*/
+                    LogError("Condition not met during set value - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_set_value));
+                    result = CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET;
+                }
+                else if (sorted_list_set_value != CLDS_SORTED_LIST_SET_VALUE_OK)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_100: [ If clds_sorted_list_set_value returns any other value, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
-                    LogError("Cannot set key in sorted list");
+                    LogError("Cannot set key in sorted list - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_set_value));
                     result = CLDS_HASH_TABLE_SET_VALUE_ERROR;
                 }
                 else
