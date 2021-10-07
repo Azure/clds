@@ -1,6 +1,14 @@
 name: $(BuildID)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 resources:
-- repo: self
+  repositories:
+    - repository: self
+      clean: true
+
+    - repository: c-build-tools
+      type: github
+      name: Azure/c-build-tools
+      endpoint: "MessagingStore GitHub connection"
+
 jobs:
 - job: windowsx64debug
   displayName: 'Build Windows x64 Debug'
@@ -54,6 +62,11 @@ jobs:
       platform: x64
       configuration: Debug
       maximumCpuCount: true
+
+  - template: build\templates\real_check.yml@c-build-tools
+    parameters:
+      lib: 'build_x64\Debug\clds.lib'
+      reals_lib: 'build_x64\tests\reals\Debug\clds_reals.lib'
 
   - task: CmdLine@1
     displayName: 'Run ctest'
