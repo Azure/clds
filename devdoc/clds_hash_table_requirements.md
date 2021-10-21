@@ -468,8 +468,6 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, C
 
  - **SRS_CLDS_HASH_TABLE_42_022: [** If the addition of the list count causes overflow then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`. **]**
 
-**SRS_CLDS_HASH_TABLE_42_062: [** If the number of items multiplied by the size of `CLDS_HASH_TABLE_ITEM` exceeds `SIZE_MAX` then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`. **]**
-
 **SRS_CLDS_HASH_TABLE_42_064: [** If there are no items then `clds_hash_table_snapshot` shall set `items` to `NULL` and `item_count` to `0` and return `CLDS_HASH_TABLE_SNAPSHOT_OK`. **]**
 
 **SRS_CLDS_HASH_TABLE_42_023: [** `clds_hash_table_snapshot` shall allocate an array of `CLDS_HASH_TABLE_ITEM*` **]**

@@ -141,7 +141,7 @@ static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
     while (interlocked_add(&first_bucket_array->item_count, 0) >= bucket_count)
     {
         // allocate a new bucket array
-        BUCKET_ARRAY* new_bucket_array = (BUCKET_ARRAY*)malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SORTED_LIST_HANDLE) * bucket_count * 2));
+        BUCKET_ARRAY* new_bucket_array = malloc_flex(sizeof(BUCKET_ARRAY), bucket_count, sizeof(CLDS_SORTED_LIST_HANDLE) * 2);
         if (new_bucket_array == NULL)
         {
             // cannot allocate new bucket, will stick to what we have, but do not fail
@@ -219,10 +219,11 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
         else
         {
             /* Codes_SRS_CLDS_HASH_TABLE_01_027: [ The hash table shall maintain a list of arrays of buckets, so that it can be resized as needed. ]*/
-            clds_hash_table->first_hash_table = malloc(sizeof(BUCKET_ARRAY) + (sizeof(CLDS_SORTED_LIST_HANDLE) * initial_bucket_size));
+            clds_hash_table->first_hash_table = malloc_flex(sizeof(BUCKET_ARRAY), initial_bucket_size, sizeof(CLDS_SORTED_LIST_HANDLE));
             if (clds_hash_table->first_hash_table == NULL)
             {
-                LogError("Cannot allocate memory for hash table array");
+                LogError("Cannot allocate memory for hash table array. Failure in malloc_flex(sizeof(BUCKET_ARRAY)=%zu, initial_bucket_size=%zu, sizeof(CLDS_SORTED_LIST_HANDLE)=%zu);",
+                    sizeof(BUCKET_ARRAY), initial_bucket_size, sizeof(CLDS_SORTED_LIST_HANDLE));
             }
             else
             {
@@ -1177,12 +1178,6 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         {
             result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
         }
-        else if (temp_item_count > SIZE_MAX / sizeof(CLDS_SORTED_LIST_ITEM*))
-        {
-            /* Codes_SRS_CLDS_HASH_TABLE_42_062: [ If the number of items multiplied by the size of CLDS_HASH_TABLE_ITEM exceeds SIZE_MAX then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-            LogError("Unable to allocate array of %" PRIu64 " items, requires more than %zu bytes", temp_item_count, SIZE_MAX);
-            result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
-        }
         else
         {
             if (temp_item_count == 0)
@@ -1195,12 +1190,13 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
             else
             {
                 /* Codes_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
-                CLDS_SORTED_LIST_ITEM** items_to_return = malloc(sizeof(CLDS_SORTED_LIST_ITEM*) * (size_t)temp_item_count);
+                CLDS_SORTED_LIST_ITEM** items_to_return = malloc_2((size_t)temp_item_count, sizeof(CLDS_SORTED_LIST_ITEM*));
 
                 if (items_to_return == NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-                    LogError("malloc(%zu) failed for the items to return", sizeof(CLDS_SORTED_LIST_ITEM*) * (size_t)temp_item_count);
+                    LogError("malloc_2((size_t)temp_item_count=%zu, sizeof(CLDS_SORTED_LIST_ITEM*)=%zu) failed for the items to return",
+                        (size_t)temp_item_count, sizeof(CLDS_SORTED_LIST_ITEM*));
                     result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
                 }
                 else
@@ -1331,7 +1327,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_node_create(size_t node_size, HASH_TABLE_I
 
     if (result == NULL)
     {
-        LogError("malloc failed");
+        LogError("malloc(node_size=%zu) failed", node_size);
     }
     else
     {

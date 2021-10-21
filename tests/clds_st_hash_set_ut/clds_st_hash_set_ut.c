@@ -117,7 +117,7 @@ TEST_FUNCTION(clds_st_hash_set_create_succeeds)
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(1024, sizeof(void*)));
 
     // act
     st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1024);
@@ -138,7 +138,7 @@ TEST_FUNCTION(clds_st_hash_set_create_with_bucket_size_1_succeeds)
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(1, sizeof(void*)));
 
     // act
     st_hash_set = clds_st_hash_set_create(test_compute_hash, test_key_compare, 1);
@@ -219,7 +219,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_bucket_array_fails_clds_st_hash_set
     CLDS_ST_HASH_SET_HANDLE st_hash_set;
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
+    STRICT_EXPECTED_CALL(malloc_2(1, sizeof(void*)))
         .SetReturn(NULL);
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 

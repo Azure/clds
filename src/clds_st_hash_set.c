@@ -45,7 +45,7 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
     else
     {
         /* Codes_SRS_CLDS_ST_HASH_SET_01_001: [ clds_st_hash_set_create shall create a new hash set object and on success it shall return a non-NULL handle to the newly created hash set. ]*/
-        clds_st_hash_set = (CLDS_ST_HASH_SET_HANDLE)malloc(sizeof(CLDS_ST_HASH_SET));
+        clds_st_hash_set = malloc(sizeof(CLDS_ST_HASH_SET));
         if (clds_st_hash_set == NULL)
         {
             /* Codes_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, clds_st_hash_set_create shall fail and return NULL. ]*/
@@ -54,11 +54,12 @@ CLDS_ST_HASH_SET_HANDLE clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FU
         else
         {
             /* Codes_SRS_CLDS_ST_HASH_SET_01_022: [ clds_st_hash_set_create shall allocate memory for the array of buckets used to store the hash set data. ]*/
-            clds_st_hash_set->hash_set = malloc(sizeof(void*) * bucket_size);
+            clds_st_hash_set->hash_set = malloc_2(bucket_size, sizeof(void*));
             if (clds_st_hash_set->hash_set == NULL)
             {
                 /* Codes_SRS_CLDS_ST_HASH_SET_01_002: [ If any error happens, clds_st_hash_set_create shall fail and return NULL. ]*/
-                LogError("Cannot allocate memory for hash set array");
+                LogError("Cannot allocate memory for hash set array, malloc_2(bucket_size=%zu, sizeof(void*)=%zu);",
+                    bucket_size, sizeof(void*));
             }
             else
             {
