@@ -13,15 +13,6 @@
 #include "testrunnerswitcher.h"
 
 #include "real_gballoc_ll.h"
-void* real_malloc(size_t size)
-{
-    return real_gballoc_ll_malloc(size);
-}
-
-void real_free(void* ptr)
-{
-    real_gballoc_ll_free(ptr);
-}
 
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_stdint.h"
@@ -217,7 +208,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
@@ -243,7 +234,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_skipped_seq_no_cb)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
@@ -268,7 +259,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds_with_NULL_sequence_number_and_skip
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, NULL, NULL, NULL);
@@ -332,7 +323,7 @@ TEST_FUNCTION(when_allocating_memory_for_the_hash_table_array_fails_clds_hash_ta
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG))
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG))
         .SetReturn(NULL);
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
@@ -427,10 +418,10 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_the_same_hazard_pointer_instan
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     // act
     hash_table_1 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, NULL, NULL, NULL);
@@ -459,10 +450,10 @@ TEST_FUNCTION(two_hash_tables_can_be_created_with_different_hazard_pointer_insta
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     // act
     hash_table_1 = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers_1, NULL, NULL, NULL);
@@ -490,7 +481,7 @@ TEST_FUNCTION(clds_hash_table_create_with_initial_size_2_succeeds)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 2, IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, NULL, NULL, NULL);
@@ -514,7 +505,7 @@ TEST_FUNCTION(clds_hash_table_create_with_non_NULL_start_sequence_number_succeed
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, 1, IGNORED_ARG));
 
     // act
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &sequence_number, NULL, NULL);
@@ -861,7 +852,7 @@ TEST_FUNCTION(clds_hash_table_insert_when_the_number_of_items_reaches_number_of_
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
     STRICT_EXPECTED_CALL(clds_hazard_pointers_release(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash((void*)0x2));
     STRICT_EXPECTED_CALL(clds_sorted_list_find_key(IGNORED_ARG, hazard_pointers_thread, (void*)0x2));
     STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
@@ -3298,7 +3289,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
     STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
@@ -3366,7 +3357,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
     STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
@@ -3461,7 +3452,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
         STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
@@ -3563,7 +3554,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
         STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
@@ -3645,7 +3636,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
     STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
@@ -3706,7 +3697,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
         STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
@@ -3775,7 +3766,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
         STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG));
     }
 
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
@@ -3830,54 +3821,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_overflow)
 
     uint64_t mocked_item_count_1 = UINT64_MAX / 2 + 1;
     uint64_t mocked_item_count_2 = UINT64_MAX / 2 + 1;
-
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))
-        .CopyOutArgumentBuffer_item_count(&mocked_item_count_1, sizeof(mocked_item_count_1));
-
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))
-        .CopyOutArgumentBuffer_item_count(&mocked_item_count_2, sizeof(mocked_item_count_2));
-
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
-
-    // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
-
-    // cleanup
-    clds_hash_table_destroy(hash_table);
-    clds_hazard_pointers_destroy(hazard_pointers);
-}
-
-/* Tests_SRS_CLDS_HASH_TABLE_42_062: [ If the number of items multiplied by the size of CLDS_HASH_TABLE_ITEM exceeds SIZE_MAX then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_cause_multiplication_overflow_in_computing_byte_size)
-{
-    // arrange
-    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    CLDS_HASH_TABLE_HANDLE hash_table;
-    volatile_atomic int64_t start_seq_no;
-    (void)interlocked_exchange_64(&start_seq_no, 0);
-    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
-
-    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item_1, NULL);
-
-    CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
-    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x2, item_2, NULL);
-
-    umock_c_reset_all_calls();
-
-    CLDS_HASH_TABLE_ITEM** items;
-    uint64_t item_count;
-
-    uint64_t mocked_item_count_1 = SIZE_MAX / sizeof(void*);
-    uint64_t mocked_item_count_2 = 1;
 
     STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, hazard_pointers_thread, IGNORED_ARG))

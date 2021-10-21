@@ -432,7 +432,7 @@ void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
     }
     else
     {
-        CLDS_RECLAIM_LIST_ENTRY* reclaim_list_entry = (CLDS_RECLAIM_LIST_ENTRY*)malloc(sizeof(CLDS_RECLAIM_LIST_ENTRY));
+        CLDS_RECLAIM_LIST_ENTRY* reclaim_list_entry = malloc(sizeof(CLDS_RECLAIM_LIST_ENTRY));
         if (reclaim_list_entry == NULL)
         {
             // oops, panic now!

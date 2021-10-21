@@ -540,7 +540,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
     void* result = malloc(node_size);
     if (result == NULL)
     {
-        LogError("malloc failed");
+        LogError("malloc(node_size=%zu) failed", node_size);
     }
     else
     {
