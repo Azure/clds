@@ -11,8 +11,9 @@
 #include "c_pal/timer.h"
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
+#include "c_pal/uuid.h"
 
-#include "c_util/uuid.h"
+#include "c_util/uuid_string.h"
 
 #include "clds/clds_hash_table.h"
 
@@ -189,14 +190,14 @@ int clds_hash_table_perf_main(void)
                         else
                         {
                             UUID_T uuid;
-                            if (UUID_generate(&uuid) != 0)
+                            if (uuid_produce(uuid) != 0)
                             {
                                 LogError("Cannot get uuid");
                                 break;
                             }
                             else
                             {
-                                char* uuid_string = UUID_to_string(&uuid);
+                                char* uuid_string = uuid_to_string(uuid);
                                 if (uuid_string == NULL)
                                 {
                                     LogError("Cannot get uuid string");

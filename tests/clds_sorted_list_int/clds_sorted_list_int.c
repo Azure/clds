@@ -22,9 +22,10 @@
 #include "c_pal/threadapi.h"
 #include "c_pal/interlocked.h"
 #include "c_pal/sync.h"
+#include "c_pal/uuid.h"
 
 #include "c_util/interlocked_hl.h"
-#include "c_util/uuid.h"
+#include "c_util/uuid_string.h"
 
 #include "clds/clds_hazard_pointers.h"
 
@@ -1344,12 +1345,12 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_fails_when_condition_che
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM2, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM2* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM2, item);
     item_payload->key.key = 0x42;
-    ASSERT_ARE_EQUAL(int, 0, UUID_generate(&item_payload->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(item_payload->key.etag));
 
     CLDS_SORTED_LIST_ITEM* item2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM2, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM2* item_payload2 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM2, item2);
     item_payload2->key.key = 0x42;
-    ASSERT_ARE_EQUAL(int, 0, UUID_generate(&item_payload2->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(item_payload2->key.etag));
 
     list = clds_sorted_list_create(hazard_pointers, test_get_item2_key, NULL, test_key_compare2, (void*)0x4243, &sequence_number, test_skipped_seq_no_cb, (void*)0x5556);
     ASSERT_IS_NOT_NULL(list);
@@ -1382,7 +1383,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_with_same_item_succeeds_when_condition_
     CLDS_SORTED_LIST_ITEM* item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM2, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM2* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM2, item);
     item_payload->key.key = 0x42;
-    ASSERT_ARE_EQUAL(int, 0, UUID_generate(&item_payload->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(item_payload->key.etag));
 
     CLDS_SORTED_LIST_ITEM* item2 = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM2, test_item_cleanup_func, (void*)0x4242);
     TEST_ITEM2* item_payload2 = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM2, item2);
