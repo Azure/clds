@@ -17,8 +17,9 @@
 
 #include "c_pal/interlocked.h"
 #include "c_pal/sync.h"
+#include "c_pal/uuid.h"
+
 #include "c_util/interlocked_hl.h"
-#include "c_util/uuid.h"
 
 #include "c_logging/xlogging.h"
 
@@ -1438,7 +1439,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_succeeds)
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM2, NULL, NULL);
     TEST_ITEM2* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM2, item);
     test_item->key.key = 0;
-    ASSERT_ARE_EQUAL(int, 0, UUID_generate(&test_item->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(test_item->key.etag));
 
     int64_t insert_seq_no;
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)&test_item->key, item, &insert_seq_no);
@@ -1472,7 +1473,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM2, NULL, NULL);
     TEST_ITEM2* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM2, item);
     test_item->key.key = 0;
-    ASSERT_ARE_EQUAL(int, 0, UUID_generate(&test_item->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(test_item->key.etag));
 
     int64_t insert_seq_no;
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)&test_item->key, item, &insert_seq_no);
@@ -1484,7 +1485,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
     CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM2, NULL, NULL);
     TEST_ITEM2* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM2, item2);
     test_item2->key.key = 0;
-    ASSERT_ARE_EQUAL(int, 0, UUID_generate(&test_item2->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(test_item2->key.etag));
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)&test_item2->key, item2, etag_condition_check, (void*)0x42, &old_item, &insert_seq_no);
 
     // assert
