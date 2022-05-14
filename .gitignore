@@ -6,8 +6,7 @@
 **/obj/*
 **/[Dd]ebug/*
 **/[Rr]elease/*
-**/[Cc]make/
+[Cc]make*/
 **/packages/*
 **/.vs/*
-cmake*/
 .vscode/*
