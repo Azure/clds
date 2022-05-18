@@ -74,7 +74,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
         do
         {
             // get the current_item value
-            CLDS_SINGLY_LINKED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, NULL, NULL);
+            CLDS_SINGLY_LINKED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer(current_item_address, NULL, NULL);
             if ((void*)((uintptr_t)current_item & (~0x1)) == NULL)
             {
                 if (previous_hp != NULL)
@@ -110,7 +110,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                 else
                 {
                     // now make sure the item has not changed
-                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, (void*)current_item, (void*)current_item) != (void*)((uintptr_t)current_item & ~0x1))
+                    if (interlocked_compare_exchange_pointer(current_item_address, current_item, current_item) != (void*)((uintptr_t)current_item & ~0x1))
                     {
                         if (previous_hp != NULL)
                         {
@@ -163,7 +163,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                                 if (previous_item == NULL)
                                 {
                                     // we are removing the head
-                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_singly_linked_list->head, (void*)current_next, (void*)current_item) != (void*)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_singly_linked_list->head, current_next, current_item) != current_item)
                                     {
                                         // head changed, restart
                                         (void)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 1));
@@ -192,7 +192,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                                 }
                                 else
                                 {
-                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, (void*)current_next, (void*)current_item) != (void*)current_item)
+                                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&previous_item->next, current_next, current_item) != current_item)
                                     {
                                         // someone is deleting our left node, restart, but first unlock our own delete mark
                                         (void)interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_item->next, (void*)current_next, (void*)((uintptr_t)current_next | 1));
@@ -258,7 +258,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
     else
     {
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_001: [ clds_singly_linked_list_create shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-        clds_singly_linked_list = (CLDS_SINGLY_LINKED_LIST_HANDLE)malloc(sizeof(CLDS_SINGLY_LINKED_LIST));
+        clds_singly_linked_list = malloc(sizeof(CLDS_SINGLY_LINKED_LIST));
         if (clds_singly_linked_list == NULL)
         {
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_002: [ If any error happens, clds_singly_linked_list_create shall fail and return NULL. ]*/
@@ -476,7 +476,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                     else
                     {
                         // now make sure the item has not changed
-                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, (void*)current_item, (void*)current_item) != (void*)((uintptr_t)current_item & ~0x1))
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, current_item, current_item) != (void*)((uintptr_t)current_item & ~0x1))
                         {
                             if (previous_hp != NULL)
                             {
@@ -505,7 +505,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                                 clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
                                 /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_029: [ On success clds_singly_linked_list_find shall return a non-NULL pointer to the found linked list item. ]*/
-                                result = (CLDS_SINGLY_LINKED_LIST_ITEM*)current_item;
+                                result = current_item;
                                 restart_needed = false;
                                 break;
                             }
@@ -544,7 +544,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
     }
     else
     {
-        CLDS_SINGLY_LINKED_LIST_ITEM* item = (CLDS_SINGLY_LINKED_LIST_ITEM*)((unsigned char*)result);
+        CLDS_SINGLY_LINKED_LIST_ITEM* item = result;
         item->item_cleanup_callback = item_cleanup_callback;
         item->item_cleanup_callback_context = item_cleanup_callback_context;
         (void)interlocked_exchange(&item->ref_count, 1);

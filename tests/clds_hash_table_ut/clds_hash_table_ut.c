@@ -3379,7 +3379,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
         for (original = 0; original < 10; original++)
         {
             if (!found_originals[original] &&
-                (void*)original_items[original] == (void*)items[i])
+                original_items[original] == items[i])
             {
                 found_originals[original] = true;
                 break;
@@ -3477,7 +3477,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
         for (original = 0; original < number_of_items; original++)
         {
             if (!found_originals[original] &&
-                (void*)original_items[original] == (void*)items[i])
+                original_items[original] == items[i])
             {
                 found_originals[original] = true;
                 break;
@@ -3579,7 +3579,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
         for (original = 0; original < number_of_items; original++)
         {
             if (!found_originals[original] &&
-                (void*)original_items[original] == (void*)items[i])
+                original_items[original] == items[i])
             {
                 found_originals[original] = true;
                 break;

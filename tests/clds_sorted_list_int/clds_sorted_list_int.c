@@ -274,7 +274,7 @@ static void add_sequence_no_to_map(SEQUENCE_NO_MAP* sequence_no_map, int64_t seq
 static int delete_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
     CLDS_SORTED_LIST_ITEM** items = (CLDS_SORTED_LIST_ITEM**)thread_data->context;
 
@@ -379,9 +379,9 @@ TEST_FUNCTION(clds_sorted_list_contended_delete_test)
 
 static int single_insert_thread(void* arg)
 {
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
-    CLDS_SORTED_LIST_ITEM* item = (CLDS_SORTED_LIST_ITEM*)thread_data->context;
+    CLDS_SORTED_LIST_ITEM* item = thread_data->context;
 
     int64_t insert_seq_no;
     CLDS_SORTED_LIST_INSERT_RESULT insert_result = clds_sorted_list_insert(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, item, &insert_seq_no);
@@ -464,9 +464,9 @@ TEST_FUNCTION(clds_sorted_list_insert_blocks_when_write_lock)
 
 static int single_delete_item_thread(void* arg)
 {
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
-    CLDS_SORTED_LIST_ITEM* item = (CLDS_SORTED_LIST_ITEM*)thread_data->context;
+    CLDS_SORTED_LIST_ITEM* item = thread_data->context;
 
     int64_t delete_seq_no;
     CLDS_SORTED_LIST_DELETE_RESULT delete_result = clds_sorted_list_delete_item(thread_data->sorted_list, thread_data->clds_hazard_pointers_thread, item, &delete_seq_no);
@@ -554,9 +554,9 @@ TEST_FUNCTION(clds_sorted_list_delete_item_blocks_when_write_lock)
 
 static int single_delete_key_thread(void* arg)
 {
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
-    CLDS_SORTED_LIST_ITEM* item = (CLDS_SORTED_LIST_ITEM*)thread_data->context;
+    CLDS_SORTED_LIST_ITEM* item = thread_data->context;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
 
     int64_t delete_seq_no;
@@ -645,9 +645,9 @@ TEST_FUNCTION(clds_sorted_list_delete_key_blocks_when_write_lock)
 
 static int single_remove_key_thread(void* arg)
 {
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
-    CLDS_SORTED_LIST_ITEM* item = (CLDS_SORTED_LIST_ITEM*)thread_data->context;
+    CLDS_SORTED_LIST_ITEM* item = thread_data->context;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
 
     int64_t remove_seq_no;
@@ -738,9 +738,9 @@ TEST_FUNCTION(clds_sorted_list_remove_key_blocks_when_write_lock)
 
 static int single_set_value_thread(void* arg)
 {
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
-    CLDS_SORTED_LIST_ITEM* item = (CLDS_SORTED_LIST_ITEM*)thread_data->context;
+    CLDS_SORTED_LIST_ITEM* item = thread_data->context;
     TEST_ITEM* item_payload = CLDS_SORTED_LIST_GET_VALUE(TEST_ITEM, item);
 
     CLDS_SORTED_LIST_ITEM* new_item = CLDS_SORTED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
@@ -839,7 +839,7 @@ TEST_FUNCTION(clds_sorted_list_set_value_blocks_when_write_lock)
 
 static int lock_write_thread(void* arg)
 {
-    LOCK_WRITE_THREAD_DATA* thread_data = (LOCK_WRITE_THREAD_DATA*)arg;
+    LOCK_WRITE_THREAD_DATA* thread_data = arg;
     int result;
 
     if (interlocked_add(&thread_data->lock_should_be_unblocked, 0) != 0)
@@ -1290,15 +1290,15 @@ static int test_key_compare2(void* context, void* key1, void* key2)
 {
     int result;
 
-    TEST_ITEM2_KEY* k1 = (TEST_ITEM2_KEY*)key1;
-    TEST_ITEM2_KEY* k2 = (TEST_ITEM2_KEY*)key2;
+    TEST_ITEM2_KEY* k1 = key1;
+    TEST_ITEM2_KEY* k2 = key2;
 
     (void)context;
-    if ((int64_t)k1->key < (int64_t)k2->key)
+    if (k1->key < k2->key)
     {
         result = -1;
     }
-    else if ((int64_t)k1->key > (int64_t)k2->key)
+    else if (k1->key > k2->key)
     {
         result = 1;
     }
@@ -1314,8 +1314,8 @@ static CLDS_CONDITION_CHECK_RESULT etag_condition_check(void* context, void* new
 {
     ASSERT_ARE_EQUAL(void_ptr, (void*)0x42, context);
 
-    TEST_ITEM2_KEY* item_new_key = (TEST_ITEM2_KEY*)new_key;
-    TEST_ITEM2_KEY* item_old_key = (TEST_ITEM2_KEY*)old_key;
+    TEST_ITEM2_KEY* item_new_key = new_key;
+    TEST_ITEM2_KEY* item_old_key = old_key;
     CLDS_CONDITION_CHECK_RESULT result;
 
     if (item_new_key == NULL || item_old_key == NULL)
@@ -1446,14 +1446,14 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 static void mark_seq_no_as_used(CHAOS_TEST_CONTEXT* chaos_test_context, int64_t seq_no)
 {
     (void)interlocked_increment_64(&chaos_test_context->seq_no_count);
-    SEQ_NO_STATE seq_no_state = (SEQ_NO_STATE)interlocked_compare_exchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
+    SEQ_NO_STATE seq_no_state = interlocked_compare_exchange(&chaos_test_context->seq_numbers[seq_no % TEST_SEQ_NO_QUEUE_SIZE], SEQ_NO_USED, SEQ_NO_NOT_USED);
     ASSERT_ARE_EQUAL(SEQ_NO_STATE, SEQ_NO_NOT_USED, seq_no_state, "sequence number already used at %" PRId64 "", seq_no);
     wake_by_address_single(&chaos_test_context->seq_numbers[seq_no & TEST_SEQ_NO_QUEUE_SIZE]);
 }
 
 static void test_skipped_seq_chaos(void* context, int64_t skipped_sequence_no)
 {
-    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)context;
+    CHAOS_TEST_CONTEXT* chaos_test_context = context;
     mark_seq_no_as_used(chaos_test_context, skipped_sequence_no);
 }
 
@@ -1487,15 +1487,15 @@ static CLDS_CONDITION_CHECK_RESULT condition_check_error(void* context, void* ne
 static int chaos_thread(void* arg)
 {
     int result;
-    CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)arg;
-    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)chaos_thread_data->chaos_test_context;
+    CHAOS_THREAD_DATA* chaos_thread_data = arg;
+    CHAOS_TEST_CONTEXT* chaos_test_context = chaos_thread_data->chaos_test_context;
 
     srand((unsigned int)time(NULL));
 
     while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
         // perform one of the several actions
-        CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
+        CHAOS_TEST_ACTION action = rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX;
         int item_index;
         int64_t seq_no = 0;
 
@@ -1764,7 +1764,7 @@ static int chaos_thread(void* arg)
 
 static int seq_no_clean_thread(void* arg)
 {
-    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)arg;
+    CHAOS_TEST_CONTEXT* chaos_test_context = arg;
 
     while (interlocked_add(&chaos_test_context->done, 0) != 1)
     {
@@ -1789,7 +1789,7 @@ TEST_FUNCTION(clds_sorted_list_chaos_knight_test)
 
     (void)interlocked_exchange_64(&sequence_number, 0);
 
-    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
+    CHAOS_TEST_CONTEXT* chaos_test_context = malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
     ASSERT_IS_NOT_NULL(chaos_test_context);
 
     for (i = 0; i < TEST_SEQ_NO_QUEUE_SIZE; i++)
@@ -1811,7 +1811,7 @@ TEST_FUNCTION(clds_sorted_list_chaos_knight_test)
     (void)interlocked_exchange(&chaos_test_context->done, 0);
 
     // start threads doing random things on the list
-    CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
+    CHAOS_THREAD_DATA* chaos_thread_data = malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
     ASSERT_IS_NOT_NULL(chaos_thread_data);
 
     ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&seq_no_clean_thread_handle, seq_no_clean_thread, chaos_test_context), "Error spawning sequence number clean thread");
