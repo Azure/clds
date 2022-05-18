@@ -19,7 +19,7 @@
 typedef struct CLDS_SINGLY_LINKED_LIST_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
-    volatile_atomic CLDS_SINGLY_LINKED_LIST_ITEM* head;
+    CLDS_SINGLY_LINKED_LIST_ITEM* volatile_atomic head;
 } CLDS_SINGLY_LINKED_LIST;
 
 static bool compare_item_by_ptr(void* item_compare_context, CLDS_SINGLY_LINKED_LIST_ITEM* item)
@@ -269,7 +269,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
             // all ok
             clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
 
-            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_singly_linked_list->head, NULL);
+            (void)interlocked_exchange_pointer(&clds_singly_linked_list->head, NULL);
         }
     }
 
@@ -434,7 +434,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
         {
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
             CLDS_SINGLY_LINKED_LIST_ITEM* previous_item = NULL;
-            volatile_atomic CLDS_SINGLY_LINKED_LIST_ITEM** current_item_address = &clds_singly_linked_list->head;
+            CLDS_SINGLY_LINKED_LIST_ITEM* volatile_atomic * current_item_address = &clds_singly_linked_list->head;
 
             do
             {
@@ -520,7 +520,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
 
                                 previous_hp = current_item_hp;
                                 previous_item = current_item;
-                                current_item_address = (volatile_atomic CLDS_SINGLY_LINKED_LIST_ITEM**)&current_item->next;
+                                current_item_address = &current_item->next;
                             }
                         }
                     }
@@ -548,7 +548,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
         item->item_cleanup_callback = item_cleanup_callback;
         item->item_cleanup_callback_context = item_cleanup_callback_context;
         (void)interlocked_exchange(&item->ref_count, 1);
-        (void)interlocked_exchange_pointer((void* volatile_atomic*)&item->next, NULL);
+        (void)interlocked_exchange_pointer(&item->next, NULL);
     }
 
     return result;

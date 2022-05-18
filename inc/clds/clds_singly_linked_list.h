@@ -35,7 +35,7 @@ typedef struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG
     volatile_atomic int32_t ref_count;
     SINGLY_LINKED_LIST_ITEM_CLEANUP_CB item_cleanup_callback;
     void* item_cleanup_callback_context;
-    volatile_atomic struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* next;
+    struct CLDS_SINGLY_LINKED_LIST_ITEM_TAG* volatile_atomic next;
 } CLDS_SINGLY_LINKED_LIST_ITEM;
 
 // these are macros that help declaring a type that can be stored in the singly linked list

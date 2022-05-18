@@ -27,7 +27,7 @@ MU_DEFINE_ENUM_STRINGS(CLDS_CONDITION_CHECK_RESULT, CLDS_CONDITION_CHECK_RESULT_
 typedef struct CLDS_SORTED_LIST_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
-    volatile_atomic CLDS_SORTED_LIST_ITEM* head;
+    CLDS_SORTED_LIST_ITEM* volatile_atomic head;
     SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb;
     void* get_item_key_cb_context;
     SORTED_LIST_KEY_COMPARE_CB key_compare_cb;
@@ -686,7 +686,7 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
             /* Codes_SRS_CLDS_SORTED_LIST_01_058: [ start_sequence_number shall be used by the sorted list to compute the sequence number of each operation. ]*/
             clds_sorted_list->sequence_number = start_sequence_number;
 
-            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, NULL);
+            (void)interlocked_exchange_pointer(&clds_sorted_list->head, NULL);
         }
     }
 
@@ -1130,7 +1130,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
 
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
             CLDS_SORTED_LIST_ITEM* previous_item = NULL;
-            volatile_atomic CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
+            CLDS_SORTED_LIST_ITEM* volatile_atomic * current_item_address = &clds_sorted_list->head;
 
             do
             {
@@ -1222,7 +1222,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
 
                                 previous_hp = current_item_hp;
                                 previous_item = current_item;
-                                current_item_address = (volatile_atomic CLDS_SORTED_LIST_ITEM**)&current_item->next;
+                                current_item_address = (CLDS_SORTED_LIST_ITEM** )&current_item->next;
                             }
                         }
                     }
@@ -1295,7 +1295,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
             CLDS_SORTED_LIST_ITEM* previous_item = NULL;
-            volatile_atomic CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
+             CLDS_SORTED_LIST_ITEM* volatile_atomic * current_item_address = &clds_sorted_list->head;
             result = CLDS_SORTED_LIST_SET_VALUE_ERROR;
 
             do
@@ -1717,7 +1717,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
 
                                 previous_hp = current_item_hp;
                                 previous_item = current_item;
-                                current_item_address = (volatile_atomic CLDS_SORTED_LIST_ITEM**)&current_item->next;
+                                current_item_address = &current_item->next;
                             }
                         }
                     }
@@ -1917,7 +1917,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_node_create(size_t node_size, SORTED_LIS
         item->item_cleanup_callback = item_cleanup_callback;
         item->item_cleanup_callback_context = item_cleanup_callback_context;
         (void)interlocked_exchange(&item->ref_count, 1);
-        (void)interlocked_exchange_pointer((void* volatile_atomic*)&item->next, NULL);
+        (void)interlocked_exchange_pointer(&item->next, NULL);
     }
 
     return result;
