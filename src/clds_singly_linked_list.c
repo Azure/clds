@@ -269,7 +269,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
             // all ok
             clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
 
-            (void)interlocked_exchange_pointer((void* volatile_atomic*) &clds_singly_linked_list->head, NULL);
+            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_singly_linked_list->head, NULL);
         }
     }
 
@@ -548,7 +548,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
         item->item_cleanup_callback = item_cleanup_callback;
         item->item_cleanup_callback_context = item_cleanup_callback_context;
         (void)interlocked_exchange(&item->ref_count, 1);
-        (void)interlocked_exchange_pointer((void* volatile_atomic*) &item->next, NULL);
+        (void)interlocked_exchange_pointer((void* volatile_atomic*)&item->next, NULL);
     }
 
     return result;

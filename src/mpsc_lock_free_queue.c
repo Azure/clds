@@ -76,13 +76,13 @@ int mpsc_lock_free_queue_enqueue(MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queu
             /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_014: [** Concurrent mpsc_lock_free_queue_enqueue from multiple threads shall be safe. ]*/
 
             // first get the current enqueue_head
-            MPSC_LOCK_FREE_QUEUE_ITEM* current_head = interlocked_compare_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->enqueue_head, NULL, NULL);
+            MPSC_LOCK_FREE_QUEUE_ITEM* current_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->enqueue_head, NULL, NULL);
 
             // now set the item's next to the head
             item->next = current_head;
 
             // now simply exchange the head if it has not changed in the meanwhile
-            if (interlocked_compare_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->enqueue_head, item, current_head) == current_head)
+            if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->enqueue_head, item, current_head) == current_head)
             {
                 // yay, we have inserted the item, simply bail out, we are done!
                 break;
@@ -118,17 +118,17 @@ MPSC_LOCK_FREE_QUEUE_ITEM* mpsc_lock_free_queue_dequeue(MPSC_LOCK_FREE_QUEUE_HAN
         // items. Items could be added at any rate but we do not care about that
 
         // first simply get the head of the dequeue list
-        result = interlocked_compare_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->dequeue_head, NULL, NULL);
+        result = interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->dequeue_head, NULL, NULL);
         if (result != NULL)
         {
             // simply advance the dequeue head
-            (void)interlocked_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->dequeue_head, result->next);
+            (void)interlocked_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->dequeue_head, result->next);
         }
         else
         {
             // nothing in the dequeue list, so we have to move some items from the enqueue list
             // simply set the head to NULL and grab the entire list
-            MPSC_LOCK_FREE_QUEUE_ITEM* temporary_list = interlocked_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->enqueue_head, NULL);
+            MPSC_LOCK_FREE_QUEUE_ITEM* temporary_list = interlocked_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->enqueue_head, NULL);
 
             if (temporary_list != NULL)
             {
@@ -154,7 +154,7 @@ MPSC_LOCK_FREE_QUEUE_ITEM* mpsc_lock_free_queue_dequeue(MPSC_LOCK_FREE_QUEUE_HAN
 
                 if (new_dequeue_head != NULL)
                 {
-                    (void)interlocked_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->dequeue_head, new_dequeue_head->next);
+                    (void)interlocked_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->dequeue_head, new_dequeue_head->next);
 
                     // set return to be the dequeue list head
                     /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_010: [ On success it shall return a pointer to the dequeued item. ]*/
@@ -188,12 +188,12 @@ MPSC_LOCK_FREE_QUEUE_ITEM* mpsc_lock_free_queue_peek(MPSC_LOCK_FREE_QUEUE_HANDLE
         // items. Items could be added at any rate but we do not care about that
 
         // first simply get the head of the dequeue list
-        result = interlocked_compare_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->dequeue_head, NULL, NULL);
+        result = interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->dequeue_head, NULL, NULL);
         if (result == NULL)
         {
             // nothing in the dequeue list, so we have to move some items from the enqueue list
             // simply set the head to NULL and grab the entire list
-            MPSC_LOCK_FREE_QUEUE_ITEM* temporary_list = interlocked_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->enqueue_head, NULL);
+            MPSC_LOCK_FREE_QUEUE_ITEM* temporary_list = interlocked_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->enqueue_head, NULL);
 
             if (temporary_list != NULL)
             {
@@ -217,7 +217,7 @@ MPSC_LOCK_FREE_QUEUE_ITEM* mpsc_lock_free_queue_peek(MPSC_LOCK_FREE_QUEUE_HANDLE
                 // now we got in the dequeue list 0 -> 1 -> 2
                 // just grab the head of the list
 
-                (void)interlocked_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->dequeue_head, new_dequeue_head);
+                (void)interlocked_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->dequeue_head, new_dequeue_head);
 
                 // set return to be the dequeue list head
                 /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_026: [ On success it shall return a non-NULL pointer to the peeked item. ]*/
@@ -246,14 +246,14 @@ int mpsc_lock_free_queue_is_empty(MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_que
     {
         // it is assumed that destroy is not called concurrently with is_empty
 
-        if (interlocked_compare_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->dequeue_head, NULL, NULL) != NULL)
+        if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->dequeue_head, NULL, NULL) != NULL)
         {
             /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_021: [ mpsc_lock_free_queue_is_empty shall set is_empty to false if at least one item is in the queue. ]*/
             *is_empty = false;
         }
         else
         {
-            if (interlocked_compare_exchange_pointer((void* volatile_atomic*) &mpsc_lock_free_queue->enqueue_head, NULL, NULL) != NULL)
+            if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->enqueue_head, NULL, NULL) != NULL)
             {
                 /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_021: [ mpsc_lock_free_queue_is_empty shall set is_empty to false if at least one item is in the queue. ]*/
                 *is_empty = false;

@@ -86,16 +86,16 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
         CLDS_HAZARD_POINTERS_THREAD_HANDLE current_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)clds_hazard_pointers->head, NULL, NULL);
         while (current_thread != NULL)
         {
-            CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_thread->next, NULL, NULL);
+            CLDS_HAZARD_POINTERS_THREAD_HANDLE next_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_thread->next, NULL, NULL);
             if (interlocked_add(&current_thread->active, 0) == 1)
             {
                 // look at the pointers of this thread
                 // if it gets unregistered in the meanwhile we won't care
                 // if it gets registered again we also don't care as for sure it does not have our hazard pointer anymore
-                CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_thread->pointers, NULL, NULL);
+                CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_thread->pointers, NULL, NULL);
                 while (clds_hazard_pointer != NULL)
                 {
-                    CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hazard_pointer->next, NULL, NULL);
+                    CLDS_HAZARD_POINTER_RECORD_HANDLE next_hazard_pointer = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointer->next, NULL, NULL);
                     void* node = interlocked_compare_exchange_pointer(&clds_hazard_pointer->node, NULL, NULL);
                     if (node != NULL)
                     {
