@@ -136,7 +136,7 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
 static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
 {
     // always insert in the first bucket array
-    BUCKET_ARRAY* first_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+    BUCKET_ARRAY* first_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
     int32_t bucket_count = interlocked_add(&first_bucket_array->bucket_count, 0);
     while (interlocked_add(&first_bucket_array->item_count, 0) >= bucket_count)
     {
@@ -159,11 +159,11 @@ static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
             // initialize buckets
             for (int32_t i = 0; i < bucket_count; i++)
             {
-                (void)interlocked_exchange_pointer(&new_bucket_array->hash_table[i], NULL);
+                (void)interlocked_exchange_pointer((void* volatile_atomic*) &new_bucket_array->hash_table[i], NULL);
             }
 
-            (void)interlocked_exchange_pointer(&new_bucket_array->next_bucket, first_bucket_array);
-            if (interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, new_bucket_array, first_bucket_array) == first_bucket_array)
+            (void)interlocked_exchange_pointer((void* volatile_atomic*) &new_bucket_array->next_bucket, first_bucket_array);
+            if (interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, new_bucket_array, first_bucket_array) == first_bucket_array)
             {
                 first_bucket_array = new_bucket_array;
                 break;
@@ -173,7 +173,7 @@ static BUCKET_ARRAY* get_first_bucket_array(CLDS_HASH_TABLE* clds_hash_table)
                 // first bucket array changed, drop ours and use the one that was inserted
                 free(new_bucket_array);
 
-                first_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+                first_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
                 bucket_count = interlocked_add(&first_bucket_array->bucket_count, 0);
             }
         }
@@ -243,14 +243,14 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
                 clds_hash_table->sequence_number = start_sequence_number;
 
                 // set the initial bucket count
-                (void)interlocked_exchange_pointer(&clds_hash_table->first_hash_table->next_bucket, NULL);
+                (void)interlocked_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table->next_bucket, NULL);
                 (void)interlocked_exchange(&clds_hash_table->first_hash_table->bucket_count, (int32_t)initial_bucket_size);
                 (void)interlocked_exchange(&clds_hash_table->first_hash_table->item_count, 0);
                 (void)interlocked_exchange(&clds_hash_table->first_hash_table->pending_insert_count, 0);
 
                 for (i = 0; i < initial_bucket_size; i++)
                 {
-                    (void)interlocked_exchange_pointer(&clds_hash_table->first_hash_table->hash_table[i], NULL);
+                    (void)interlocked_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table->hash_table[i], NULL);
                 }
 
                 goto all_ok;
@@ -288,17 +288,17 @@ void clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table)
     {
         int32_t i;
 
-        BUCKET_ARRAY* bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+        BUCKET_ARRAY* bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
         while (bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &bucket_array->next_bucket, NULL, NULL);
 
             /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ clds_hash_table_destroy shall free all resources associated with the hash table instance. ]*/
             for (i = 0; i < bucket_array->bucket_count; i++)
             {
                 if (bucket_array->hash_table[i] != NULL)
                 {
-                    CLDS_SORTED_LIST_HANDLE linked_list = interlocked_compare_exchange_pointer(&bucket_array->hash_table[i], NULL, NULL);
+                    CLDS_SORTED_LIST_HANDLE linked_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &bucket_array->hash_table[i], NULL, NULL);
                     if (linked_list != NULL)
                     {
                         clds_sorted_list_destroy(linked_list);
@@ -365,7 +365,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
         // check if the key exists in the lower level bucket arrays
         BUCKET_ARRAY* find_bucket_array = current_bucket_array;
-        BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&find_bucket_array->next_bucket, NULL, NULL);
+        BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &find_bucket_array->next_bucket, NULL, NULL);
 
         if (next_bucket_array != NULL)
         {
@@ -382,10 +382,10 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
         find_bucket_array = next_bucket_array;
         while (find_bucket_array != NULL)
         {
-            next_bucket_array = interlocked_compare_exchange_pointer(&find_bucket_array->next_bucket, NULL, NULL);
+            next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &find_bucket_array->next_bucket, NULL, NULL);
 
             bucket_index = hash % interlocked_add(&find_bucket_array->bucket_count, 0);
-            bucket_list = interlocked_compare_exchange_pointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
+            bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &find_bucket_array->hash_table[bucket_index], NULL, NULL);
 
             if (bucket_list != NULL)
             {
@@ -417,7 +417,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
             do
             {
                 // do we have a list here or do we create one?
-                bucket_list = interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
                     restart_needed = false;
@@ -437,7 +437,7 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
                     else
                     {
                         // now put the list in the bucket
-                        if (interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
                         {
                             // oops, someone else inserted a new list, just bail on our list and restart
                             clds_sorted_list_destroy(bucket_list);
@@ -553,17 +553,17 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete(CLDS_HASH_TABLE_HANDLE clds
 
         // always delete starting with the first bucket array
         /* Codes_SRS_CLDS_HASH_TABLE_01_101: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
-        current_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+        current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->next_bucket, NULL, NULL);
 
             if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
             {
                 // find the bucket
                 uint64_t bucket_index = hash % interlocked_add(&current_bucket_array->bucket_count, 0);
 
-                bucket_list = interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list == NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_023: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_delete shall return CLDS_HASH_TABLE_DELETE_NOT_FOUND. ]*/
@@ -649,17 +649,17 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
 
         // always insert in the first bucket array
         /*Codes_SRS_CLDS_HASH_TABLE_42_007: [ Otherwise, key shall be looked up in each of the arrays of buckets starting with the first. ]*/
-        current_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+        current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->next_bucket, NULL, NULL);
 
             if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
             {
                 // find the bucket
                 uint64_t bucket_index = hash % interlocked_add(&current_bucket_array->bucket_count, 0);
 
-                bucket_list = interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list == NULL)
                 {
                     /*Codes_SRS_CLDS_HASH_TABLE_42_008: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_delete_key_value shall return CLDS_HASH_TABLE_DELETE_NOT_FOUND. ]*/
@@ -745,17 +745,17 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
         result = CLDS_HASH_TABLE_REMOVE_NOT_FOUND;
 
         // always insert in the first bucket array
-        current_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+        current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->next_bucket, NULL, NULL);
 
             if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
             {
                 // find the bucket
                 uint64_t bucket_index = hash % interlocked_add(&current_bucket_array->bucket_count, 0);
 
-                bucket_list = interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list == NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_053: [ If the desired key is not found in the hash table (not found in any of the arrays of buckets), clds_hash_table_remove shall return CLDS_HASH_TABLE_REMOVE_NOT_FOUND. ]*/
@@ -842,7 +842,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         // increment pending inserts count
         (void)interlocked_increment(&first_bucket_array->pending_insert_count);
 
-        BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&first_bucket_array->next_bucket, NULL, NULL);
+        BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &first_bucket_array->next_bucket, NULL, NULL);
         if (next_bucket_array != NULL)
         {
             // wait for all outstanding inserts in the lower levels to complete
@@ -862,10 +862,10 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
         BUCKET_ARRAY* find_bucket_array = next_bucket_array;
         while (find_bucket_array != NULL)
         {
-            next_bucket_array = interlocked_compare_exchange_pointer(&find_bucket_array->next_bucket, NULL, NULL);
+            next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &find_bucket_array->next_bucket, NULL, NULL);
 
             bucket_index = hash % interlocked_add(&find_bucket_array->bucket_count, 0);
-            bucket_list = interlocked_compare_exchange_pointer(&find_bucket_array->hash_table[bucket_index], NULL, NULL);
+            bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &find_bucket_array->hash_table[bucket_index], NULL, NULL);
 
             if (bucket_list != NULL)
             {
@@ -929,7 +929,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
             {
                 /* Codes_SRS_CLDS_HASH_TABLE_01_103: [ clds_hash_table_set_value shall obtain the sorted list at the bucket corresponding to the hash of the key. ]*/
                 // do we have a list here or do we create one?
-                bucket_list = interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
                     restart_needed = false;
@@ -948,7 +948,7 @@ CLDS_HASH_TABLE_SET_VALUE_RESULT clds_hash_table_set_value(CLDS_HASH_TABLE_HANDL
                     else
                     {
                         // now put the list in the bucket
-                        if (interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
+                        if (interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], bucket_list, NULL) != NULL)
                         {
                             // oops, someone else inserted a new list, just bail on our list and restart
                             clds_sorted_list_destroy(bucket_list);
@@ -1038,10 +1038,10 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
         uint64_t hash = clds_hash_table->compute_hash(key);
 
         /* Codes_SRS_CLDS_HASH_TABLE_01_041: [ clds_hash_table_find shall look up the key in the biggest array of buckets. ]*/
-        BUCKET_ARRAY* current_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+        BUCKET_ARRAY* current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->next_bucket, NULL, NULL);
 
             if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
             {
@@ -1049,7 +1049,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
                 /* Codes_SRS_CLDS_HASH_TABLE_01_044: [ Looking up the key in the array of buckets is done by obtaining the list in the bucket correspoding to the hash and looking up the key in the list by calling clds_sorted_list_find. ]*/
                 uint64_t bucket_index = hash % interlocked_add(&current_bucket_array->bucket_count, 0);
 
-                bucket_list = interlocked_compare_exchange_pointer(&current_bucket_array->hash_table[bucket_index], NULL, NULL);
+                bucket_list = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->hash_table[bucket_index], NULL, NULL);
                 if (bucket_list != NULL)
                 {
                     /* Codes_SRS_CLDS_HASH_TABLE_01_034: [ clds_hash_table_find shall find the key identified by key in the hash table and on success return the item corresponding to it. ]*/
@@ -1113,10 +1113,10 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         bool need_to_unlock_all = false;
 
         /* Codes_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
-        BUCKET_ARRAY* current_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+        BUCKET_ARRAY* current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
-            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&current_bucket_array->next_bucket, NULL, NULL);
+            BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->next_bucket, NULL, NULL);
 
             if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
             {
@@ -1204,10 +1204,10 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
                     uint64_t result_index = 0;
 
                     /* Codes_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
-                    current_bucket_array = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+                    current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
                     while (current_bucket_array != NULL)
                     {
-                        BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&current_bucket_array->next_bucket, NULL, NULL);
+                        BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &current_bucket_array->next_bucket, NULL, NULL);
 
                         if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
                         {
@@ -1294,10 +1294,10 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
             // Unlock all the lists that have been locked so far
             // If we only looked at part of the table, the old "current_bucket_array" is already in a cleaned up state
             // Otherwise it is NULL and we will unlock everything
-            BUCKET_ARRAY* bucket_array_to_clean = interlocked_compare_exchange_pointer(&clds_hash_table->first_hash_table, NULL, NULL);
+            BUCKET_ARRAY* bucket_array_to_clean = interlocked_compare_exchange_pointer((void* volatile_atomic*) &clds_hash_table->first_hash_table, NULL, NULL);
             while (bucket_array_to_clean != current_bucket_array)
             {
-                BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer(&bucket_array_to_clean->next_bucket, NULL, NULL);
+                BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*) &bucket_array_to_clean->next_bucket, NULL, NULL);
 
                 if (interlocked_add(&bucket_array_to_clean->item_count, 0) != 0)
                 {

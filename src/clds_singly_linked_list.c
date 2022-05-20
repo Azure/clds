@@ -74,7 +74,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
         do
         {
             // get the current_item value
-            CLDS_SINGLY_LINKED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer(current_item_address, NULL, NULL);
+            CLDS_SINGLY_LINKED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, NULL, NULL);
             if ((void*)((uintptr_t)current_item & (~0x1)) == NULL)
             {
                 if (previous_hp != NULL)
@@ -110,7 +110,7 @@ static CLDS_SINGLY_LINKED_LIST_DELETE_RESULT internal_delete(CLDS_SINGLY_LINKED_
                 else
                 {
                     // now make sure the item has not changed
-                    if (interlocked_compare_exchange_pointer(current_item_address, current_item, current_item) != (void*)((uintptr_t)current_item & ~0x1))
+                    if (interlocked_compare_exchange_pointer((void* volatile_atomic*)current_item_address, current_item, current_item) != (void*)((uintptr_t)current_item & ~0x1))
                     {
                         if (previous_hp != NULL)
                         {
@@ -269,7 +269,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
             // all ok
             clds_singly_linked_list->clds_hazard_pointers = clds_hazard_pointers;
 
-            (void)interlocked_exchange_pointer(&clds_singly_linked_list->head, NULL);
+            (void)interlocked_exchange_pointer((void* volatile_atomic*) &clds_singly_linked_list->head, NULL);
         }
     }
 
@@ -548,7 +548,7 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_node_create(size_t node_si
         item->item_cleanup_callback = item_cleanup_callback;
         item->item_cleanup_callback_context = item_cleanup_callback_context;
         (void)interlocked_exchange(&item->ref_count, 1);
-        (void)interlocked_exchange_pointer(&item->next, NULL);
+        (void)interlocked_exchange_pointer((void* volatile_atomic*) &item->next, NULL);
     }
 
     return result;
