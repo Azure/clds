@@ -3,11 +3,7 @@
 #ifndef REAL_CLDS_HASH_TABLE_H
 #define REAL_CLDS_HASH_TABLE_H
 
-#ifdef __cplusplus
-#include <cstddef>
-#else
 #include <stddef.h>
-#endif
 
 #include "macro_utils/macro_utils.h"
 #include "clds/clds_hash_table.h"
@@ -30,9 +26,6 @@
         clds_hash_table_snapshot \
     )
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 CLDS_HASH_TABLE_HANDLE real_clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, volatile_atomic int64_t* start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context);
 void real_clds_hash_table_destroy(CLDS_HASH_TABLE_HANDLE clds_hash_table);
@@ -49,8 +42,5 @@ CLDS_HASH_TABLE_ITEM* real_clds_hash_table_node_create(size_t node_size, HASH_TA
 int real_clds_hash_table_node_inc_ref(CLDS_HASH_TABLE_ITEM* item);
 void real_clds_hash_table_node_release(CLDS_HASH_TABLE_ITEM* item);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // REAL_CLDS_HASH_TABLE_H
