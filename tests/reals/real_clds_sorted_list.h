@@ -3,12 +3,8 @@
 #ifndef REAL_CLDS_SORTED_LIST_H
 #define REAL_CLDS_SORTED_LIST_H
 
-#ifdef __cplusplus
-#include <cstddef>
-#else
 #include <stddef.h>
 #include <stdbool.h>
-#endif
 
 #include "macro_utils/macro_utils.h"
 #include "clds/clds_sorted_list.h"
@@ -34,10 +30,6 @@
         clds_sorted_list_node_release \
     )
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 CLDS_SORTED_LIST_HANDLE real_clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, SORTED_LIST_GET_ITEM_KEY_CB get_item_key_cb, void* get_item_key_cb_context, SORTED_LIST_KEY_COMPARE_CB key_compare_cb, void* key_compare_cb_context, volatile_atomic int64_t* sequence_no, SORTED_LIST_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context);
 void real_clds_sorted_list_destroy(CLDS_SORTED_LIST_HANDLE clds_sorted_list);
@@ -58,8 +50,5 @@ CLDS_SORTED_LIST_ITEM* real_clds_sorted_list_node_create(size_t node_size, SORTE
 int real_clds_sorted_list_node_inc_ref(CLDS_SORTED_LIST_ITEM* item);
 void real_clds_sorted_list_node_release(CLDS_SORTED_LIST_ITEM* item);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // REAL_CLDS_SORTED_LIST_H

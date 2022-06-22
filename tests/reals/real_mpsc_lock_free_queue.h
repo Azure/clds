@@ -18,14 +18,8 @@
         mpsc_lock_free_queue_peek \
     )
 
-#ifdef __cplusplus
-#include <cstddef>
-extern "C"
-{
-#else
 #include <stddef.h>
 #include <stdbool.h>
-#endif
 
 MPSC_LOCK_FREE_QUEUE_HANDLE real_mpsc_lock_free_queue_create(void);
 void real_mpsc_lock_free_queue_destroy(MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queue);
@@ -34,8 +28,5 @@ MPSC_LOCK_FREE_QUEUE_ITEM* real_mpsc_lock_free_queue_dequeue(MPSC_LOCK_FREE_QUEU
 int real_mpsc_lock_free_queue_is_empty(MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queue, bool* is_empty);
 MPSC_LOCK_FREE_QUEUE_ITEM* real_mpsc_lock_free_queue_peek(MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queue);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // REAL_MPSC_LOCK_FREE_QUEUE_H

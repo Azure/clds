@@ -1,15 +1,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#ifdef __cplusplus
-#include <cstdlib>
-#include <cinttypes>
-#include <ctime>
-#else
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <time.h>
-#endif
 
 #include "macro_utils/macro_utils.h"
 

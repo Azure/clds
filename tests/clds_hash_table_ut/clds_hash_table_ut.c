@@ -1,13 +1,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#ifdef __cplusplus
-#include <cinttypes>
-#include <cstdlib>
-#else
 #include <stdbool.h>
 #include <inttypes.h>
 #include <stdlib.h>
-#endif
 
 #include "macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"

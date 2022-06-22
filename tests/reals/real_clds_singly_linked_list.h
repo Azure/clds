@@ -21,13 +21,7 @@
         clds_singly_linked_list_node_release \
     )
 
-#ifdef __cplusplus
-#include <cstddef>
-extern "C"
-{
-#else
 #include <stddef.h>
-#endif
 
 CLDS_SINGLY_LINKED_LIST_HANDLE real_clds_singly_linked_list_create(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers);
 void real_clds_singly_linked_list_destroy(CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list);
@@ -41,8 +35,5 @@ CLDS_SINGLY_LINKED_LIST_ITEM* real_clds_singly_linked_list_node_create(size_t no
 int real_clds_singly_linked_list_node_inc_ref(CLDS_SINGLY_LINKED_LIST_ITEM* item);
 void real_clds_singly_linked_list_node_release(CLDS_SINGLY_LINKED_LIST_ITEM* item);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // REAL_CLDS_SINGLY_LINKED_LIST_H

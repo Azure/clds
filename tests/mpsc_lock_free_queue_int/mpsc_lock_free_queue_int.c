@@ -1,11 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 
-#ifdef __cplusplus
-#include <cstdlib>
-#else
 #include <stdbool.h>
 #include <stdlib.h>
-#endif
 
 #include "testrunnerswitcher.h"
 #include "c_pal/gballoc_hl.h"

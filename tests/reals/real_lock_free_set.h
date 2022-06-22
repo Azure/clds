@@ -17,13 +17,7 @@
         lock_free_set_purge_not_thread_safe \
     )
 
-#ifdef __cplusplus
-#include <cstddef>
-extern "C"
-{
-#else
 #include <stddef.h>
-#endif
 
 LOCK_FREE_SET_HANDLE real_lock_free_set_create(void);
 void real_lock_free_set_destroy(LOCK_FREE_SET_HANDLE lock_free_set, NODE_CLEANUP_FUNC node_cleanup_callback, void* context);
@@ -31,8 +25,5 @@ int real_lock_free_set_insert(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_
 int real_lock_free_set_remove(LOCK_FREE_SET_HANDLE lock_free_set, LOCK_FREE_SET_ITEM* item);
 int real_lock_free_set_purge_not_thread_safe(LOCK_FREE_SET_HANDLE lock_free_set, NODE_CLEANUP_FUNC node_cleanup_callback, void* context);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // REAL_LOCK_FREE_SET_H

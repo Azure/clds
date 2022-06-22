@@ -16,21 +16,12 @@
         clds_st_hash_set_find \
     )
 
-#ifdef __cplusplus
-#include <cstddef>
-extern "C"
-{
-#else
 #include <stddef.h>
-#endif
 
 CLDS_ST_HASH_SET_HANDLE real_clds_st_hash_set_create(CLDS_ST_HASH_SET_COMPUTE_HASH_FUNC compute_hash, CLDS_ST_HASH_SET_KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size);
 void real_clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set);
 CLDS_ST_HASH_SET_INSERT_RESULT real_clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key);
 CLDS_ST_HASH_SET_FIND_RESULT real_clds_st_hash_set_find(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set, void* key);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // REAL_CLDS_ST_HASH_SET_H
