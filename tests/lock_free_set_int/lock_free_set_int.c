@@ -6,9 +6,8 @@
 #include "testrunnerswitcher.h"
 
 #include "c_pal/gballoc_hl.h"
-#include "c_pal/threadapi.h"
-#include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
+#include "c_pal/threadapi.h"
 
 #include "clds/lock_free_set.h"
 
