@@ -304,6 +304,7 @@ TEST_FUNCTION(clds_sorted_list_contended_delete_test)
     size_t i;
     size_t j;
     CLDS_SORTED_LIST_ITEM** items = (CLDS_SORTED_LIST_ITEM**)malloc(sizeof(CLDS_SORTED_LIST_ITEM*) * ITEM_COUNT);
+    ASSERT_IS_NOT_NULL(items);
     THREAD_DATA thread_data[THREAD_COUNT];
     THREAD_HANDLE threads[THREAD_COUNT];
     SEQUENCE_NO_MAP sequence_no_map;
