@@ -113,7 +113,7 @@ static void* get_item_key_cb(void* context, CLDS_SORTED_LIST_ITEM* item)
 
 static int key_compare_cb(void* context, void* key1, void* key2)
 {
-    CLDS_HASH_TABLE_HANDLE clds_hash_table = (CLDS_HASH_TABLE_HANDLE)context;
+    CLDS_HASH_TABLE_HANDLE clds_hash_table = context;
     return clds_hash_table->key_compare_func(key1, key2);
 }
 
@@ -128,7 +128,7 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
     else
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_076: [ on_sorted_list_skipped_seq_no shall call the skipped sequence number callback passed to clds_hash_table_create and pass the skipped_sequence_no as skipped_sequence_no argument. ]*/
-        CLDS_HASH_TABLE_HANDLE clds_hash_table = (CLDS_HASH_TABLE_HANDLE)context;
+        CLDS_HASH_TABLE_HANDLE clds_hash_table = context;
         clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, skipped_sequence_no);
     }
 }
@@ -210,7 +210,7 @@ CLDS_HASH_TABLE_HANDLE clds_hash_table_create(COMPUTE_HASH_FUNC compute_hash, KE
     else
     {
         /* Codes_SRS_CLDS_HASH_TABLE_01_001: [ clds_hash_table_create shall create a new hash table object and on success it shall return a non-NULL handle to the newly created hash table. ]*/
-        clds_hash_table = (CLDS_HASH_TABLE_HANDLE)malloc(sizeof(CLDS_HASH_TABLE));
+        clds_hash_table = malloc(sizeof(CLDS_HASH_TABLE));
         if (clds_hash_table == NULL)
         {
             /* Codes_SRS_CLDS_HASH_TABLE_01_002: [ If any error happens, clds_hash_table_create shall fail and return NULL. ]*/
@@ -498,8 +498,8 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 static bool find_by_key_value(void* item_compare_context, CLDS_SORTED_LIST_ITEM* item)
 {
     bool result;
-    FIND_BY_KEY_VALUE_CONTEXT* find_by_key_value_context = (FIND_BY_KEY_VALUE_CONTEXT*)item_compare_context;
-    HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
+    FIND_BY_KEY_VALUE_CONTEXT* find_by_key_value_context = item_compare_context;
+    HASH_TABLE_ITEM* hash_table_item = CLDS_SORTED_LIST_GET_VALUE(HASH_TABLE_ITEM, item);
 
     if ((item != find_by_key_value_context->value) ||
         (find_by_key_value_context->key_compare_func(hash_table_item->key, find_by_key_value_context->key) != 0))

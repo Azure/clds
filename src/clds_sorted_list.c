@@ -63,7 +63,7 @@ static int compare_item_by_ptr(void* context, CLDS_SORTED_LIST_ITEM* item, void*
 
 static int compare_item_by_key(void* context, CLDS_SORTED_LIST_ITEM* item, void* item_compare_target)
 {
-    CLDS_SORTED_LIST_HANDLE clds_sorted_list = (CLDS_SORTED_LIST_HANDLE)context;
+    CLDS_SORTED_LIST_HANDLE clds_sorted_list = context;
     // get item key
     void* item_key = clds_sorted_list->get_item_key_cb(clds_sorted_list->get_item_key_cb_context, item);
     return clds_sorted_list->key_compare_cb(clds_sorted_list->key_compare_cb_context, item_key, item_compare_target);
@@ -663,7 +663,7 @@ CLDS_SORTED_LIST_HANDLE clds_sorted_list_create(CLDS_HAZARD_POINTERS_HANDLE clds
     else
     {
         /* Codes_SRS_CLDS_SORTED_LIST_01_001: [ clds_sorted_list_create shall create a new sorted list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-        clds_sorted_list = (CLDS_SORTED_LIST_HANDLE)malloc(sizeof(CLDS_SORTED_LIST));
+        clds_sorted_list = malloc(sizeof(CLDS_SORTED_LIST));
         if (clds_sorted_list == NULL)
         {
             /* Codes_SRS_CLDS_SORTED_LIST_01_002: [ If any error happens, clds_sorted_list_create shall fail and return NULL. ]*/

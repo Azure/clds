@@ -258,7 +258,7 @@ CLDS_SINGLY_LINKED_LIST_HANDLE clds_singly_linked_list_create(CLDS_HAZARD_POINTE
     else
     {
         /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_001: [ clds_singly_linked_list_create shall create a new singly linked list object and on success it shall return a non-NULL handle to the newly created list. ]*/
-        clds_singly_linked_list = (CLDS_SINGLY_LINKED_LIST_HANDLE)malloc(sizeof(CLDS_SINGLY_LINKED_LIST));
+        clds_singly_linked_list = malloc(sizeof(CLDS_SINGLY_LINKED_LIST));
         if (clds_singly_linked_list == NULL)
         {
             /* Codes_SRS_CLDS_SINGLY_LINKED_LIST_01_002: [ If any error happens, clds_singly_linked_list_create shall fail and return NULL. ]*/

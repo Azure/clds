@@ -41,7 +41,7 @@ typedef struct THREAD_DATA_TAG
 static int insert_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     double start_time = timer_global_get_elapsed_ms();
@@ -72,7 +72,7 @@ static int insert_thread(void* arg)
 static int delete_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     double start_time = timer_global_get_elapsed_ms();
@@ -103,7 +103,7 @@ static int delete_thread(void* arg)
 static int find_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     double start_time = timer_global_get_elapsed_ms();
@@ -167,7 +167,7 @@ int clds_hash_table_perf_main(void)
         {
             LogInfo("Generating data");
 
-            thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
+            thread_data = malloc_2(THREAD_COUNT, sizeof(THREAD_DATA));
             if (thread_data == NULL)
             {
                 LogError("Error allocating thread data array");

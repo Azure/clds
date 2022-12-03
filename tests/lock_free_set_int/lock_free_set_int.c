@@ -37,7 +37,7 @@ typedef struct THREAD_DATA_TAG
 static int insert_and_remove_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     for (i = 0; i < INSERT_COUNT; i++)
@@ -96,7 +96,7 @@ TEST_FUNCTION(lock_free_set_insert_remove_succeeds)
     set = lock_free_set_create();
     ASSERT_IS_NOT_NULL(set, "set creation failed");
 
-    thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
+    thread_data = malloc_2(THREAD_COUNT, sizeof(THREAD_DATA));
     ASSERT_IS_NOT_NULL(thread_data, "thread_data creation failed");
 
     for (i = 0; i < THREAD_COUNT; i++)
@@ -107,7 +107,7 @@ TEST_FUNCTION(lock_free_set_insert_remove_succeeds)
 
         for (j = 0; j < INSERT_COUNT; j++)
         {
-            thread_data[i].items[j] = (TEST_SET_ITEM*)malloc(sizeof(TEST_SET_ITEM));
+            thread_data[i].items[j] = malloc(sizeof(TEST_SET_ITEM));
             ASSERT_IS_NOT_NULL(thread_data[i].items[j], "Failed allocating item %zu for thread %zu", j, i);
         }
     }
