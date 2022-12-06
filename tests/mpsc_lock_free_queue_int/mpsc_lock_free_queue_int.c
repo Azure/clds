@@ -4,7 +4,9 @@
 #include <stdlib.h>
 
 #include "testrunnerswitcher.h"
+
 #include "c_pal/gballoc_hl.h"
+#include "c_pal/gballoc_hl_redirect.h"
 #include "c_pal/threadapi.h"
 
 #include "clds/mpsc_lock_free_queue.h"
@@ -30,7 +32,7 @@ typedef struct THREAD_DATA_TAG
 static int enqueue_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
 
     for (i = 0; i < INSERT_COUNT; i++)
     {
@@ -42,7 +44,7 @@ static int enqueue_thread(void* arg)
 
 static int dequeue_thread(void* arg)
 {
-    MPSC_LOCK_FREE_QUEUE_HANDLE queue = (MPSC_LOCK_FREE_QUEUE_HANDLE)arg;
+    MPSC_LOCK_FREE_QUEUE_HANDLE queue = arg;
     size_t dequeued_count = 0;
 
     while (dequeued_count < INSERT_COUNT * THREAD_COUNT)
@@ -109,7 +111,7 @@ TEST_FUNCTION(multiple_threads_adding_and_one_consuming_succeeds)
     queue = mpsc_lock_free_queue_create();
     ASSERT_IS_NOT_NULL(queue, "mpsc_lock_free_queue_create failed");
 
-    thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
+    thread_data = malloc_2(THREAD_COUNT, sizeof(THREAD_DATA));
     ASSERT_IS_NOT_NULL(thread_data, "thread_data creation failed");
 
     for (i = 0; i < THREAD_COUNT; i++)
@@ -120,7 +122,7 @@ TEST_FUNCTION(multiple_threads_adding_and_one_consuming_succeeds)
 
         for (j = 0; j < INSERT_COUNT; j++)
         {
-            thread_data[i].items[j] = (TEST_MPSC_QUEUE_ITEM*)malloc(sizeof(TEST_MPSC_QUEUE_ITEM));
+            thread_data[i].items[j] = malloc(sizeof(TEST_MPSC_QUEUE_ITEM));
             ASSERT_IS_NOT_NULL(thread_data[i].items[j], "Failed allocating item %zu for thread %zu", j, i);
         }
     }

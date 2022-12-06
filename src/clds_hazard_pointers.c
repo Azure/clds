@@ -182,7 +182,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
 
-    clds_hazard_pointers = (CLDS_HAZARD_POINTERS_HANDLE)malloc(sizeof(CLDS_HAZARD_POINTERS));
+    clds_hazard_pointers = malloc(sizeof(CLDS_HAZARD_POINTERS));
     if (clds_hazard_pointers == NULL)
     {
         LogError("malloc failed");
@@ -242,7 +242,7 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
 
 CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = (CLDS_HAZARD_POINTERS_THREAD_HANDLE)malloc(sizeof(CLDS_HAZARD_POINTERS_THREAD));
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = malloc(sizeof(CLDS_HAZARD_POINTERS_THREAD));
     if (clds_hazard_pointers_thread == NULL)
     {
         LogError("malloc failed");
@@ -333,7 +333,7 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
         if (hazard_ptr == NULL)
         {
             // no more pointers in free list, create one
-            hazard_ptr = (CLDS_HAZARD_POINTER_RECORD_HANDLE)malloc(sizeof(CLDS_HAZARD_POINTER_RECORD));
+            hazard_ptr = malloc(sizeof(CLDS_HAZARD_POINTER_RECORD));
             if (hazard_ptr == NULL)
             {
                 LogError("Error allocating hazard pointer");

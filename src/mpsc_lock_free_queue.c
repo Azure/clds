@@ -22,7 +22,7 @@ typedef struct MPSC_LOCK_FREE_QUEUE_TAG
 MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queue_create(void)
 {
     /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_001: [ mpsc_lock_free_queue_create shall create a lock free multiple producer single consumer queue. ] */
-    MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queue = (MPSC_LOCK_FREE_QUEUE_HANDLE)malloc(sizeof(MPSC_LOCK_FREE_QUEUE));
+    MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queue = malloc(sizeof(MPSC_LOCK_FREE_QUEUE));
     if (mpsc_lock_free_queue == NULL)
     {
         /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_003: [ If mpsc_lock_free_queue_create fails allocating memory for the queue then it shall fail and return NULL. ]*/

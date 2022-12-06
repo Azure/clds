@@ -175,8 +175,8 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
 static int chaos_thread(void* arg)
 {
     int result;
-    CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)arg;
-    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)chaos_thread_data->chaos_test_context;
+    CHAOS_THREAD_DATA* chaos_thread_data = arg;
+    CHAOS_TEST_CONTEXT* chaos_test_context = chaos_thread_data->chaos_test_context;
 
     srand((unsigned int)time(NULL));
 
@@ -275,7 +275,7 @@ TEST_FUNCTION(clds_singly_linked_list_chaos_knight_test)
     volatile_atomic int64_t sequence_number = -1;
     size_t i;
 
-    CHAOS_TEST_CONTEXT* chaos_test_context = (CHAOS_TEST_CONTEXT*)malloc(sizeof(CHAOS_TEST_CONTEXT) + (sizeof(CHAOS_TEST_ITEM_DATA) * CHAOS_ITEM_COUNT));
+    CHAOS_TEST_CONTEXT* chaos_test_context = malloc_flex(sizeof(CHAOS_TEST_CONTEXT), CHAOS_ITEM_COUNT, sizeof(CHAOS_TEST_ITEM_DATA));
     ASSERT_IS_NOT_NULL(chaos_test_context);
 
     for (i = 0; i < CHAOS_ITEM_COUNT; i++)
@@ -289,7 +289,7 @@ TEST_FUNCTION(clds_singly_linked_list_chaos_knight_test)
     (void)interlocked_exchange(&chaos_test_context->done, 0);
 
     // start threads doing random things on the list
-    CHAOS_THREAD_DATA* chaos_thread_data = (CHAOS_THREAD_DATA*)malloc(sizeof(CHAOS_THREAD_DATA) * CHAOS_THREAD_COUNT);
+    CHAOS_THREAD_DATA* chaos_thread_data = malloc_2(CHAOS_THREAD_COUNT, sizeof(CHAOS_THREAD_DATA));
     ASSERT_IS_NOT_NULL(chaos_thread_data);
 
     for (i = 0; i < CHAOS_THREAD_COUNT; i++)

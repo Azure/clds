@@ -140,7 +140,7 @@ CLDS_ST_HASH_SET_INSERT_RESULT clds_st_hash_set_insert(CLDS_ST_HASH_SET_HANDLE c
         // find the bucket
         uint64_t bucket_index = hash % clds_st_hash_set->bucket_count;
 
-        HASH_TABLE_ITEM* hash_table_item = (HASH_TABLE_ITEM*)malloc(sizeof(HASH_TABLE_ITEM));
+        HASH_TABLE_ITEM* hash_table_item = malloc(sizeof(HASH_TABLE_ITEM));
         if (hash_table_item == NULL)
         {
             LogError("Error allocating memory for hash set item");

@@ -31,7 +31,7 @@ typedef struct THREAD_DATA_TAG
 static int insert_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     double start_time = timer_global_get_elapsed_ms();
@@ -62,7 +62,7 @@ static int insert_thread(void* arg)
 static int remove_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     double start_time = timer_global_get_elapsed_ms();
@@ -92,7 +92,7 @@ static int remove_thread(void* arg)
 static int insert_and_remove_thread(void* arg)
 {
     size_t i;
-    THREAD_DATA* thread_data = (THREAD_DATA*)arg;
+    THREAD_DATA* thread_data = arg;
     int result;
 
     double start_time = timer_global_get_elapsed_ms();
@@ -145,7 +145,7 @@ int lock_free_set_perf_main(void)
     }
     else
     {
-        thread_data = (THREAD_DATA*)malloc(sizeof(THREAD_DATA) * THREAD_COUNT);
+        thread_data = malloc_2(THREAD_COUNT, sizeof(THREAD_DATA));
         if (thread_data == NULL)
         {
             LogError("Error allocating thread data array");
@@ -158,7 +158,7 @@ int lock_free_set_perf_main(void)
 
                 for (j = 0; j < INSERT_COUNT; j++)
                 {
-                    thread_data[i].items[j] = (TEST_SET_ITEM*)malloc(sizeof(TEST_SET_ITEM));
+                    thread_data[i].items[j] = malloc(sizeof(TEST_SET_ITEM));
                     if (thread_data[i].items == NULL)
                     {
                         LogError("Error allocating test item");
