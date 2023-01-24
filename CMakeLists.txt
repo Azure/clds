@@ -194,6 +194,8 @@ add_library(clds
 
 target_link_libraries(clds c_util c_pal)
 
+install_library_with_prefix(clds clds ${clds_h_files})
+
 add_subdirectory(tests)
 
 if(${run_reals_check})
