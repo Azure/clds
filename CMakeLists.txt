@@ -194,6 +194,7 @@ add_library(clds
 
 target_link_libraries(clds c_util c_pal)
 
+# make an install target so we can produce a Linux native client package.
 install_library_with_prefix(clds clds ${clds_h_files})
 
 add_subdirectory(tests)
