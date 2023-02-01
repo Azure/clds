@@ -19,7 +19,7 @@
 #include "c_pal/sync.h"
 #include "c_pal/uuid.h"
 
-#include "c_util/interlocked_hl.h"
+#include "c_pal/interlocked_hl.h"
 #include "c_util/uuid_string.h"
 
 #include "clds/clds_hazard_pointers.h"
