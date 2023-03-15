@@ -1,6 +1,5 @@
 #Copyright (c) Microsoft. All rights reserved.
 
-compileAsC11()
 set(theseTestsName mpsc_lock_free_queue_ut)
 
 set(${theseTestsName}_test_files
