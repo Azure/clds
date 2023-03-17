@@ -128,11 +128,6 @@ if (
 
 endif()
 
-if ((NOT TARGET c_util) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-util/CMakeLists.txt))
-    add_subdirectory(deps/c-util)
-    include_directories(${C_UTIL_INC_FOLDER})
-endif() 
-
 #smhasher generates some warnings with /W3 (default)
 if(WIN32)
     add_definitions(/W2)
@@ -146,6 +141,11 @@ endif()
 if(WIN32)
     remove_definitions(/W2)
 endif(WIN32)
+
+if ((NOT TARGET c_util) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-util/CMakeLists.txt))
+    add_subdirectory(deps/c-util)
+    include_directories(${C_UTIL_INC_FOLDER})
+endif() 
 
 set(run_e2e_tests ${original_run_e2e_tests})
 set(run_unittests ${original_run_unittests})
