@@ -31,7 +31,7 @@ The goals are:
 - Clone `clds` by:
 
 ```
-git clone --recursive https://github.com/dcristoloveanu/clds.git
+git clone --recursive https://github.com/Azure/clds.git
 ```
 
 - Create a folder named `cmake` under `clds`
