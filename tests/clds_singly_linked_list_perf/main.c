@@ -8,11 +8,11 @@
 
 int main(void)
 {
-    //(void)logger_init();
+    (void)logger_init();
 
     clds_singly_linked_list_perf_main();
 
-    //logger_deinit();
+    logger_deinit();
 
     return 0;
 }
