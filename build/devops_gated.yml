@@ -287,17 +287,29 @@ jobs:
      echo Running Hash table perf test
      $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_hash_table_perf.exe
 
+    workingDirectory: 'build_x64'
+    displayName: 'Run clds_hash_table_perf tests'
+
+  - script: |
      echo Running Singly linked list perf test
      $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_singly_linked_list_perf.exe
 
+    workingDirectory: 'build_x64'
+    displayName: 'Run clds_singly_linked_list_perf tests'
+
+  - script: |
      echo Running Sorted list perf test
      $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_sorted_list_perf.exe
 
+    workingDirectory: 'build_x64'
+    displayName: 'Run clds_sorted_list_perf tests'
+
+  - script: |
      echo Running Lock free set perf test
      $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/lock_free_set_perf.exe
 
     workingDirectory: 'build_x64'
-    displayName: 'Run perf tests'
+    displayName: 'Run lock_free_set_perf tests'
 
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu'
