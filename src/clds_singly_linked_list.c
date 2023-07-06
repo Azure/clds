@@ -433,7 +433,6 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
         do
         {
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
-            CLDS_SINGLY_LINKED_LIST_ITEM* previous_item = NULL;
             volatile_atomic CLDS_SINGLY_LINKED_LIST_ITEM** current_item_address = &clds_singly_linked_list->head;
 
             do
@@ -519,7 +518,6 @@ CLDS_SINGLY_LINKED_LIST_ITEM* clds_singly_linked_list_find(CLDS_SINGLY_LINKED_LI
                                 }
 
                                 previous_hp = current_item_hp;
-                                previous_item = current_item;
                                 current_item_address = (volatile_atomic CLDS_SINGLY_LINKED_LIST_ITEM**)&current_item->next;
                             }
                         }
