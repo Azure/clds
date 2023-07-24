@@ -1572,8 +1572,8 @@ TEST_FUNCTION(clds_singly_linked_list_find_result_has_the_ref_count_incremented)
     CLDS_SINGLY_LINKED_LIST_HANDLE list = clds_singly_linked_list_create(hazard_pointers);
     CLDS_SINGLY_LINKED_LIST_ITEM* item = CLDS_SINGLY_LINKED_LIST_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
     (void)clds_hazard_pointers_set_reclaim_threshold(hazard_pointers, 1);
-    (void)clds_singly_linked_list_insert(list, hazard_pointers_thread, item);
-    (void)clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item);
+    ASSERT_ARE_EQUAL(int, 0, clds_singly_linked_list_insert(list, hazard_pointers_thread, item));
+    ASSERT_IS_NOT_NULL(clds_singly_linked_list_find(list, hazard_pointers_thread, test_item_compare, item));
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_acquire(IGNORED_ARG, IGNORED_ARG)).IgnoreAllCalls();
