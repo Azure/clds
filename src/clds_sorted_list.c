@@ -1129,7 +1129,6 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
             }
 
             CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hp = NULL;
-            CLDS_SORTED_LIST_ITEM* previous_item = NULL;
             volatile_atomic CLDS_SORTED_LIST_ITEM** current_item_address = &clds_sorted_list->head;
 
             do
@@ -1221,7 +1220,6 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
                                 }
 
                                 previous_hp = current_item_hp;
-                                previous_item = current_item;
                                 current_item_address = (volatile_atomic CLDS_SORTED_LIST_ITEM**)&current_item->next;
                             }
                         }
@@ -1421,6 +1419,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT clds_sorted_list_set_value(CLDS_SORTED_LIST_HA
                                     CLDS_CONDITION_CHECK_RESULT condition_check_result = condition_check_func(condition_check_context, new_item_key, current_item_key);
                                     switch (condition_check_result)
                                     {
+                                        case CLDS_CONDITION_CHECK_RESULT_INVALID:
                                         case CLDS_CONDITION_CHECK_ERROR:
                                         {
                                             LogError("Condition check failed - %" PRI_MU_ENUM "", MU_ENUM_VALUE(CLDS_CONDITION_CHECK_RESULT, condition_check_result));
