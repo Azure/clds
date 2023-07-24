@@ -65,8 +65,7 @@ MOCK_FUNCTION_END()
 
 static CLDS_CONDITION_CHECK_RESULT g_condition_check_result = CLDS_CONDITION_CHECK_OK;
 MOCK_FUNCTION_WITH_CODE(, CLDS_CONDITION_CHECK_RESULT, test_item_condition_check, void*, context, void*, new_key, void*, old_key)
-    return g_condition_check_result;
-MOCK_FUNCTION_END()
+MOCK_FUNCTION_END(g_condition_check_result)
 
 typedef struct TEST_ITEM_TAG
 {

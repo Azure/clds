@@ -81,8 +81,7 @@ MOCK_FUNCTION_END()
 
 static CLDS_CONDITION_CHECK_RESULT g_condition_check_result = CLDS_CONDITION_CHECK_OK;
 MOCK_FUNCTION_WITH_CODE(, CLDS_CONDITION_CHECK_RESULT, test_item_condition_check, void*, context, void*, new_key, void*, old_key)
-    return g_condition_check_result;
-MOCK_FUNCTION_END()
+MOCK_FUNCTION_END(g_condition_check_result)
 
 static int test_key_compare_func(void* key_1, void* key_2)
 {
@@ -3602,13 +3601,11 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 20, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
-    bool found_originals[10];
 
     for (uint32_t i = 0; i < 10; i++)
     {
         original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
         (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + (20 * i)), original_items[i], NULL);
-        found_originals[i] = false;
     }
     umock_c_reset_all_calls();
 
@@ -3658,7 +3655,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[10];
-    bool found_originals[10];
 
     const uint32_t number_of_sorted_lists = 10;
 
@@ -3666,7 +3662,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
     {
         original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
         (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL);
-        found_originals[i] = false;
     }
     umock_c_reset_all_calls();
 
@@ -3722,7 +3717,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
     hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, test_skipped_seq_no_cb, NULL);
 
     CLDS_HASH_TABLE_ITEM* original_items[20];
-    bool found_originals[20];
     uint32_t number_of_items = 20;
 
     const uint32_t number_of_sorted_lists = 20;
@@ -3734,7 +3728,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
         STRICT_EXPECTED_CALL(test_compute_hash((void*)(uintptr_t)(0x1 + i)))
             .SetReturn(i);
         (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL);
-        found_originals[i] = false;
         umock_c_reset_all_calls();
     }
     umock_c_reset_all_calls();
