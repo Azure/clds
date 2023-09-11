@@ -157,6 +157,7 @@ set(clds_h_files
     ./inc/clds/clds_hash_table.h
     ./inc/clds/clds_singly_linked_list.h
     ./inc/clds/mpsc_lock_free_queue.h
+    ./inc/clds/lru_cache.h
 )
 
 set(clds_c_files
@@ -167,6 +168,7 @@ set(clds_c_files
     ./src/clds_hash_table.c
     ./src/clds_singly_linked_list.c
     ./src/mpsc_lock_free_queue.c
+    ./src/lru_cache.c
 )
 
 FILE(GLOB clds_md_files "devdoc/*.md")

@@ -22,6 +22,7 @@ if(${run_int_tests})
 if(WIN32)
         # this test has a problem on Linux, suspicion of badly written test
         build_test_folder(clds_hash_table_int)
+	    build_test_folder(lru_cache_int)
 endif()
     build_test_folder(clds_sorted_list_int)
     build_test_folder(mpsc_lock_free_queue_int)
