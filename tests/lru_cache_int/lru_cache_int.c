@@ -120,15 +120,13 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 }
 
 
-TEST_FUNCTION(cyrus)
+TEST_FUNCTION(test_put_and_get)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    //CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
-    //ASSERT_IS_NOT_NULL(hazard_pointers_thread);
     volatile_atomic int64_t sequence_number = 45;
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 4);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -137,11 +135,27 @@ TEST_FUNCTION(cyrus)
     TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
     test_item->key = 1;
     test_item->appendix = 13;
+    CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item);
 
     CLDS_HASH_TABLE_ITEM* item1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     TEST_ITEM* test_item1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
     test_item1->key = 2;
     test_item1->appendix = 14;
+    CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item1);
+
+    CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    TEST_ITEM* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
+    test_item2->key = 3;
+    test_item2->appendix = 15;
+    CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item2);
+
+
+    CLDS_HASH_TABLE_ITEM* item3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    TEST_ITEM* test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
+    test_item3->key = 4;
+    test_item3->appendix = 16;
+    CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item3);
+
 
     // act
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item, 1);
@@ -150,10 +164,10 @@ TEST_FUNCTION(cyrus)
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item1, 1);
     ASSERT_ARE_EQUAL(int, 0, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item1, 1);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item2, 1);
     ASSERT_ARE_EQUAL(int, 0, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item, 1);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item3, 1);
     ASSERT_ARE_EQUAL(int, 0, result);
 
 
