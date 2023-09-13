@@ -44,6 +44,7 @@ typedef struct LRU_NODE_TAG
 {
     void* key;
     int64_t size;
+    CLDS_HASH_TABLE_ITEM* value;  // Include value here
     DLIST_ENTRY node;
 } LRU_NODE;
 DECLARE_HASH_TABLE_NODE_TYPE(LRU_NODE);
@@ -108,21 +109,20 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
     }
 }
 
-
 int add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size)
 {
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
     LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
     new_node->key = key;
     new_node->size = size;
+    new_node->value = value;  // Store value here
 
     CLDS_HASH_TABLE_NODE_INC_REF(LRU_NODE, item);
 
     DList_InsertHeadList(&lru_cache->head, &new_node->node);
 
     int64_t insert_seq_no;
-    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, lru_cache->hazard_pointers_thread, key, value, &insert_seq_no);
-    hash_table_insert = clds_hash_table_insert(lru_cache->link_table, lru_cache->hazard_pointers_thread, key, item, &insert_seq_no);
+    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, lru_cache->hazard_pointers_thread, key, item, &insert_seq_no);  // Store item here
 
     if (hash_table_insert == CLDS_HASH_TABLE_INSERT_ERROR)
     {
@@ -144,15 +144,12 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
 
     if (hash_table_item != NULL)
     {
-        CLDS_HASH_TABLE_ITEM* removed_item;
-        CLDS_HASH_TABLE_ITEM* exists_removed_item;
-
-        CLDS_HASH_TABLE_REMOVE_RESULT res = clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, key, &removed_item, &seq_no);
-        res = clds_hash_table_remove(lru_cache->link_table, lru_cache->hazard_pointers_thread, key, &exists_removed_item, &seq_no);
-
-        LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, exists_removed_item);
+        LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
         DLIST_ENTRY node = doubly_value->node;
 
+        CLDS_HASH_TABLE_ITEM* entry;
+        (void)clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, key, &entry, &seq_no);
+        lru_cache->current_size -= doubly_value->size;
         DList_RemoveEntryList(&node);
         result = add_to_cache_internal(lru_cache, key, value, size);
     }
@@ -164,14 +161,10 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
             // evict the last element
             DLIST_ENTRY* last_node = lru_cache->head.Blink;
             LRU_NODE* last_node_value = (LRU_NODE*)CONTAINING_RECORD(last_node, LRU_NODE, node);
-
-            //remove from clds_hash_table
-            CLDS_HASH_TABLE_ITEM* removed_item;
-            CLDS_HASH_TABLE_ITEM* removed_link;
+            CLDS_HASH_TABLE_ITEM* entry;
 
             // Need to delete from DLinkedList
-            CLDS_HASH_TABLE_REMOVE_RESULT res = clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, last_node_value->key, &removed_item, &seq_no);
-            res = clds_hash_table_remove(lru_cache->link_table, lru_cache->hazard_pointers_thread, last_node_value->key, &removed_link, &seq_no);
+            CLDS_HASH_TABLE_REMOVE_RESULT res = clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, last_node_value->key, &entry, &seq_no);
 
             if (res != CLDS_HASH_TABLE_REMOVE_OK)
             {
@@ -179,14 +172,13 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
             }
             else
             {
-                //remove from doubly linked list
+                // Remove from doubly linked list
                 lru_cache->current_size -= last_node_value->size;
                 DList_RemoveEntryList(last_node);
             }
         }
-     
-        result = add_to_cache_internal(lru_cache, key, value, size);
 
+        result = add_to_cache_internal(lru_cache, key, value, size);
     }
     return result;
 }
@@ -198,9 +190,9 @@ CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
 
     if (hash_table_item != NULL)
     {
-        CLDS_HASH_TABLE_ITEM* link_item = clds_hash_table_find(lru_cache->link_table, lru_cache->hazard_pointers_thread, key);
+        //CLDS_HASH_TABLE_ITEM* link_item = clds_hash_table_find(lru_cache->link_table, lru_cache->hazard_pointers_thread, key);
 
-        LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, link_item);
+        LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
         DLIST_ENTRY node = doubly_value->node;
         if (node.Flink == lru_cache->head.Flink)
         {
@@ -211,6 +203,8 @@ CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
             DList_RemoveEntryList(&node);
             DList_InsertHeadList(&lru_cache->head, &node);
         }
+
+        return doubly_value->value;
     }
 
     return hash_table_item;
