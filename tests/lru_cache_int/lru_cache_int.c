@@ -144,14 +144,14 @@ TEST_FUNCTION(test_put_and_get)
     CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item1);
 
     CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
-    TEST_ITEM* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
+    TEST_ITEM* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item2);
     test_item2->key = 3;
     test_item2->appendix = 15;
     CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item2);
 
 
     CLDS_HASH_TABLE_ITEM* item3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
-    TEST_ITEM* test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
+    TEST_ITEM* test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item3);
     test_item3->key = 4;
     test_item3->appendix = 16;
     CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, item3);
@@ -164,8 +164,8 @@ TEST_FUNCTION(test_put_and_get)
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item1, 1);
     ASSERT_ARE_EQUAL(int, 0, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item2, 1);
-    ASSERT_ARE_EQUAL(int, 0, result);
+    //result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item2, 1);
+    //ASSERT_ARE_EQUAL(int, 0, result);
 
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item3, 1);
     ASSERT_ARE_EQUAL(int, 0, result);

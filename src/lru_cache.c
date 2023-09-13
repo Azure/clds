@@ -13,10 +13,10 @@
 
 #include "c_util/rc_string.h"
 #include "c_pal/thandle.h"
+#include "c_pal/srw_lock.h"
 
 #include "c_util/doublylinkedlist.h"
 
-#include "clds/clds_singly_linked_list.h"
 #include "clds/clds_hazard_pointers.h"
 
 #include "clds/lru_cache.h"
@@ -25,6 +25,7 @@ typedef struct LRU_CACHE_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread;
+
     CLDS_HASH_TABLE_HANDLE table;
     CLDS_HASH_TABLE_HANDLE link_table;
 
@@ -35,6 +36,8 @@ typedef struct LRU_CACHE_TAG
     volatile_atomic int64_t* seq_no;
 
     DLIST_ENTRY head;
+
+    SRW_LOCK_HANDLE lock;
 } LRU_CACHE;
 
 typedef struct LRU_NODE_TAG
@@ -100,42 +103,67 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
         clds_hash_table_destroy(lru_cache->table);
         clds_hazard_pointers_destroy(lru_cache->clds_hazard_pointers);
         TlsFree(lru_cache->tls_slot);
+        srw_lock_destroy(lru_cache->lock);
+        free(lru_cache);
     }
 }
 
 
+int add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size)
+{
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
+    LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
+    new_node->key = key;
+    new_node->size = size;
+
+    CLDS_HASH_TABLE_NODE_INC_REF(LRU_NODE, item);
+
+    DList_InsertHeadList(&lru_cache->head, &new_node->node);
+
+    int64_t insert_seq_no;
+    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, lru_cache->hazard_pointers_thread, key, value, &insert_seq_no);
+    hash_table_insert = clds_hash_table_insert(lru_cache->link_table, lru_cache->hazard_pointers_thread, key, item, &insert_seq_no);
+
+    if (hash_table_insert == CLDS_HASH_TABLE_INSERT_ERROR)
+    {
+        return 1;
+    }
+    else
+    {
+        lru_cache->current_size += size;
+    }
+    return 0;
+}
+
 int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size)
 {
+    int result = 0;
+    int64_t seq_no;
+
     CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, lru_cache->hazard_pointers_thread, key);
 
     if (hash_table_item != NULL)
     {
-        CLDS_HASH_TABLE_ITEM* link_node_item = clds_hash_table_find(lru_cache->link_table, lru_cache->hazard_pointers_thread, key);
-        LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, link_node_item);
+        CLDS_HASH_TABLE_ITEM* removed_item;
+        CLDS_HASH_TABLE_ITEM* exists_removed_item;
+
+        CLDS_HASH_TABLE_REMOVE_RESULT res = clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, key, &removed_item, &seq_no);
+        res = clds_hash_table_remove(lru_cache->link_table, lru_cache->hazard_pointers_thread, key, &exists_removed_item, &seq_no);
+
+        LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, exists_removed_item);
         DLIST_ENTRY node = doubly_value->node;
 
-        // Update the key and value (value could have been changed) 
-
-        if (node.Flink == lru_cache->head.Flink)
-        {
-            
-        }
-        else
-        {
-            // srw lock needs to come
-            DList_RemoveEntryList(&node);
-            DList_InsertHeadList(&lru_cache->head, &node);
-        }
+        DList_RemoveEntryList(&node);
+        result = add_to_cache_internal(lru_cache, key, value, size);
     }
     else
     {
         // eviction logic. Should move to internal_evict function
-        while (lru_cache->current_size + size >= lru_cache->capacity)
+        while ((lru_cache->current_size + size >= lru_cache->capacity))
         {
             // evict the last element
             DLIST_ENTRY* last_node = lru_cache->head.Blink;
             LRU_NODE* last_node_value = (LRU_NODE*)CONTAINING_RECORD(last_node, LRU_NODE, node);
-            int64_t seq_no;
 
             //remove from clds_hash_table
             CLDS_HASH_TABLE_ITEM* removed_item;
@@ -156,31 +184,13 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
                 DList_RemoveEntryList(last_node);
             }
         }
-        CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
-        LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
-        new_node->key = key;
-        new_node->size = size;
-
-        CLDS_HASH_TABLE_NODE_INC_REF(LRU_NODE, item);
-
-        DList_InsertHeadList(&lru_cache->head, &new_node->node);
-
-        int64_t insert_seq_no;
-        CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, lru_cache->hazard_pointers_thread, key, value, &insert_seq_no);
-        hash_table_insert = clds_hash_table_insert(lru_cache->link_table, lru_cache->hazard_pointers_thread, key, item, &insert_seq_no);
-        
-        if (hash_table_insert == CLDS_HASH_TABLE_INSERT_ERROR)
-        {
-            // Nothing
-        }
-        else
-        {
-            lru_cache->current_size += size;
-        }
+     
+        result = add_to_cache_internal(lru_cache, key, value, size);
 
     }
-    return 0;
+    return result;
 }
+
 
 CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
 {

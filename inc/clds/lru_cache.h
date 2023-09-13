@@ -19,6 +19,19 @@ extern "C" {
 
 typedef struct LRU_CACHE_TAG* LRU_CACHE_HANDLE;
 
+#define LRU_CACHE_INSERT_RESULT_VALUES \
+    LRU_CACHE_INSERT_OK, \
+    LRU_CACHE_INSERT_ERROR, \
+    LRU_CACHE_KEY_ALREADY_EXISTS_OK
+
+MU_DEFINE_ENUM(LRU_CACHE_INSERT_RESULT, LRU_CACHE_INSERT_RESULT_VALUES);
+
+#define LRU_CACHE_EVICT_RESULT_VALUES \
+    LRU_CACHE_EVICT_OK, \
+    LRU_CACHE_EVICT_ERROR
+
+MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
+
 MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile_atomic int64_t*, start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context, int64_t, capacity);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
