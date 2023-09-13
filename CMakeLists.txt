@@ -151,6 +151,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/inc)
 
 set(clds_h_files
     ./inc/clds/clds_hazard_pointers.h
+    ./inc/clds/clds_hazard_pointers_thread_helper.h
     ./inc/clds/clds_sorted_list.h
     ./inc/clds/clds_st_hash_set.h
     ./inc/clds/lock_free_set.h
@@ -161,6 +162,7 @@ set(clds_h_files
 
 set(clds_c_files
     ./src/clds_hazard_pointers.c
+    ./src/clds_hazard_pointers_thread_helper.c
     ./src/clds_sorted_list.c
     ./src/clds_st_hash_set.c
     ./src/lock_free_set.c
