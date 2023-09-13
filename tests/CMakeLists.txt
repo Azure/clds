@@ -6,7 +6,9 @@ add_subdirectory(reals)
 #unittests
 if(${run_unittests})
     build_test_folder(reals_ut)
-    build_test_folder(clds_hazard_pointers_thread_helper_ut)
+    if(WIN32)
+        build_test_folder(clds_hazard_pointers_thread_helper_ut) # Windows only until there is a PAL for thread local storage
+    endif()
     build_test_folder(clds_hazard_pointers_ut)
     build_test_folder(clds_st_hash_set_ut)
     build_test_folder(lock_free_set_ut)
