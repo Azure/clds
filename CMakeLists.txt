@@ -159,6 +159,13 @@ set(clds_h_files
     ./inc/clds/mpsc_lock_free_queue.h
 )
 
+if (WIN32)
+    set(clds_h_files
+        ${clds_h_files}
+        ./inc/clds/clds_hazard_pointers_thread_helper.h # Windows only until there is a PAL for thread local storage
+    )
+endif()
+
 set(clds_c_files
     ./src/clds_hazard_pointers.c
     ./src/clds_sorted_list.c
@@ -168,6 +175,13 @@ set(clds_c_files
     ./src/clds_singly_linked_list.c
     ./src/mpsc_lock_free_queue.c
 )
+
+if (WIN32)
+    set(clds_c_files
+        ${clds_c_files}
+        ./src/clds_hazard_pointers_thread_helper.c # Windows only until there is a PAL for thread local storage
+    )
+endif()
 
 FILE(GLOB clds_md_files "devdoc/*.md")
 SOURCE_GROUP(devdoc FILES ${clds_md_files})
