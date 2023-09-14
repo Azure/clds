@@ -3104,6 +3104,40 @@ TEST_FUNCTION(on_sorted_list_skipped_seq_no_calls_the_hash_table_skipped_seq_no)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+/* Tests_SRS_CLDS_HASH_TABLE_01_113: [ If the sequence number callback passed to clds_hash_table_create was NULL, on_sorted_list_skipped_seq_no shall return. ]*/
+TEST_FUNCTION(on_sorted_list_skipped_seq_no_with_NULL_hash_table_skipped_seq_no_returns)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    CLDS_HASH_TABLE_HANDLE hash_table;
+    volatile_atomic int64_t start_seq_no;
+    (void)interlocked_exchange_64(&start_seq_no, 0);
+    hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, hazard_pointers, &start_seq_no, NULL, NULL);
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
+    SORTED_LIST_SKIPPED_SEQ_NO_CB test_on_sorted_list_skipped_seq_no;
+    void* test_on_sorted_list_skipped_seq_no_context;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(test_compute_hash((void*)0x1));
+    STRICT_EXPECTED_CALL(clds_sorted_list_create(hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
+        .CaptureArgumentValue_skipped_seq_no_cb(&test_on_sorted_list_skipped_seq_no)
+        .CaptureArgumentValue_skipped_seq_no_cb_context(&test_on_sorted_list_skipped_seq_no_context);
+    STRICT_EXPECTED_CALL(clds_sorted_list_insert(IGNORED_ARG, IGNORED_ARG, (CLDS_SORTED_LIST_ITEM*)item, NULL));
+    (void)clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)0x1, item, NULL);
+    umock_c_reset_all_calls();
+
+    // act
+    test_on_sorted_list_skipped_seq_no(test_on_sorted_list_skipped_seq_no_context, 1);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    clds_hash_table_destroy(hash_table);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 /* clds_hash_table_snapshot */
 
 /* Tests_SRS_CLDS_HASH_TABLE_42_013: [ If clds_hash_table is NULL then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/

@@ -127,10 +127,14 @@ static void on_sorted_list_skipped_seq_no(void* context, int64_t skipped_sequenc
     }
     else
     {
-        /* Codes_SRS_CLDS_HASH_TABLE_01_076: [ on_sorted_list_skipped_seq_no shall call the skipped sequence number callback passed to clds_hash_table_create and pass the skipped_sequence_no as skipped_sequence_no argument. ]*/
         CLDS_HASH_TABLE_HANDLE clds_hash_table = context;
-        if (clds_hash_table->skipped_seq_no_cb != NULL)
+        if (clds_hash_table->skipped_seq_no_cb == NULL)
         {
+            /* Codes_SRS_CLDS_HASH_TABLE_01_113: [ If the sequence number callback passed to clds_hash_table_create was NULL, on_sorted_list_skipped_seq_no shall return. ]*/
+        }
+        else
+        {
+            /* Codes_SRS_CLDS_HASH_TABLE_01_076: [ on_sorted_list_skipped_seq_no shall call the skipped sequence number callback passed to clds_hash_table_create and pass the skipped_sequence_no as skipped_sequence_no argument. ]*/
             clds_hash_table->skipped_seq_no_cb(clds_hash_table->skipped_seq_no_cb_context, skipped_sequence_no);
         }
     }
