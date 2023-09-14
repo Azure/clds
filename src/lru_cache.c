@@ -27,7 +27,6 @@ typedef struct LRU_CACHE_TAG
     CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread;
 
     CLDS_HASH_TABLE_HANDLE table;
-    CLDS_HASH_TABLE_HANDLE link_table;
 
     int64_t current_size;
     int64_t capacity;
@@ -81,8 +80,6 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
             lru_cache->hazard_pointers_thread = clds_hazard_pointers_register_thread(lru_cache->clds_hazard_pointers);
 
             lru_cache->table = clds_hash_table_create(compute_hash, key_compare_func, 1024 * 1024, lru_cache->clds_hazard_pointers, lru_cache->seq_no, skipped_seq_no_cb, skipped_seq_no_cb_context);
-
-            lru_cache->link_table = clds_hash_table_create(compute_hash, key_compare_func, 1024 * 1024, lru_cache->clds_hazard_pointers, lru_cache->seq_no, skipped_seq_no_cb, skipped_seq_no_cb_context);
 
             lru_cache->current_size = 0;
             lru_cache->capacity = capacity;

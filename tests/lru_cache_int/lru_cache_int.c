@@ -176,7 +176,10 @@ TEST_FUNCTION(test_put_and_get)
     CLDS_HASH_TABLE_ITEM* return_val = lru_cache_get(lru_cache, (void*)(uintptr_t)(2));
     TEST_ITEM* return_val1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val);
 
-    if (return_val1)
+    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(2));
+    TEST_ITEM* return_val3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val2);
+
+    if (return_val1 && return_val3)
     {
 
     }
