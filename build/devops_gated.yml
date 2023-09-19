@@ -283,13 +283,12 @@ jobs:
       configuration: RelWithDebInfo
       maximumCpuCount: true
 
-# Fails for some reason, tracked by task
-#  - script: |
-#     echo Running Hash table perf test
-#     $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_hash_table_perf.exe
-#
-#    workingDirectory: 'build_x64'
-#    displayName: 'Run clds_hash_table_perf tests'
+  - script: |
+     echo Running Hash table perf test
+     $(Build.Repository.LocalPath)/build_x64/RelWithDebInfo/clds_hash_table_perf.exe
+
+    workingDirectory: 'build_x64'
+    displayName: 'Run clds_hash_table_perf tests'
 
   - script: |
      echo Running Singly linked list perf test
