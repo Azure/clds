@@ -24,7 +24,6 @@
 typedef struct LRU_CACHE_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread;
 
     CLDS_HASH_TABLE_HANDLE table;
 
@@ -32,7 +31,7 @@ typedef struct LRU_CACHE_TAG
     int64_t capacity;
 
     DWORD tls_slot;
-    volatile_atomic int64_t* seq_no;
+    volatile_atomic int64_t seq_no;
 
     DLIST_ENTRY head;
 
@@ -43,7 +42,7 @@ typedef struct LRU_NODE_TAG
 {
     void* key;
     int64_t size;
-    CLDS_HASH_TABLE_ITEM* value;  // Include value here
+    CLDS_HASH_TABLE_ITEM* value;
     DLIST_ENTRY node;
 } LRU_NODE;
 DECLARE_HASH_TABLE_NODE_TYPE(LRU_NODE);
@@ -67,7 +66,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
     else
     {
 
-        lru_cache = malloc(sizeof(lru_cache));
+        lru_cache = malloc(sizeof(LRU_CACHE));
         if (lru_cache == NULL)
         {
             LogError("Cannot allocate memory for lru_cache");
@@ -76,13 +75,14 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         {
             lru_cache->tls_slot = TlsAlloc();
             lru_cache->clds_hazard_pointers = clds_hazard_pointers_create();
+            (void)interlocked_exchange_64(&lru_cache->seq_no, 0);
 
-            lru_cache->hazard_pointers_thread = clds_hazard_pointers_register_thread(lru_cache->clds_hazard_pointers);
-
-            lru_cache->table = clds_hash_table_create(compute_hash, key_compare_func, 1024 * 1024, lru_cache->clds_hazard_pointers, lru_cache->seq_no, skipped_seq_no_cb, skipped_seq_no_cb_context);
+            lru_cache->table = clds_hash_table_create(compute_hash, key_compare_func, 1024 * 1024, lru_cache->clds_hazard_pointers, &lru_cache->seq_no, skipped_seq_no_cb, skipped_seq_no_cb_context);
 
             lru_cache->current_size = 0;
             lru_cache->capacity = capacity;
+
+            lru_cache->lock = srw_lock_create(false, "lru_cache");
             DList_InitializeListHead(&(lru_cache->head));
 
         }
@@ -106,20 +106,52 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
     }
 }
 
+static CLDS_HAZARD_POINTERS_THREAD_HANDLE get_hazard_pointers_thread(LRU_CACHE_HANDLE lru_cache)
+{
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = TlsGetValue(lru_cache->tls_slot);
+    if (hazard_pointers_thread == NULL)
+    {
+        hazard_pointers_thread = clds_hazard_pointers_register_thread(lru_cache->clds_hazard_pointers);
+        if (hazard_pointers_thread == NULL)
+        {
+            LogError("Cannot create clds hazard pointers thread");
+        }
+        else
+        {
+            if (!TlsSetValue(lru_cache->tls_slot, hazard_pointers_thread))
+            {
+                LogError("Cannot set Tls slot value");
+            }
+            else
+            {
+                goto all_ok;
+            }
+
+            clds_hazard_pointers_unregister_thread(hazard_pointers_thread);
+            hazard_pointers_thread = NULL;
+        }
+    }
+
+all_ok:
+    return hazard_pointers_thread;
+}
+
 int add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size)
 {
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
     LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
     new_node->key = key;
     new_node->size = size;
-    new_node->value = value;  // Store value here
+    new_node->value = value; 
 
     CLDS_HASH_TABLE_NODE_INC_REF(LRU_NODE, item);
 
     DList_InsertHeadList(&lru_cache->head, &new_node->node);
 
-    int64_t insert_seq_no;
-    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, lru_cache->hazard_pointers_thread, key, item, &insert_seq_no);  // Store item here
+    int64_t insert_seq_no = 0;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = get_hazard_pointers_thread(lru_cache);
+
+    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, &insert_seq_no); 
 
     if (hash_table_insert == CLDS_HASH_TABLE_INSERT_ERROR)
     {
@@ -136,8 +168,9 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
 {
     int result = 0;
     int64_t seq_no;
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = get_hazard_pointers_thread(lru_cache);
 
-    CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, lru_cache->hazard_pointers_thread, key);
+    CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
 
     if (hash_table_item != NULL)
     {
@@ -145,7 +178,7 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
         DLIST_ENTRY node = doubly_value->node;
 
         CLDS_HASH_TABLE_ITEM* entry;
-        (void)clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, key, &entry, &seq_no);
+        (void)clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, key, &entry, &seq_no);
         lru_cache->current_size -= doubly_value->size;
         DList_RemoveEntryList(&node);
         result = add_to_cache_internal(lru_cache, key, value, size);
@@ -161,7 +194,7 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
             CLDS_HASH_TABLE_ITEM* entry;
 
             // Need to delete from DLinkedList
-            CLDS_HASH_TABLE_REMOVE_RESULT res = clds_hash_table_remove(lru_cache->table, lru_cache->hazard_pointers_thread, last_node_value->key, &entry, &seq_no);
+            CLDS_HASH_TABLE_REMOVE_RESULT res = clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, last_node_value->key, &entry, &seq_no);
 
             if (res != CLDS_HASH_TABLE_REMOVE_OK)
             {
@@ -183,7 +216,9 @@ int lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_HASH_TABLE_ITEM* v
 
 CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
 {
-    CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, lru_cache->hazard_pointers_thread, key);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = get_hazard_pointers_thread(lru_cache);
+
+    CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
 
     if (hash_table_item != NULL)
     {
