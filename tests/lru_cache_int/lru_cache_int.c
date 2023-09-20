@@ -158,6 +158,13 @@ TEST_FUNCTION(test_put_and_get)
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item, 1, seq_no);
     ASSERT_ARE_EQUAL(int, 0, result);
 
+
+    CLDS_HASH_TABLE_ITEM* return_val = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    TEST_ITEM* return_val1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val);
+
+    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    TEST_ITEM* return_val3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val2);
+
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, seq_no);
     ASSERT_ARE_EQUAL(int, 0, result);
 
@@ -170,13 +177,14 @@ TEST_FUNCTION(test_put_and_get)
     //result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item3, 1, seq_no);
     //ASSERT_ARE_EQUAL(int, 0, result);
 
-    CLDS_HASH_TABLE_ITEM* return_val = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
-    TEST_ITEM* return_val1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val);
 
-    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
-    TEST_ITEM* return_val3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val2);
+    CLDS_HASH_TABLE_ITEM* return_val4 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    TEST_ITEM* return_val5 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val4);
 
-    if (return_val1 && return_val3)
+    CLDS_HASH_TABLE_ITEM* return_val6 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    TEST_ITEM* return_val7 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val6);
+
+    if (return_val1 && return_val3 && return_val5 && return_val7)
     {
 
     }
