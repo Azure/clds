@@ -119,86 +119,133 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 {
 }
 
+typedef struct EVICT_CONTEXT_TAG
+{
+    uint32_t count;
+} EVICT_CONTEXT;
+
+void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status)
+{
+    EVICT_CONTEXT* count_context = context;
+    count_context->count++;
+    (void)cache_evict_status;
+}
 
 TEST_FUNCTION(test_put_and_get)
 {
     // arrange
-    int64_t seq_no = 0;
+    EVICT_CONTEXT count_context = { 0 };
+
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    volatile_atomic int64_t sequence_number = 45;
+    int64_t sequence_number = 45;
     LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
     int result;
-    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
-    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
-    test_item->key = 1;
-    test_item->appendix = 13;
-
     CLDS_HASH_TABLE_ITEM* item1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     TEST_ITEM* test_item1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
-    test_item1->key = 2;
-    test_item1->appendix = 14;
+    test_item1->key = 1;
+    test_item1->appendix = 13;
 
     CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     TEST_ITEM* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item2);
-    test_item2->key = 3;
-    test_item2->appendix = 15;
-
-
-    CLDS_HASH_TABLE_ITEM* item3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
-    TEST_ITEM* test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item3);
-    test_item3->key = 4;
-    test_item3->appendix = 16;
-
+    test_item2->key = 2;
+    test_item2->appendix = 14;
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item, 1, seq_no);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(int, 0, result);
 
 
-    CLDS_HASH_TABLE_ITEM* return_val = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
-    TEST_ITEM* return_val1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val);
+    CLDS_HASH_TABLE_ITEM* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    TEST_ITEM* return_test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val1);
+    ASSERT_IS_NOT_NULL(return_test_item);
+    ASSERT_ARE_EQUAL(int, 1, return_test_item->key);
+    ASSERT_ARE_EQUAL(int, 13, return_test_item->appendix);
 
-    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
-    TEST_ITEM* return_val3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val2);
-
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, seq_no);
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, seq_no);
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    //result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item3, 1, seq_no);
-    //ASSERT_ARE_EQUAL(int, 0, result);
-
-    //result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item3, 1, seq_no);
-    //ASSERT_ARE_EQUAL(int, 0, result);
-
-
-    CLDS_HASH_TABLE_ITEM* return_val4 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
-    TEST_ITEM* return_val5 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val4);
-
-    CLDS_HASH_TABLE_ITEM* return_val6 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
-    TEST_ITEM* return_val7 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val6);
-
-    if (return_val1 && return_val3 && return_val5 && return_val7)
-    {
-
-    }
+    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(2));
+    TEST_ITEM* return_test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val2);
+    ASSERT_IS_NOT_NULL(return_test_item2);
+    ASSERT_ARE_EQUAL(int, 2, return_test_item2->key);
+    ASSERT_ARE_EQUAL(int, 14, return_test_item2->appendix);
 
     // cleanup
-    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item1);
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item2);
-    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item3);
-    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, return_val);
 
     lru_cache_destroy(lru_cache);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+
+TEST_FUNCTION(test_put_evict_and_get)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    int64_t sequence_number = 45;
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+
+    int result;
+    CLDS_HASH_TABLE_ITEM* item1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    TEST_ITEM* test_item1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
+    test_item1->key = 1;
+    test_item1->appendix = 13;
+
+    CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    TEST_ITEM* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item2);
+    test_item2->key = 2;
+    test_item2->appendix = 14;
+
+    CLDS_HASH_TABLE_ITEM* item3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    TEST_ITEM* test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item3);
+    test_item3->key = 3;
+    test_item3->appendix = 15;
+
+    // act
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, &sequence_number, on_evict_callback, &count_context);
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+
+    CLDS_HASH_TABLE_ITEM* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    ASSERT_IS_NULL(return_val1);
+
+    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(2));
+    ASSERT_IS_NOT_NULL(return_val2);
+    TEST_ITEM* return_test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val2);
+    ASSERT_IS_NOT_NULL(return_test_item2);
+    ASSERT_ARE_EQUAL(int, 2, return_test_item2->key);
+    ASSERT_ARE_EQUAL(int, 14, return_test_item2->appendix);
+
+    CLDS_HASH_TABLE_ITEM* return_val3 = lru_cache_get(lru_cache, (void*)(uintptr_t)(3));
+    ASSERT_IS_NOT_NULL(return_val3);
+    TEST_ITEM* return_test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val3);
+    ASSERT_IS_NOT_NULL(return_test_item3);
+    ASSERT_ARE_EQUAL(int, 3, return_test_item3->key);
+    ASSERT_ARE_EQUAL(int, 15, return_test_item3->appendix);
+
+    // cleanup
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item1);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item2);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item3);
+
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
 
 END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

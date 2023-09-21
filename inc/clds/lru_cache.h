@@ -19,12 +19,12 @@ extern "C" {
 
 typedef struct LRU_CACHE_TAG* LRU_CACHE_HANDLE;
 
-#define LRU_CACHE_INSERT_RESULT_VALUES \
-    LRU_CACHE_INSERT_OK, \
-    LRU_CACHE_INSERT_ERROR, \
-    LRU_CACHE_KEY_ALREADY_EXISTS_OK
+#define LRU_CACHE_PUT_RESULT_VALUES \
+    LRU_CACHE_PUT_OK, \
+    LRU_CACHE_PUT_ERROR, \
+    LRU_CACHE_PUT_VALUE_TOO_BIG
 
-MU_DEFINE_ENUM(LRU_CACHE_INSERT_RESULT, LRU_CACHE_INSERT_RESULT_VALUES);
+MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 #define LRU_CACHE_EVICT_RESULT_VALUES \
     LRU_CACHE_EVICT_OK, \
@@ -38,7 +38,8 @@ MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compu
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
-MOCKABLE_FUNCTION(, int, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t, size, int64_t, seq_no);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t, size, int64_t*, seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 
 #ifdef __cplusplus
