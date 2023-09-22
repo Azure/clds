@@ -100,3 +100,18 @@ Frees up `LRU_CACHE_HANDLE`.
 MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t, size, int64_t, seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
 ```
 
+The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, it is removed and reinserted to maintain the LRU order. Additionally, when the cache is at full capacity, this function triggers eviction by removing the least recently used item to make space for the new item. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`.
+
+**SRS_LRU_CACHE_13_023: [** If `lru_handle` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_024: [** If `key` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_025: [** If `value` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_026: [** If `size` is `0`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_027: [** If `size` is greater than `capacity` of lru cache, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_VALUE_INVALID_SIZE`. **]**
+
+**SRS_LRU_CACHE_13_028: [** `lru_cache_put` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
+
+**SRS_LRU_CACHE_13_029: [** `lru_cache_put` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**

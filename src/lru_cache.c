@@ -213,8 +213,8 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
     {
         if (lru_cache->capacity < size)
         {
-            LogError("value size is too large.");
-            result = LRU_CACHE_PUT_VALUE_TOO_BIG;
+            LogError("value size is larger than capacity.");
+            result = LRU_CACHE_PUT_VALUE_INVALID_SIZE;
         }
         else
         {
@@ -231,21 +231,21 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
 
             if (hash_table_item != NULL)
             {
-                LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
-                PDLIST_ENTRY node = &(doubly_value->node);
+                LRU_NODE* current_item = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
+                PDLIST_ENTRY node = &(current_item->node);
 
-                CLDS_HASH_TABLE_ITEM* entry;
-                if (clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, key, &entry, seq_no) != CLDS_HASH_TABLE_REMOVE_OK)
+                CLDS_HASH_TABLE_ITEM* old_item;
+                if (clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, key, &old_item, seq_no) != CLDS_HASH_TABLE_REMOVE_OK)
                 {
                     LogError("Cannot remove old key=%p from the clds_hash_table", key);
                     result = LRU_CACHE_PUT_ERROR;
                 }
                 else
                 {
-                    CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
+                    CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
                     srw_lock_acquire_exclusive(lru_cache->lock);
                     {
-                        lru_cache->current_size -= doubly_value->size;
+                        lru_cache->current_size -= current_item->size;
                         DList_RemoveEntryList(node);
                     }
                     srw_lock_release_exclusive(lru_cache->lock);
@@ -257,11 +257,11 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
             bool can_continue = (result == LRU_CACHE_PUT_OK);
             while (!DList_IsListEmpty(&lru_cache->head) && (lru_cache->current_size + size >= lru_cache->capacity) && can_continue)
             {
-                DLIST_ENTRY* last_node = lru_cache->head.Flink;
-                LRU_NODE* last_node_value = (LRU_NODE*)CONTAINING_RECORD(last_node, LRU_NODE, node);
+                DLIST_ENTRY* least_used_node = lru_cache->head.Flink;
+                LRU_NODE* least_used_node_value = (LRU_NODE*)CONTAINING_RECORD(least_used_node, LRU_NODE, node);
 
                 CLDS_HASH_TABLE_ITEM* entry;
-                if (clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, last_node_value->key, &entry, seq_no) != CLDS_HASH_TABLE_REMOVE_OK)
+                if (clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, least_used_node_value->key, &entry, seq_no) != CLDS_HASH_TABLE_REMOVE_OK)
                 {
                     LogError("Error removing item from hash table");
                     can_continue = false;
@@ -272,8 +272,8 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
                 {
                     srw_lock_acquire_exclusive(lru_cache->lock);
                     {
-                        lru_cache->current_size -= last_node_value->size;
-                        (void)DList_RemoveEntryList(last_node);
+                        lru_cache->current_size -= least_used_node_value->size;
+                        (void)DList_RemoveEntryList(least_used_node);
                         CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
                     }
                     srw_lock_release_exclusive(lru_cache->lock);
