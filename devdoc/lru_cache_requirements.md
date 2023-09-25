@@ -102,6 +102,17 @@ MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_h
 
 The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, it is removed and reinserted to maintain the LRU order. Additionally, when the cache is at full capacity, this function triggers eviction by removing the least recently used item to make space for the new item. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`.
 
+For example: 
+
+LRU Cache (Capacity: 2)
+- put(key1, value1)
+  - Head -> Node (key1)
+- put(key2, value2)
+  - Head -> Node (key1) -> Node (key2)
+- put(key3, value3)
+  - Head -> Node (key2) -> Node (key3) (`key1` is evicted)
+
+
 **SRS_LRU_CACHE_13_023: [** If `lru_handle` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
 **SRS_LRU_CACHE_13_024: [** If `key` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
@@ -115,3 +126,45 @@ The `lru_cache_put` function is utilized for inserting or updating an item in th
 **SRS_LRU_CACHE_13_028: [** `lru_cache_put` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
 
 **SRS_LRU_CACHE_13_029: [** `lru_cache_put` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**
+
+**SRS_LRU_CACHE_13_030: [**  If the `key` is found: **]**
+
+- **SRS_LRU_CACHE_13_031: [** `lru_cache_put` shall remove the old `value` from the `clds_hash_table`. **]**
+
+- **SRS_LRU_CACHE_13_032: [** `lru_cache_put` shall free the old `value`. **]**
+
+- **SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
+
+- **SRS_LRU_CACHE_13_034: [** `lru_cache_put` shall subtract old `value` size from Cache `current_size`. **]**
+
+- **SRS_LRU_CACHE_13_035: [** `lru_cache_put` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
+
+- **SRS_LRU_CACHE_13_036: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_037: [** While the `capacity` of the cache is full: **]**
+
+- **SRS_LRU_CACHE_13_038: [** `lru_cache_put` shall get the least used node. **]**
+
+- **SRS_LRU_CACHE_13_039: [** The least used node is removed from `clds_hash_table` by calling `clds_hash_table_remove`. **]**
+
+- **SRS_LRU_CACHE_13_040: [** `lru_cache_put` shall acquire the lock in exclusive. **]**
+
+- **SRS_LRU_CACHE_13_041: [** `lru_cache_put` shall decrement the least used node size from `current_size` and remove it from the DList by calling `DList_RemoveEntryList`. **]**
+
+- **SRS_LRU_CACHE_13_042: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
+
+- **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the status `LRU_CACHE_EVICT_OK`. **]**
+
+**SRS_LRU_CACHE_13_044: [** `lru_cache_put` shall create LRU Node item to be inserted in the hash table. **]**
+
+**SRS_LRU_CACHE_13_045: [** `lru_cache_put` shall insert the LRU Node item in the hash table by calling `clds_hash_table_insert`. **]**
+
+**SRS_LRU_CACHE_13_046: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_047: [** `lru_cache_put` shall append the node to the tail and update the `current_size` with item `size`. **]**
+
+**SRS_LRU_CACHE_13_048: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_049: [** On success, `lru_cache_put` shall return `LRU_CACHE_PUT_OK`. **]**
+
+**SRS_LRU_CACHE_13_050: [** For any other errors, `lru_cache_put` shall return `LRU_CACHE_PUT_ERROR` **]**
