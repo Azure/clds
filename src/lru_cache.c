@@ -323,35 +323,57 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
 CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
 {
     CLDS_HASH_TABLE_ITEM* result = NULL;
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
 
-    if (hazard_pointers_thread == NULL)
+    if (
+        /*Codes_SRS_LRU_CACHE_13_051: [ If lru_cache is NULL, then lru_cache_get shall fail and return NULL. ]*/
+        lru_cache == NULL ||
+        /*Codes_SRS_LRU_CACHE_13_052: [ If key is NULL, then lru_cache_get shall fail and return NULL. ]*/
+        key == NULL)
     {
-        LogError("clds_hazard_pointers_thread_helper_get_thread failed");
+        LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p", lru_cache, key);
+        result = NULL;
     }
     else
     {
-        CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
-
-        if (hash_table_item != NULL)
+        /*Codes_SRS_LRU_CACHE_13_053: [ lru_cache_get shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+        CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
+        if (hazard_pointers_thread == NULL)
         {
-            LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
-            PDLIST_ENTRY node = &(doubly_value->node);
-
-            srw_lock_acquire_exclusive(lru_cache->lock);
+            /*Codes_SRS_LRU_CACHE_13_061: [ If there are any failures, lru_cache_get shall return NULL. ]*/
+            LogError("clds_hazard_pointers_thread_helper_get_thread failed");
+            result = NULL;
+        }
+        else
+        {
+            /*Codes_SRS_LRU_CACHE_13_054: [ lru_cache_get shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
+            CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
+            if (hash_table_item != NULL)
             {
-                if (lru_cache->head.Blink != node)
+
+                LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
+                PDLIST_ENTRY node = &(doubly_value->node);
+
+                /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
+                srw_lock_acquire_exclusive(lru_cache->lock);
                 {
-                    DList_RemoveEntryList(node);
-                    DList_InitializeListHead(node);
-                    DList_InsertTailList(&lru_cache->head, node);
+                    /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
+                    if (lru_cache->head.Blink != node)
+                    {
+                        /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+                        DList_RemoveEntryList(node);
+                        DList_InitializeListHead(node);
+                        /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
+                        DList_InsertTailList(&lru_cache->head, node);
+                    }
                 }
+                /*Codes_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
+                srw_lock_release_exclusive(lru_cache->lock);
+                result = doubly_value->value;
+                CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
             }
-            srw_lock_release_exclusive(lru_cache->lock);
-            result = doubly_value->value;
-            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
         }
     }
 
+    /*Codes_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return CLDS_HASH_TABLE_ITEM value of the key. ]*/
     return result;
 }

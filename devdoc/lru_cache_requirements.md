@@ -168,3 +168,34 @@ LRU Cache (Capacity: 2)
 **SRS_LRU_CACHE_13_049: [** On success, `lru_cache_put` shall return `LRU_CACHE_PUT_OK`. **]**
 
 **SRS_LRU_CACHE_13_050: [** For any other errors, `lru_cache_put` shall return `LRU_CACHE_PUT_ERROR` **]**
+
+
+### lru_cache_get
+
+```c
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
+```
+
+Gets the `value` of the `key` from the cache. If the `key` is found, the node is made as tail if it is not already.
+
+**SRS_LRU_CACHE_13_051: [** If `lru_cache` is `NULL`, then `lru_cache_get` shall fail and return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_052: [** If `key` is `NULL`, then `lru_cache_get` shall fail and return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_053: [** `lru_cache_get` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
+
+**SRS_LRU_CACHE_13_054: [** `lru_cache_get` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**
+
+**SRS_LRU_CACHE_13_055: [**  If the `key` is found and the node from the `key` is not recently used: **]**
+
+- **SRS_LRU_CACHE_13_056: [** `lru_cache_get` shall acquire the lock in exclusive mode. **]**
+
+- **SRS_LRU_CACHE_13_057: [** `lru_cache_get` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
+
+- **SRS_LRU_CACHE_13_058: [** `lru_cache_get` shall make the node as the tail by calling `DList_InsertTailList`. **]**
+
+- **SRS_LRU_CACHE_13_059: [** `lru_cache_get` shall release the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_060: [** On success, `lru_cache_get` shall return `CLDS_HASH_TABLE_ITEM` value of the `key`. **]**
+
+**SRS_LRU_CACHE_13_061: [** If there are any failures, `lru_cache_get` shall return `NULL`. **]**
