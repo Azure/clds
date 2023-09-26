@@ -3,6 +3,7 @@
 
 set(clds_reals_c_files
     real_clds_hazard_pointers.c
+    real_clds_hazard_pointers_thread_helper.c
     real_clds_hash_table.c
     real_clds_singly_linked_list.c
     real_clds_sorted_list.c
@@ -14,6 +15,8 @@ set(clds_reals_c_files
 set(clds_reals_h_files
     real_clds_hazard_pointers.h
     real_clds_hazard_pointers_renames.h
+    real_clds_hazard_pointers_thread_helper.h
+    real_clds_hazard_pointers_thread_helper_renames.h
     real_clds_hash_table.h
     real_clds_hash_table_renames.h
     real_clds_singly_linked_list.h

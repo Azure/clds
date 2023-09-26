@@ -7,6 +7,7 @@
 #define ENABLE_MOCKS
 
 #include "clds/clds_hazard_pointers.h"
+#include "clds/clds_hazard_pointers_thread_helper.h"
 #include "clds/clds_hash_table.h"
 #include "clds/clds_singly_linked_list.h"
 #include "clds/clds_sorted_list.h"
@@ -17,6 +18,7 @@
 #undef ENABLE_MOCKS
 
 #include "../tests/reals/real_clds_hazard_pointers.h"
+#include "../tests/reals/real_clds_hazard_pointers_thread_helper.h"
 #include "../tests/reals/real_clds_hash_table.h"
 #include "../tests/reals/real_clds_singly_linked_list.h"
 #include "../tests/reals/real_clds_sorted_list.h"
@@ -34,6 +36,7 @@ TEST_FUNCTION(check_all_clds_reals)
 
     // act
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
+    REGISTER_CLDS_HAZARD_POINTERS_THREAD_HELPER_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_HASH_TABLE_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_SINGLY_LINKED_LIST_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_SORTED_LIST_GLOBAL_MOCK_HOOKS();
