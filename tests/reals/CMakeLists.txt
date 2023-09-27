@@ -11,6 +11,13 @@ set(clds_reals_c_files
     real_mpsc_lock_free_queue.c
 )
 
+if (WIN32)
+    set(clds_reals_c_files
+        ${clds_reals_c_files}
+        real_clds_hazard_pointers_thread_helper.c # Windows only until there is a PAL for thread local storage
+    )
+endif()
+
 set(clds_reals_h_files
     real_clds_hazard_pointers.h
     real_clds_hazard_pointers_renames.h
@@ -27,6 +34,14 @@ set(clds_reals_h_files
     real_mpsc_lock_free_queue.h
     real_mpsc_lock_free_queue_renames.h
 )
+
+if (WIN32)
+    set(clds_reals_h_files
+        ${clds_reals_h_files}
+        real_clds_hazard_pointers_thread_helper.h
+        real_clds_hazard_pointers_thread_helper_renames.h # Windows only until there is a PAL for thread local storage
+    )
+endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../src)
 add_library(clds_reals ${clds_reals_c_files} ${clds_reals_h_files})
