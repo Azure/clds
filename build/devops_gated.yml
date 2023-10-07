@@ -311,6 +311,13 @@ jobs:
     workingDirectory: 'build_x64'
     displayName: 'Run lock_free_set_perf tests'
 
+  - task: CmdLine@1
+    displayName: 'Run ctest'
+    inputs:
+      filename: ctest
+      arguments: '-C "Debug" -V --output-on-failure' -R perf
+      workingFolder: 'build_x64'
+
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu'
   pool:
