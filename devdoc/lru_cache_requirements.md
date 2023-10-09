@@ -89,7 +89,7 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache);
 
 Frees up `LRU_CACHE_HANDLE`.
 
-**SRS_LRU_CACHE_13_021: [** If `lru_cache` is `NULL`, then `lru_cache_destroy` shall fail. **]**
+**SRS_LRU_CACHE_13_021: [** If `lru_cache` is `NULL`, then `lru_cache_destroy` shall return. **]**
 
 **SRS_LRU_CACHE_13_022: [** `lru_cache_destroy` shall free all resources associated with the `LRU_CACHE_HANDLE`. **]**
 
@@ -100,7 +100,7 @@ Frees up `LRU_CACHE_HANDLE`.
 MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t, size, int64_t, seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
 ```
 
-The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, it is removed and reinserted to maintain the LRU order. Additionally, when the cache is at full capacity, this function triggers eviction by removing the least recently used item to make space for the new item. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`.
+The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, it is updated with the new value if the cache has sufficient capacity; otherwise, the item is removed and reinserted to maintain the LRU order. Additionally, when the cache is at full capacity, this function triggers eviction by removing the least recently used item to make space for the new item. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`.
 
 For example: 
 
@@ -112,6 +112,7 @@ LRU Cache (Capacity: 2)
 - put(key3, value3)
   - Head -> Node (key2) -> Node (key3) (`key1` is evicted)
 
+Note: The `size` of the value needs to be precalculated in terms of the `capacity` mentioned at the creation of the cache.
 
 **SRS_LRU_CACHE_13_023: [** If `lru_handle` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
@@ -161,7 +162,9 @@ LRU Cache (Capacity: 2)
 
 **SRS_LRU_CACHE_13_046: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
 
-**SRS_LRU_CACHE_13_047: [** `lru_cache_put` shall append the node to the tail and update the `current_size` with item `size`. **]**
+**SRS_LRU_CACHE_13_047: [** `lru_cache_put` shall append the node to the tail. **]**
+
+**SRS_LRU_CACHE_13_062: [** `lru_cache_put` shall update the `current_size` with item `size`. **]**
 
 **SRS_LRU_CACHE_13_048: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 

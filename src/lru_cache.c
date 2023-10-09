@@ -1,4 +1,5 @@
-// Licensed under the MIT license.See LICENSE file in the project root for full license information.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -63,7 +64,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         /*Codes_SRS_LRU_CACHE_13_004: [ If clds_hazard_pointers is NULL, lru_cache_create shall fail and return NULL. ]*/
         (clds_hazard_pointers == NULL) ||
         /*Codes_SRS_LRU_CACHE_13_010: [ If capacity less than or equals to 0, then lru_cache_create shall fail and return NULL. ]*/
-        (capacity <= 0) || 
+        (capacity <= 0) ||
         /*Codes_SRS_LRU_CACHE_13_009: [ If start_sequence_number is NULL, then skipped_seq_no_cb must also be NULL, otherwise lru_cache_create shall fail and return NULL. ]*/
         ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL))
         )
@@ -175,10 +176,10 @@ static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CL
     LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
     new_node->key = key;
     new_node->size = size;
-    new_node->value = value; 
+    new_node->value = value;
 
     /*Codes_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
-    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, insert_seq_no); 
+    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, insert_seq_no);
 
     if (hash_table_insert != CLDS_HASH_TABLE_INSERT_OK)
     {
@@ -221,6 +222,8 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
     }
     else
     {
+        bool can_continue = (result == LRU_CACHE_PUT_OK);
+
         if (lru_cache->capacity < size)
         {
             /*Codes_SRS_LRU_CACHE_13_027: [ If size is greater than capacity of lru cache, then lru_cache_put shall fail and return LRU_CACHE_PUT_VALUE_INVALID_SIZE. ]*/
@@ -249,33 +252,72 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
                 PDLIST_ENTRY node = &(current_item->node);
 
                 CLDS_HASH_TABLE_ITEM* old_item;
-                /*Codes_SRS_LRU_CACHE_13_031: [ lru_cache_put shall remove the old value from the clds_hash_table. ]*/
-                if (clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, key, &old_item, seq_no) != CLDS_HASH_TABLE_REMOVE_OK)
+                srw_lock_acquire_exclusive(lru_cache->lock);
+
+                if ((lru_cache->current_size - current_item->size + size) < lru_cache->capacity)
                 {
-                    /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-                    LogError("Cannot remove old key=%p from the clds_hash_table", key);
-                    result = LRU_CACHE_PUT_ERROR;
+                    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
+                    LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
+                    new_node->key = key;
+                    new_node->size = size;
+                    new_node->value = value;
+
+                    if (clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, seq_no) != CLDS_HASH_TABLE_SET_VALUE_OK)
+                    {
+                        /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+                        LogError("Cannot set old key=%p from the clds_hash_table", key);
+                        result = LRU_CACHE_PUT_ERROR;
+
+                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
+                    }
+                    else
+                    {
+
+                        DList_RemoveEntryList(node);
+
+                        DList_InitializeListHead(&(new_node->node));
+                        DList_InsertTailList(&(lru_cache->head), &(new_node->node));
+
+                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
+
+                        lru_cache->current_size -= current_item->size;
+                        lru_cache->current_size += size;
+                        can_continue = false;
+
+                        result = LRU_CACHE_EVICT_OK;
+                    }
+
                 }
                 else
                 {
-                    /*Codes_SRS_LRU_CACHE_13_032: [ lru_cache_put shall free the old value. ]*/
-                    CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
-                    /*Codes_SRS_LRU_CACHE_13_033: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
-                    srw_lock_acquire_exclusive(lru_cache->lock);
+                    /*Codes_SRS_LRU_CACHE_13_031: [ lru_cache_put shall remove the old value from the clds_hash_table. ]*/
+                    if (clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, key, &old_item, seq_no) != CLDS_HASH_TABLE_REMOVE_OK)
                     {
-                        /*Codes_SRS_LRU_CACHE_13_034: [ lru_cache_put shall subtract old value size from Cache current_size. ]*/
-                        lru_cache->current_size -= current_item->size;
-                        /*Codes_SRS_LRU_CACHE_13_035: [ lru_cache_put shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
-                        DList_RemoveEntryList(node);
-                        /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
-                        srw_lock_release_exclusive(lru_cache->lock);
+                        /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+                        LogError("Cannot remove old key=%p from the clds_hash_table", key);
+                        result = LRU_CACHE_PUT_ERROR;
+                    }
+                    else
+                    {
+                        /*Codes_SRS_LRU_CACHE_13_032: [ lru_cache_put shall free the old value. ]*/
+                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
+                        /*Codes_SRS_LRU_CACHE_13_033: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
+                        //srw_lock_acquire_exclusive(lru_cache->lock);
+                        {
+                            /*Codes_SRS_LRU_CACHE_13_034: [ lru_cache_put shall subtract old value size from Cache current_size. ]*/
+                            lru_cache->current_size -= current_item->size;
+                            /*Codes_SRS_LRU_CACHE_13_035: [ lru_cache_put shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+                            DList_RemoveEntryList(node);
+                            /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
+                            //srw_lock_release_exclusive(lru_cache->lock);
+                        }
                     }
                 }
                 CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
+                srw_lock_release_exclusive(lru_cache->lock);
             }
 
-            bool can_continue = (result == LRU_CACHE_PUT_OK);
-            while (!DList_IsListEmpty(&lru_cache->head) && (lru_cache->current_size + size >= lru_cache->capacity) && can_continue)
+            while (can_continue && !DList_IsListEmpty(&lru_cache->head) && (lru_cache->current_size + size >= lru_cache->capacity))
             {
                 /*Codes_SRS_LRU_CACHE_13_037: [ While the capacity of the cache is full: ]*/
                 /*Codes_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node. ]*/
