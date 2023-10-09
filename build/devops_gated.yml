@@ -315,7 +315,7 @@ jobs:
     displayName: 'Run ctest tests - Perf'
     inputs:
       filename: ctest
-      arguments: '-C "Debug" -V --output-on-failure -R perf'
+      arguments: '-C "RelWithDebInfo" -V --output-on-failure -R perf'
       workingFolder: 'build_x64'
 
 - job: linuxubuntu
