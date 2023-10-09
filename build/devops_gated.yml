@@ -312,7 +312,7 @@ jobs:
     displayName: 'Run lock_free_set_perf tests'
 
   - task: CmdLine@1
-    displayName: 'Run ctest'
+    displayName: 'Run ctest tests - Perf'
     inputs:
       filename: ctest
       arguments: '-C "Debug" -V --output-on-failure' -R perf
