@@ -125,11 +125,15 @@ typedef struct EVICT_CONTEXT_TAG
     uint32_t count;
 } EVICT_CONTEXT;
 
-void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status)
+void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, CLDS_HASH_TABLE_ITEM* item)
 {
     EVICT_CONTEXT* count_context = context;
     count_context->count++;
-    (void)cache_evict_status;
+    if (cache_evict_status == LRU_CACHE_EVICT_OK)
+    {
+        TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
+        ASSERT_IS_NOT_NULL(test_item);
+    }
 }
 
 TEST_FUNCTION(test_put_and_get)

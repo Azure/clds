@@ -327,8 +327,18 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
                 CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
             }
 
-            while (can_continue && !DList_IsListEmpty(&lru_cache->head) && (lru_cache->current_size + size >= lru_cache->capacity))
+            do
             {
+                srw_lock_acquire_shared(lru_cache->lock);
+                {
+                    if (!can_continue || DList_IsListEmpty(&lru_cache->head) || (lru_cache->current_size + size < lru_cache->capacity))
+                    {
+                        srw_lock_release_shared(lru_cache->lock);
+                        break;
+                    }
+                    srw_lock_release_shared(lru_cache->lock);
+                }
+
                 /*Codes_SRS_LRU_CACHE_13_037: [ While the capacity of the cache is full: ]*/
                 /*Codes_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node. ]*/
                 DLIST_ENTRY* least_used_node = lru_cache->head.Flink;
@@ -342,7 +352,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
                     LogError("Error removing item from hash table");
                     can_continue = false;
                     result = MU_FAILURE;
-                    evict_callback(context, LRU_CACHE_EVICT_ERROR);
+                    evict_callback(context, LRU_CACHE_EVICT_ERROR, NULL);
                 }
                 else
                 {
@@ -352,15 +362,16 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
                         /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall decrement the least used node size from current_size and remove it from the DList by calling DList_RemoveEntryList. ]*/
                         lru_cache->current_size -= least_used_node_value->size;
                         (void)DList_RemoveEntryList(least_used_node);
-                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
                     }
                     /*Codes_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
                     srw_lock_release_exclusive(lru_cache->lock);
 
                     /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK. ]*/
-                    evict_callback(context, LRU_CACHE_EVICT_OK);
+                    evict_callback(context, LRU_CACHE_EVICT_OK, least_used_node_value->value);
+
+                    CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
                 }
-            }
+            } while (1);
 
             if (can_continue)
             {
