@@ -58,7 +58,7 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 
 **SRS_LRU_CACHE_13_009: [** If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `lru_cache_create` shall fail and return NULL. **]**
 
-**SRS_LRU_CACHE_13_010: [** If `capacity` is less than or equals to `0`, then `lru_cache_create` shall fail and return NULL. **]**
+**SRS_LRU_CACHE_13_010: [** If `capacity` is `0`, then `lru_cache_create` shall fail and return NULL. **]**
 
 **SRS_LRU_CACHE_13_011: [** `lru_cache_create` shall allocate memory for `LRU_CACHE_HANDLE`. **]**
 
@@ -130,15 +130,31 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_030: [**  If the `key` is found: **]**
 
-- **SRS_LRU_CACHE_13_031: [** `lru_cache_put` shall remove the old `value` from the `clds_hash_table`. **]**
-
-- **SRS_LRU_CACHE_13_032: [** `lru_cache_put` shall free the old `value`. **]**
-
 - **SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
 
-- **SRS_LRU_CACHE_13_034: [** `lru_cache_put` shall subtract old `value` size from Cache `current_size`. **]**
+- **SRS_LRU_CACHE_13_063: [** If the cache has enough `capacity` to accommodate the new `value`: **]**
 
-- **SRS_LRU_CACHE_13_035: [** `lru_cache_put` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
+  - **SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
+
+  - **SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
+
+  - **SRS_LRU_CACHE_13_066: [** `lru_cache_put` shall append the updated node to the tail to maintain the order. **]**
+
+  - **SRS_LRU_CACHE_13_070: [** `lru_cache_put` shall update the `current_size` with the new `size`. **]**
+
+  - **SRS_LRU_CACHE_13_067: [** `lru_cache_put` shall free the old value. **]**
+
+  - **SRS_LRU_CACHE_13_068: [** `lru_cache_put` shall return with `LRU_CACHE_EVICT_OK`. **]**
+
+- **SRS_LRU_CACHE_13_069: [** If the cache does not have enough `capacity` to accommodate the new `value`: **]**
+
+  - **SRS_LRU_CACHE_13_031: [** `lru_cache_put` shall remove the old `value` from the `clds_hash_table`. **]**
+
+  - **SRS_LRU_CACHE_13_032: [** `lru_cache_put` shall free the old `value`. **]**
+
+  - **SRS_LRU_CACHE_13_034: [** `lru_cache_put` shall subtract old `value` size from cache `current_size`. **]**
+
+  - **SRS_LRU_CACHE_13_035: [** `lru_cache_put` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
 
 - **SRS_LRU_CACHE_13_036: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 
