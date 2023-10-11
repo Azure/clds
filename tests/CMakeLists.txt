@@ -22,6 +22,7 @@ endif()
 if(${run_int_tests})
     build_test_folder(lock_free_set_int)
     build_test_folder(clds_singly_linked_list_int)
+    build_test_folder(lru_cache_int)
 if(WIN32)
         # this test has a problem on Linux, suspicion of badly written test
         build_test_folder(clds_hash_table_int)

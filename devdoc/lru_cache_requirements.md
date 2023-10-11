@@ -170,7 +170,7 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_042: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 
-- **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the status `LRU_CACHE_EVICT_OK`. **]**
+- **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the status `LRU_CACHE_EVICT_OK` and the evicted item. **]**
 
 **SRS_LRU_CACHE_13_044: [** `lru_cache_put` shall create LRU Node item to be inserted in the hash table. **]**
 

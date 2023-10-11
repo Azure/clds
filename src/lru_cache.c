@@ -366,7 +366,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, CLDS_H
                     /*Codes_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
                     srw_lock_release_exclusive(lru_cache->lock);
 
-                    /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK. ]*/
+                    /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
                     evict_callback(context, LRU_CACHE_EVICT_OK, least_used_node_value->value);
 
                     CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
