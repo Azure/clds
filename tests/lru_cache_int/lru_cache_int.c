@@ -125,7 +125,7 @@ typedef struct EVICT_CONTEXT_TAG
     uint32_t count;
 } EVICT_CONTEXT;
 
-void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, CLDS_HASH_TABLE_ITEM* item)
+void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* item)
 {
     EVICT_CONTEXT* count_context = context;
     count_context->count++;
@@ -143,8 +143,7 @@ TEST_FUNCTION(test_put_and_get)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    int64_t sequence_number = 45;
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -160,10 +159,10 @@ TEST_FUNCTION(test_put_and_get)
     test_item2->appendix = 14;
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -195,8 +194,7 @@ TEST_FUNCTION(test_put_calls_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    int64_t sequence_number = 45;
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -216,14 +214,14 @@ TEST_FUNCTION(test_put_calls_evict)
     test_item3->key = 3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -263,8 +261,7 @@ TEST_FUNCTION(test_put_same_item_multiple_times_triggers_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    int64_t sequence_number = 45;
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -284,22 +281,22 @@ TEST_FUNCTION(test_put_same_item_multiple_times_triggers_evict)
     test_item3->key = 3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
     for (int i = 0; i < call_times; i++)
     {
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, &sequence_number, on_evict_callback, &count_context);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -340,8 +337,7 @@ TEST_FUNCTION(test_put_multiple_times_on_same_item_does_not_trigger_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    int64_t sequence_number = 45;
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -357,16 +353,16 @@ TEST_FUNCTION(test_put_multiple_times_on_same_item_does_not_trigger_evict)
     test_item2->appendix = 14;
 
     // Lets fill the capacity
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
     for (int i = 0; i < call_times; i++)
     {
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -404,8 +400,7 @@ TEST_FUNCTION(test_put_different_value_same_key_works)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    int64_t sequence_number = 45;
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
     ASSERT_IS_NOT_NULL(lru_cache);
 
     LRU_CACHE_PUT_RESULT result;
@@ -419,7 +414,7 @@ TEST_FUNCTION(test_put_different_value_same_key_works)
     test_item2->key = 2;
     test_item2->appendix = 14;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     CLDS_HASH_TABLE_ITEM* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
@@ -430,7 +425,7 @@ TEST_FUNCTION(test_put_different_value_same_key_works)
     ASSERT_ARE_EQUAL(int, 13, return_test_item1->appendix);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item2, 1, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item2, 1, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -460,12 +455,11 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    int64_t sequence_number = 45;
     uint64_t capacity = 11;
     int n = 10;
     CLDS_HASH_TABLE_ITEM** items = malloc(n * sizeof(CLDS_HASH_TABLE_ITEM*));
 
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556, capacity);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, capacity);
     ASSERT_IS_NOT_NULL(lru_cache);
 
     LRU_CACHE_PUT_RESULT result;
@@ -477,7 +471,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
         test_item1->key = i + 1;
         test_item1->appendix = i + 10;
 
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i+1), items[i], 1, &sequence_number, on_evict_callback, &count_context);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i+1), items[i], 1, on_evict_callback, &count_context);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -486,7 +480,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     test_large_item->key = 100013;
     test_large_item->appendix = 110013;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 10, &sequence_number, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 10, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // assert
@@ -505,7 +499,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     {
         CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
     }
-
+    free(items);
     lru_cache_destroy(lru_cache);
     clds_hazard_pointers_destroy(hazard_pointers);
 }

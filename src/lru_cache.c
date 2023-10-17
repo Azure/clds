@@ -34,8 +34,6 @@ typedef struct LRU_CACHE_TAG
     volatile_atomic int64_t current_size;
     uint64_t capacity;
 
-    volatile_atomic int64_t* seq_no;
-
     DLIST_ENTRY head;
 
     SRW_LOCK_HANDLE lock;
@@ -50,7 +48,7 @@ typedef struct LRU_NODE_TAG
 } LRU_NODE;
 DECLARE_HASH_TABLE_NODE_TYPE(LRU_NODE);
 
-LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, volatile_atomic int64_t* start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb, void* skipped_seq_no_cb_context, uint64_t capacity)
+LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, size_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, uint64_t capacity)
 {
     LRU_CACHE_HANDLE result;
 
@@ -64,13 +62,10 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         /*Codes_SRS_LRU_CACHE_13_004: [ If clds_hazard_pointers is NULL, lru_cache_create shall fail and return NULL. ]*/
         (clds_hazard_pointers == NULL) ||
         /*Codes_SRS_LRU_CACHE_13_010: [ If capacity less than or equals to 0, then lru_cache_create shall fail and return NULL. ]*/
-        (capacity <= 0) ||
-        /*Codes_SRS_LRU_CACHE_13_009: [ If start_sequence_number is NULL, then skipped_seq_no_cb must also be NULL, otherwise lru_cache_create shall fail and return NULL. ]*/
-        ((start_sequence_number == NULL) && (skipped_seq_no_cb != NULL))
-        )
+        (capacity <= 0))
     {
-        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, size_t initial_bucket_size=%zu, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, volatile_atomic int64_t* start_sequence_number=%p, HASH_TABLE_SKIPPED_SEQ_NO_CB skipped_seq_no_cb=%p, void* skipped_seq_no_cb_context=%p",
-            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, start_sequence_number, skipped_seq_no_cb, skipped_seq_no_cb_context);
+        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, size_t initial_bucket_size=%zu, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t size=%" PRIu64 "",
+            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, capacity);
         result = NULL;
     }
     else
@@ -85,17 +80,6 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         }
         else
         {
-            /*Codes_SRS_LRU_CACHE_13_005: [ start_sequence_number shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. ]*/
-            /*Codes_SRS_LRU_CACHE_13_012: [ lru_cache_create shall assign start_sequence_number to seq_no if not NULL, otherwise seq_no is defaulted to 0. ]*/
-            if (start_sequence_number == NULL)
-            {
-                interlocked_exchange_64(lru_cache->seq_no, 0);
-            }
-            else
-            {
-                lru_cache->seq_no = start_sequence_number;
-            }
-
             /*Codes_SRS_LRU_CACHE_13_013: [ lru_cache_create shall assign clds_hazard_pointers to LRU_CACHE_HANDLE. ]*/
             lru_cache->clds_hazard_pointers = clds_hazard_pointers;
 
@@ -110,7 +94,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
             else
             {
                 /*Codes_SRS_LRU_CACHE_13_015: [ lru_cache_create shall allocate clds_hash_table by calling clds_hash_table_create. ]*/
-                lru_cache->table = clds_hash_table_create(compute_hash, key_compare_func, initial_bucket_size, lru_cache->clds_hazard_pointers, lru_cache->seq_no, skipped_seq_no_cb, skipped_seq_no_cb_context);
+                lru_cache->table = clds_hash_table_create(compute_hash, key_compare_func, initial_bucket_size, lru_cache->clds_hazard_pointers, NULL, NULL, NULL);
                 if (lru_cache->table == NULL)
                 {
                     /*Codes_SRS_LRU_CACHE_13_020: [ If there are any failures then lru_cache_create shall fail and return NULL. ]*/
@@ -163,13 +147,12 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
         /*Codes_SRS_LRU_CACHE_13_022: [ lru_cache_destroy shall free all resources associated with the LRU_CACHE_HANDLE. ]*/
         srw_lock_destroy(lru_cache->lock);
         clds_hash_table_destroy(lru_cache->table);
-        //clds_hazard_pointers_destroy(lru_cache->clds_hazard_pointers);
         clds_hazard_pointers_thread_helper_destroy(lru_cache->clds_hazard_pointers_thread_helper);
         free(lru_cache);
     }
 }
 
-static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size, int64_t* insert_seq_no)
+static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;
     /*Codes_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
@@ -180,7 +163,7 @@ static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CL
     new_node->value = value;
 
     /*Codes_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
-    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, insert_seq_no);
+    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, NULL);
 
     if (hash_table_insert != CLDS_HASH_TABLE_INSERT_OK)
     {
@@ -207,7 +190,7 @@ static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CL
 }
 
 
-static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, int64_t* insert_seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
+static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
 {
     LRU_CACHE_EVICT_RESULT result = LRU_CACHE_EVICT_OK;
     do
@@ -219,7 +202,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
         }
         else
         {
-            /*Codes_SRS_LRU_CACHE_13_037: [ While the capacity of the cache is full: ]*/
+            /*Codes_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
             /*Codes_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
             srw_lock_acquire_exclusive(lru_cache->lock);
             if (DList_IsListEmpty(&lru_cache->head))
@@ -231,7 +214,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                 break;
             }
 
-            /*Codes_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node. ]*/
+            /*Codes_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node which is Flink of head node. ]*/
             DLIST_ENTRY* least_used_node = lru_cache->head.Flink;
             LRU_NODE* least_used_node_value = (LRU_NODE*)CONTAINING_RECORD(least_used_node, LRU_NODE, node);
 
@@ -248,7 +231,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
             {
                 CLDS_HASH_TABLE_ITEM* entry;
                 /*Codes_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
-                CLDS_HASH_TABLE_REMOVE_RESULT remove_result = clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, least_used_node_value->key, &entry, insert_seq_no);
+                CLDS_HASH_TABLE_REMOVE_RESULT remove_result = clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, least_used_node_value->key, &entry, NULL);
 
                 switch (remove_result)
                 {
@@ -293,7 +276,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
     return result;
 }
 
-LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, uint64_t size, int64_t* seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
+LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, uint64_t size, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;
 
@@ -306,7 +289,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
         /*Codes_SRS_LRU_CACHE_13_026: [ If size is 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         size == 0)
     {
-        LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRIu64 ", int64_t seq_no=%" PRIu64 "", lru_cache, key, value, size, seq_no);
+        LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRIu64 "", lru_cache, key, value, size);
         result = LRU_CACHE_PUT_ERROR;
     }
     else
@@ -336,9 +319,6 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                 LRU_NODE* current_item = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
                 PDLIST_ENTRY node = &(current_item->node);
 
-                /*Codes_SRS_LRU_CACHE_13_070: [ lru_cache_put shall update the current_size with the new size and removes the old value size. ]*/
-                (void)interlocked_add_64(&lru_cache->current_size, -current_item->size + size);
-
                 /*Codes_SRS_LRU_CACHE_13_064: [ lru_cache_put shall create LRU Node item to be updated in the hash table. ]*/
                 CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
                 LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
@@ -348,7 +328,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
 
                 CLDS_HASH_TABLE_ITEM* old_item;
                 /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
-                if (clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, seq_no) != CLDS_HASH_TABLE_SET_VALUE_OK)
+                if (clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, NULL) != CLDS_HASH_TABLE_SET_VALUE_OK)
                 {
                     /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
                     LogError("Cannot set old key=%p from the clds_hash_table", key);
@@ -371,6 +351,9 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
                     srw_lock_release_exclusive(lru_cache->lock);
 
+                    /*Codes_SRS_LRU_CACHE_13_070: [ lru_cache_put shall update the current_size with the new size and removes the old value size. ]*/
+                    (void)interlocked_add_64(&lru_cache->current_size, -current_item->size + size);
+
                     /*Codes_SRS_LRU_CACHE_13_067: [ lru_cache_put shall free the old value. ]*/
                     CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
 
@@ -381,11 +364,11 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
             }
             else
             {
-                result = add_to_cache_internal(lru_cache, hazard_pointers_thread, key, value, size, seq_no);
+                result = add_to_cache_internal(lru_cache, hazard_pointers_thread, key, value, size);
             }
 
             // Evict if the current size overflows capacity of the cache. 
-            if (evict_internal(lru_cache, hazard_pointers_thread, seq_no, evict_callback, context) != LRU_CACHE_EVICT_OK)
+            if (evict_internal(lru_cache, hazard_pointers_thread, evict_callback, context) != LRU_CACHE_EVICT_OK)
             {
                 LogError("Eviction failed.");
             }

@@ -15,6 +15,7 @@ if(${run_unittests})
     build_test_folder(clds_singly_linked_list_ut)
     build_test_folder(clds_sorted_list_ut)
     build_test_folder(clds_hash_table_ut)
+    build_test_folder(lru_cache_ut)
     build_test_folder(mpsc_lock_free_queue_ut)
 endif()
 

@@ -12,7 +12,7 @@ typedef struct LRU_CACHE_TAG* LRU_CACHE_HANDLE;
 #define LRU_CACHE_PUT_RESULT_VALUES \
     LRU_CACHE_PUT_OK, \
     LRU_CACHE_PUT_ERROR, \
-    LRU_CACHE_PUT_VALUE_TOO_BIG
+    LRU_CACHE_PUT_VALUE_INVALID_SIZE
 
 MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
@@ -22,13 +22,14 @@ MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
-typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status);
+typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile_atomic int64_t*, start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context, int64_t, capacity);
+MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, uint64_t, capacity);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t, size, int64_t, seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, uint64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 ```
 
@@ -48,21 +49,15 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 
 **SRS_LRU_CACHE_13_004: [** If `clds_hazard_pointers` is NULL, `lru_cache_create` shall fail and return NULL. **]**
 
-**SRS_LRU_CACHE_13_005: [** `start_sequence_number` shall be used as the sequence number variable that shall be incremented at every operation that is done on the hash table. **]**
-
 **SRS_LRU_CACHE_13_006: [** `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. **]**
 
 **SRS_LRU_CACHE_13_007: [** `skipped_seq_no_cb` shall be allowed to be NULL. **]**
 
 **SRS_LRU_CACHE_13_008: [** `skipped_seq_no_cb_context` shall be allowed to be NULL. **]**
 
-**SRS_LRU_CACHE_13_009: [** If `start_sequence_number` is NULL, then `skipped_seq_no_cb` must also be NULL, otherwise `lru_cache_create` shall fail and return NULL. **]**
-
 **SRS_LRU_CACHE_13_010: [** If `capacity` is `0`, then `lru_cache_create` shall fail and return NULL. **]**
 
 **SRS_LRU_CACHE_13_011: [** `lru_cache_create` shall allocate memory for `LRU_CACHE_HANDLE`. **]**
-
-**SRS_LRU_CACHE_13_012: [** `lru_cache_create` shall assign `start_sequence_number` to `seq_no` if not `NULL`, otherwise `seq_no` is defaulted to `0`. **]**
 
 **SRS_LRU_CACHE_13_013: [** `lru_cache_create` shall assign `clds_hazard_pointers` to `LRU_CACHE_HANDLE`. **]**
 
@@ -130,8 +125,6 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_030: [**  If the `key` is found: **]**
 
-- **SRS_LRU_CACHE_13_070: [** `lru_cache_put` shall update the `current_size` with the new `size` and removes the old value size. **]**
-
 - **SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
 
 - **SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
@@ -141,6 +134,8 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 - **SRS_LRU_CACHE_13_066: [** `lru_cache_put` shall append the updated node to the tail to maintain the order. **]**
 
 - **SRS_LRU_CACHE_13_036: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
+
+- **SRS_LRU_CACHE_13_070: [** `lru_cache_put` shall update the `current_size` with the new `size` and removes the old value size. **]**
 
 - **SRS_LRU_CACHE_13_067: [** `lru_cache_put` shall free the old value. **]**
 
@@ -160,11 +155,11 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_062: [** `lru_cache_put` shall add the item `size` to the `current_size`. **]**
 
-**SRS_LRU_CACHE_13_037: [** While the `capacity` of the cache is full: **]**
+**SRS_LRU_CACHE_13_037: [** While the `current_size` of the cache exceeds `capacity`: **]**
 
 - **SRS_LRU_CACHE_13_040: [** `lru_cache_put` shall acquire the lock in exclusive. **]**
 
-- **SRS_LRU_CACHE_13_038: [** `lru_cache_put` shall get the least used node. **]**
+- **SRS_LRU_CACHE_13_038: [** `lru_cache_put` shall get the least used node which is `Flink` of head node. **]**
 
 - **SRS_LRU_CACHE_13_042: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 
