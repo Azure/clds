@@ -192,7 +192,17 @@ add_library(clds
     ${clds_md_files}
     )
 
-target_link_libraries(clds c_util c_pal)
+add_subdirectory(thread_notifications_lackey_dll)
+
+target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
+
+function(copy_clds_outputs target output_directory)
+    add_custom_command(TARGET ${target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE_DIR:thread_notifications_lackey_dll>/thread_notifications_lackey_dll.pdb;$<TARGET_FILE_DIR:thread_notifications_lackey_dll>/thread_notifications_lackey_dll.dll
+        ${output_directory} )
+    add_dependencies(${target} thread_notifications_lackey_dll)
+endfunction()
 
 # make an install target so we can produce a Linux native client package.
 install_library_with_prefix(clds clds ${clds_h_files})

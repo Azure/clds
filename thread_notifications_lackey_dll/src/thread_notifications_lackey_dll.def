@@ -1,0 +1,4 @@
+LIBRARY thread_notifications_lackey_dll
+EXPORTS
+    thread_notifications_lackey_dll_init_callback
+    thread_notifications_lackey_dll_deinit_callback
