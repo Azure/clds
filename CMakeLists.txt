@@ -192,9 +192,11 @@ add_library(clds
     ${clds_md_files}
     )
 
-add_subdirectory(thread_notifications_lackey_dll)
-
-target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
+if((WIN32)
+    # maybe this should make its way to c-pal at some point ... maybe
+    add_subdirectory(thread_notifications_lackey_dll)
+    target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
+endif()
 
 function(copy_clds_outputs target output_directory)
     add_custom_command(TARGET ${target} POST_BUILD
