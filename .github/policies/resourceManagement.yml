@@ -57,6 +57,7 @@ configuration:
           filesMatchPattern:
             pattern: deps/*
       - isOpen
+      - is
       then:
       - dismissPullRequestReview:
           message: Files outside deps detected, disengaging auto approval!
