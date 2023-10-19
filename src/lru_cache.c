@@ -14,7 +14,7 @@
 
 #include "c_util/rc_string.h"
 #include "c_pal/thandle.h"
-#include "c_pal/srw_lock.h"
+#include "c_pal/srw_lock_ll.h"
 
 #include "c_util/doublylinkedlist.h"
 
@@ -36,7 +36,7 @@ typedef struct LRU_CACHE_TAG
 
     DLIST_ENTRY head;
 
-    SRW_LOCK_HANDLE lock;
+    SRW_LOCK_LL srw_lock;
 } LRU_CACHE;
 
 typedef struct LRU_NODE_TAG
@@ -104,11 +104,10 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
                 else
                 {
                     /*Codes_SRS_LRU_CACHE_13_016: [ lru_cache_create shall allocate SRW_LOCK_HANDLE by calling srw_lock_create. ]*/
-                    lru_cache->lock = srw_lock_create(false, "lru_cache_lock");
-                    if (lru_cache->lock == NULL)
+                    if (srw_lock_ll_init(&lru_cache->srw_lock) != 0)
                     {
                         /*Codes_SRS_LRU_CACHE_13_020: [ If there are any failures then lru_cache_create shall fail and return NULL. ]*/
-                        LogError("failure in srw_lock_create(false, \"lru_cache_lock\")");
+                        LogError("failure in srw_lock_ll_init(&lru_cache->srw_lock);");
                         result = NULL;
                     }
                     else
@@ -116,7 +115,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
                         /*Codes_SRS_LRU_CACHE_13_017: [ lru_cache_create shall initialize head by calling DList_InitializeListHead. ]*/
                         DList_InitializeListHead(&(lru_cache->head));
 
-                        /*Codes_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign default value of 0 to current_size and capacity. ]*/
+                        /*Codes_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign default value of 0 to current_size and the capacity to capacity. ]*/
                         lru_cache->current_size = 0;
                         lru_cache->capacity = capacity;
 
@@ -145,14 +144,14 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
     else
     {
         /*Codes_SRS_LRU_CACHE_13_022: [ lru_cache_destroy shall free all resources associated with the LRU_CACHE_HANDLE. ]*/
-        srw_lock_destroy(lru_cache->lock);
+        srw_lock_ll_deinit(&lru_cache->srw_lock);
         clds_hash_table_destroy(lru_cache->table);
         clds_hazard_pointers_thread_helper_destroy(lru_cache->clds_hazard_pointers_thread_helper);
         free(lru_cache);
     }
 }
 
-static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* value, int64_t size)
+static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, void* key, void* value, int64_t size)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;
     /*Codes_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
@@ -174,14 +173,14 @@ static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CL
     else
     {
         /*Codes_SRS_LRU_CACHE_13_046: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
-        srw_lock_acquire_exclusive(lru_cache->lock);
+        srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
         {
             /*Codes_SRS_LRU_CACHE_13_047: [ lru_cache_put shall append the node to the tail ]*/
             DList_InitializeListHead(&(new_node->node));
             DList_InsertTailList(&(lru_cache->head), &(new_node->node));
         }
         /*Codes_SRS_LRU_CACHE_13_048: [ lru_cache_put shall release the lock in exclusive mode. ]*/
-        srw_lock_release_exclusive(lru_cache->lock);
+        srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
 
         /*Codes_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
         (void)interlocked_add_64(&lru_cache->current_size, size);
@@ -204,12 +203,12 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
         {
             /*Codes_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
             /*Codes_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
-            srw_lock_acquire_exclusive(lru_cache->lock);
+            srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
             if (DList_IsListEmpty(&lru_cache->head))
             {
                 /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
                 LogError("Something is wrong. The cache is empty but there is no capacity");
-                srw_lock_release_exclusive(lru_cache->lock);
+                srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
                 result = LRU_CACHE_EVICT_ERROR;
                 break;
             }
@@ -219,7 +218,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
             LRU_NODE* least_used_node_value = (LRU_NODE*)CONTAINING_RECORD(least_used_node, LRU_NODE, node);
 
             /*Codes_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
-            srw_lock_release_exclusive(lru_cache->lock);
+            srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
 
             /*Codes_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
             if (interlocked_compare_exchange_64(&lru_cache->current_size, current_size - least_used_node_value->size, current_size) != current_size)
@@ -238,13 +237,13 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                     case CLDS_HASH_TABLE_REMOVE_OK:
                     {
                         /*Codes_SRS_LRU_CACHE_13_073: [ lru_cache_put shall acquire the lock in exclusive. ]*/
-                        srw_lock_acquire_exclusive(lru_cache->lock);
+                        srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
                         {
                             /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall decrement the least used node size from current_size and remove it from the DList by calling DList_RemoveEntryList. ]*/
                             (void)DList_RemoveEntryList(least_used_node);
                         }
                         /*Codes_SRS_LRU_CACHE_13_074: [ lru_cache_put shall release the lock in exclusive mode. ]*/
-                        srw_lock_release_exclusive(lru_cache->lock);
+                        srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
 
                         /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
                         evict_callback(context, LRU_CACHE_EVICT_OK, least_used_node_value->value);
@@ -340,7 +339,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                 else
                 {
                     /*Codes_SRS_LRU_CACHE_13_033: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
-                    srw_lock_acquire_exclusive(lru_cache->lock);
+                    srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
 
                     DList_RemoveEntryList(node);
                     DList_InitializeListHead(&(new_node->node));
@@ -349,7 +348,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     DList_InsertTailList(&(lru_cache->head), &(new_node->node));
 
                     /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
-                    srw_lock_release_exclusive(lru_cache->lock);
+                    srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
 
                     /*Codes_SRS_LRU_CACHE_13_070: [ lru_cache_put shall update the current_size with the new size and removes the old value size. ]*/
                     (void)interlocked_add_64(&lru_cache->current_size, -current_item->size + size);
@@ -379,7 +378,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
 }
 
 
-CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
+void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
 {
     CLDS_HASH_TABLE_ITEM* result = NULL;
 
@@ -413,7 +412,7 @@ CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
                 PDLIST_ENTRY node = &(doubly_value->node);
 
                 /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
-                srw_lock_acquire_exclusive(lru_cache->lock);
+                srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
                 {
                     /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
                     if (lru_cache->head.Blink != node)
@@ -426,7 +425,7 @@ CLDS_HASH_TABLE_ITEM* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
                     }
                 }
                 /*Codes_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
-                srw_lock_release_exclusive(lru_cache->lock);
+                srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
                 result = doubly_value->value;
                 CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
             }

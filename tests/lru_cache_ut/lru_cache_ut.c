@@ -1,3 +1,4 @@
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include <stdbool.h>
@@ -20,7 +21,7 @@
 
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
-#include "c_pal/srw_lock.h"
+#include "c_pal/srw_lock_ll.h"
 
 #include "c_util/doublylinkedlist.h"
 
@@ -31,6 +32,7 @@
 #undef ENABLE_MOCKS
 
 #include "real_gballoc_hl.h"
+#include "real_srw_lock_ll.h"
 
 #include "../reals/real_clds_hazard_pointers.h"
 #include "../reals/real_clds_hash_table.h"
@@ -58,8 +60,6 @@ MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 
 
 static CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE g_clds_hazard_pointers_thread_handle = (CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE)0x1301;
-static SRW_LOCK_HANDLE g_test_lock = (SRW_LOCK_HANDLE)0x1302;
-
 
 static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 {
@@ -125,6 +125,8 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_GBALLOC_HL_GLOBAL_MOCK_HOOK();
     REGISTER_CLDS_HAZARD_POINTERS_GLOBAL_MOCK_HOOKS();
     REGISTER_CLDS_HASH_TABLE_GLOBAL_MOCK_HOOKS();
+    REGISTER_SRW_LOCK_LL_GLOBAL_MOCK_HOOK();
+
 
     REGISTER_GLOBAL_MOCK_FAIL_RETURN(clds_sorted_list_get_count, CLDS_SORTED_LIST_GET_COUNT_ERROR);
     REGISTER_GLOBAL_MOCK_FAIL_RETURN(clds_sorted_list_get_all, CLDS_SORTED_LIST_GET_ALL_ERROR);
@@ -133,7 +135,6 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_GLOBAL_MOCK_FAIL_RETURN(clds_hash_table_create, NULL);
 
     REGISTER_GLOBAL_MOCK_RETURNS(clds_hazard_pointers_thread_helper_create, g_clds_hazard_pointers_thread_handle, NULL);
-    REGISTER_GLOBAL_MOCK_RETURNS(srw_lock_create, g_test_lock, NULL);
 
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(LRU_CACHE_HANDLE, void*);
@@ -143,7 +144,6 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_UMOCK_ALIAS_TYPE(PDLIST_ENTRY, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HASH_TABLE_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, void*);
-    REGISTER_UMOCK_ALIAS_TYPE(SRW_LOCK_HANDLE, void*);
 
     REGISTER_TYPE(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT);
 
@@ -198,7 +198,7 @@ static void set_lru_create_expectations(size_t bucket_size, CLDS_HAZARD_POINTERS
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_create(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_create(IGNORED_ARG, IGNORED_ARG, bucket_size, hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_create(false, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_init(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
 }
 /* lru_cache_create */
@@ -375,7 +375,6 @@ TEST_FUNCTION(lru_cache_destroy_frees_the_resources)
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE hazard_pointers_thread;
     CLDS_HASH_TABLE_HANDLE hash_table;
-    SRW_LOCK_HANDLE srw_lock;
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     size_t bucket_size = 1024;
@@ -385,7 +384,7 @@ TEST_FUNCTION(lru_cache_destroy_frees_the_resources)
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_create(IGNORED_ARG)).CaptureReturn(&hazard_pointers_thread);
     STRICT_EXPECTED_CALL(clds_hash_table_create(IGNORED_ARG, IGNORED_ARG, bucket_size, hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).CaptureReturn(&hash_table);
-    STRICT_EXPECTED_CALL(srw_lock_create(false, IGNORED_ARG)).CaptureReturn(&srw_lock);
+    STRICT_EXPECTED_CALL(srw_lock_ll_init(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
 
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, hazard_pointers, capacity);
@@ -393,7 +392,7 @@ TEST_FUNCTION(lru_cache_destroy_frees_the_resources)
 
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(srw_lock_destroy(srw_lock));
+    STRICT_EXPECTED_CALL(srw_lock_ll_deinit(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_destroy(hash_table));
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_destroy(hazard_pointers_thread));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));

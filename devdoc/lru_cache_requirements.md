@@ -2,7 +2,7 @@
 
 ## Overview
 
-A cache module that deletes the least-recently-used (lru) items. The design for this is [here]()
+A cache module that deletes the least-recently-used (lru) items. The design for this is [here](lru_cache_design.md)
 
 ## Exposed API
 
@@ -30,13 +30,13 @@ MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
 MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, uint64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
 
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
+MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 ```
 
 ### clds_hash_table_create
 
 ```c
-MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, volatile_atomic int64_t*, start_sequence_number, HASH_TABLE_SKIPPED_SEQ_NO_CB, skipped_seq_no_cb, void*, skipped_seq_no_cb_context, int64_t, capacity);
+MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, uint64_t, capacity);
 ```
 
 Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and `SRW_LOCK_HANDLE`.
@@ -48,12 +48,6 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 **SRS_LRU_CACHE_13_003: [** If `initial_bucket_size` is `0`, `lru_cache_create` shall fail and return NULL. **]**
 
 **SRS_LRU_CACHE_13_004: [** If `clds_hazard_pointers` is NULL, `lru_cache_create` shall fail and return NULL. **]**
-
-**SRS_LRU_CACHE_13_006: [** `start_sequence_number` shall be allowed to be NULL, in which case no sequence number computations shall be performed. **]**
-
-**SRS_LRU_CACHE_13_007: [** `skipped_seq_no_cb` shall be allowed to be NULL. **]**
-
-**SRS_LRU_CACHE_13_008: [** `skipped_seq_no_cb_context` shall be allowed to be NULL. **]**
 
 **SRS_LRU_CACHE_13_010: [** If `capacity` is `0`, then `lru_cache_create` shall fail and return NULL. **]**
 
@@ -69,7 +63,7 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 
 **SRS_LRU_CACHE_13_017: [** `lru_cache_create` shall initialize `head` by calling `DList_InitializeListHead`. **]**
 
-**SRS_LRU_CACHE_13_018: [** `lru_cache_create` shall assign default value of `0` to `current_size` and `capacity`. **]**
+**SRS_LRU_CACHE_13_018: [** `lru_cache_create` shall assign default value of `0` to `current_size` and the capacity to `capacity`. **]**
 
 **SRS_LRU_CACHE_13_019: [** On success, `lru_cache_create` shall return `LRU_CACHE_HANDLE`. **]**
 
@@ -79,7 +73,7 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 ### lru_cache_destroy
 
 ```c
-void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache);
+MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 ```
 
 Frees up `LRU_CACHE_HANDLE`.
@@ -92,10 +86,10 @@ Frees up `LRU_CACHE_HANDLE`.
 ### lru_cache_put
 
 ```c
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, CLDS_HASH_TABLE_ITEM*, value, int64_t, size, int64_t, seq_no, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, uint64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
 ```
 
-The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache using `add_to_cache_internal` and performs eviction if necessary with `evict_internal`. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
+The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache  and performs eviction if necessary. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
 
 For example: 
 
@@ -183,7 +177,7 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 ### lru_cache_get
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
+MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 ```
 
 Gets the `value` of the `key` from the cache. If the `key` is found, the node is made as tail if it is not already.

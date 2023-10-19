@@ -14,4 +14,4 @@ set(${theseTestsName}_h_files
 ../../inc/clds/lru_cache.h
 )
 
-build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal_reals c_pal clds_reals)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal_reals c_pal clds_reals c_util c_util_reals)
