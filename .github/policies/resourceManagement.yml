@@ -50,6 +50,6 @@ configuration:
           reviewer: M-iceberg
       - requestReview:
           reviewer: BertKleewein
-      description: 
+      description: Add reviewers
 onFailure: 
 onSuccess: 
