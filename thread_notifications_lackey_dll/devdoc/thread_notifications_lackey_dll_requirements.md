@@ -33,27 +33,29 @@ MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_deinit_callback);
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 ```
 
-### thread_notifications_lackey_dll_set_callback
+### thread_notifications_lackey_dll_init_callback
 
 ```c
-MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_set_callback, THREAD_NOTIFICATION_LACKEY_DLL_CALLBACK_FUNC, thread_notification_cb, void*, context);
+MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_init_callback, THREAD_NOTIFICATION_LACKEY_DLL_CALLBACK_FUNC, thread_notification_cb, void*, context);
 ```
 
-`thread_notifications_lackey_set_callback` sets the callback/context that is to be called whenever a thread attach/detach event happens.
+`thread_notifications_lackey_set_callback` initializes the callback that is to be called whenever a thread attach/detach event happens.
 
-If `thread_notification_cb` is `NULL`, `thread_notifications_lackey_set_callback` shall fail and return a non-zero value.
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_001: [** If `thread_notification_cb` is `NULL`, `thread_notifications_lackey_set_callback` shall fail and return a non-zero value. **]**
 
-Otherwise, `THREAD_NOTIFICATIONS_LACKEY_dll_init` shall replace the previously used callback information maintained by the module with `thread_notification_cb`, succeed and return 0.
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_003: [** If the callback was already initialized, `thread_notifications_lackey_dll_init_callback` shall fail and return a non-zero value. **]**
 
-### thread_notifications_lackey_dll_clear_callback
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_002: [** Otherwise, `thread_notifications_lackey_dll_init_callback` shall initialize the callback maintained by the module with `thread_notification_cb`, succeed and return 0. **]**
+
+### thread_notifications_lackey_dll_deinit_callback
 
 ```c
-MOCKABLE_FUNCTION(, int, THREAD_NOTIFICATIONS_LACKEY_dll_clear_callback);
+MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_deinit_callback);
 ```
 
-`THREAD_NOTIFICATIONS_LACKEY_dll_deinit` clears the thread notifications callback.
+`thread_notifications_lackey_dll_deinit_callback` clears the thread notifications callback.
 
-`THREAD_NOTIFICATIONS_LACKEY_dll_deinit` shall set the callback maintained by the module to `NULL`.
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_004: [** `thread_notifications_lackey_dll_deinit_callback` shall set the callback maintained by the module to `NULL`. **]**
 
 ### DllMain
 
@@ -63,28 +65,28 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
 `DllMain` implements the DLL main entry point.
 
-If `fdwReason` is `DLL_PROCESS_ATTACH`:
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_005: [** If `fdwReason` is `DLL_PROCESS_ATTACH`: **]**
 
-- `DllMain` shall call `logger_init` to initialize logging for the module.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_006: [** `DllMain` shall call `logger_init` to initialize logging for the module. **]**
 
-- If `logger_init` fails, `DllMain` shall return FALSE.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_008: [** If `logger_init` fails, `DllMain` shall return FALSE. **]**
 
-- Otherwise, `DllMain` shall initialize the callback maintained by the module wth `NULL` and return `TRUE`.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [** Otherwise, `DllMain` shall initialize the callback maintained by the module wth `NULL` and return `TRUE`. **]**
 
-If `fdwReason` is `DLL_PROCESS_DETACH`:
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_009: [** If `fdwReason` is `DLL_PROCESS_DETACH`: **]**
 
-- `DllMain` shall call `logger_deinit` and return `TRUE`.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_010: [** `DllMain` shall call `logger_deinit` and return `TRUE`. **]**
 
-If `fdwReason` is `DLL_THREAD_ATTACH`:
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_011: [** If `fdwReason` is `DLL_THREAD_ATTACH`: **]**
 
-- If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH`.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [** If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH`. **]**
 
-- `DllMain` shall return `TRUE`.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_012: [** `DllMain` shall return `TRUE`. **]**
 
-If `fdwReason` is `DLL_THREAD_DETACH`:
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_014: [** If `fdwReason` is `DLL_THREAD_DETACH`: **]**
 
-- If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH`.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [** If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH`. **]**
 
-- `DllMain` shall return `TRUE`.
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_015: [** `DllMain` shall return `TRUE`. **]**
 
-If `fdwReason` is any other value, `DllMain` shall terminate the process.
+**SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_017: [** If `fdwReason` is any other value, `DllMain` shall terminate the process. **]**
