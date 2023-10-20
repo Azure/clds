@@ -29,8 +29,8 @@ MOCK_FUNCTION_WITH_CODE(, void, test_thread_notifications_callback_2, THREAD_NOT
 MOCK_FUNCTION_END()
 MOCK_FUNCTION_WITH_CODE(, int, mock_logger_init);
 MOCK_FUNCTION_END(0)
-MOCK_FUNCTION_WITH_CODE(, int, mock_logger_deinit);
-MOCK_FUNCTION_END(0)
+MOCK_FUNCTION_WITH_CODE(, void, mock_logger_deinit);
+MOCK_FUNCTION_END()
 
 BOOL WINAPI DllMain_under_test(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
@@ -96,6 +96,9 @@ TEST_FUNCTION(thread_notifications_lackey_dll_init_callback_succeeds)
 
     // assert
     ASSERT_ARE_EQUAL(int, 0, result);
+
+    // cleanup
+    thread_notifications_lackey_dll_deinit_callback();
 }
 
 /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_003: [ If the callback was already initialized, thread_notifications_lackey_dll_init_callback shall fail and return a non-zero value. ] */
