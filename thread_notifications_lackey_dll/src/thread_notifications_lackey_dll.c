@@ -51,7 +51,7 @@ BOOL WINAPI DllMain(
     DWORD fdwReason,     // reason for calling function
     LPVOID lpvReserved)  // reserved
 {
-    BOOL result;
+    BOOL result = FALSE;
 
     (void)hinstDLL;
     (void)lpvReserved;
@@ -61,7 +61,6 @@ BOOL WINAPI DllMain(
     default:
         /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_017: [ If fdwReason is any other value, DllMain shall terminate the process. ]*/
         ps_util_terminate_process();
-        result = FALSE;
         break;
 
     /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_005: [ If fdwReason is DLL_PROCESS_ATTACH: ]*/
