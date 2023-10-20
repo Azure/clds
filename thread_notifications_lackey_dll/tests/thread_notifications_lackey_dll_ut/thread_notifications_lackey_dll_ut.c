@@ -7,6 +7,8 @@
 #include "macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"
 
+#include "c_logging/logger.h"
+
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_windows.h"
 #include "umock_c/umock_c_negative_tests.h"
@@ -29,6 +31,8 @@ MOCK_FUNCTION_WITH_CODE(, int, mock_logger_init);
 MOCK_FUNCTION_END(0)
 MOCK_FUNCTION_WITH_CODE(, int, mock_logger_deinit);
 MOCK_FUNCTION_END(0)
+
+BOOL WINAPI DllMain_under_test(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
 static HMODULE test_module_handle = (HMODULE)0x42;
 
@@ -148,7 +152,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_PROCESS_ATTACH_return
     STRICT_EXPECTED_CALL(mock_logger_init());
 
     // act
-    BOOL result = DllMain(test_module_handle, DLL_PROCESS_ATTACH, NULL);
+    BOOL result = DllMain_under_test(test_module_handle, DLL_PROCESS_ATTACH, NULL);
 
     // assert
     ASSERT_IS_TRUE(result);
@@ -171,7 +175,7 @@ TEST_FUNCTION(when_underlying_calls_fail_thread_notifications_lackey_DllMain_wit
             umock_c_negative_tests_fail_call(i);
 
             // act
-            BOOL result = DllMain(test_module_handle, DLL_PROCESS_ATTACH, NULL);
+            BOOL result = DllMain_under_test(test_module_handle, DLL_PROCESS_ATTACH, NULL);
 
             // assert
             ASSERT_IS_FALSE(result);
@@ -187,7 +191,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_PROCESS_DETACH_return
     STRICT_EXPECTED_CALL(mock_logger_deinit());
 
     // act
-    BOOL result = DllMain(test_module_handle, DLL_PROCESS_DETACH, NULL);
+    BOOL result = DllMain_under_test(test_module_handle, DLL_PROCESS_DETACH, NULL);
 
     // assert
     ASSERT_IS_TRUE(result);
@@ -201,7 +205,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_no
     // arrange
 
     // act
-    BOOL result = DllMain(test_module_handle, DLL_THREAD_ATTACH, NULL);
+    BOOL result = DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL);
 
     // assert
     ASSERT_IS_TRUE(result);
@@ -218,7 +222,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_ca
     STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH));
 
     // act
-    BOOL result = DllMain(test_module_handle, DLL_THREAD_ATTACH, NULL);
+    BOOL result = DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL);
 
     // assert
     ASSERT_IS_TRUE(result);
@@ -239,8 +243,8 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_ca
     STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH));
 
     // act
-    ASSERT_IS_TRUE(DllMain(test_module_handle, DLL_THREAD_ATTACH, NULL));
-    ASSERT_IS_TRUE(DllMain(test_module_handle, DLL_THREAD_ATTACH, NULL));
+    ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL));
+    ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL));
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -256,7 +260,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_no
     // arrange
 
     // act
-    BOOL result = DllMain(test_module_handle, DLL_THREAD_DETACH, NULL);
+    BOOL result = DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL);
 
     // assert
     ASSERT_IS_TRUE(result);
@@ -273,7 +277,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_ca
     STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
 
     // act
-    BOOL result = DllMain(test_module_handle, DLL_THREAD_DETACH, NULL);
+    BOOL result = DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL);
 
     // assert
     ASSERT_IS_TRUE(result);
@@ -294,8 +298,8 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_ca
     STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
 
     // act
-    ASSERT_IS_TRUE(DllMain(test_module_handle, DLL_THREAD_DETACH, NULL));
-    ASSERT_IS_TRUE(DllMain(test_module_handle, DLL_THREAD_DETACH, NULL));
+    ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL));
+    ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL));
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -316,8 +320,8 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_and_THR
     STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
 
     // act
-    ASSERT_IS_TRUE(DllMain(test_module_handle, DLL_THREAD_ATTACH, NULL));
-    ASSERT_IS_TRUE(DllMain(test_module_handle, DLL_THREAD_DETACH, NULL));
+    ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL));
+    ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL));
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -334,7 +338,7 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_0xFF_terminates_the_proce
     STRICT_EXPECTED_CALL(ps_util_terminate_process());
 
     // act
-    ASSERT_IS_FALSE(DllMain(test_module_handle, 0xFF, NULL));
+    ASSERT_IS_FALSE(DllMain_under_test(test_module_handle, 0xFF, NULL));
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());

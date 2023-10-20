@@ -3,5 +3,9 @@
 #define logger_init mock_logger_init
 #define logger_deinit mock_logger_deinit
 
+// Since we mightbe running in an environemtn where a DllMain exists (like running under VS CppUnittest)
+// we want to rename it to something else
+#define DllMain DllMain_under_test
+
 #include "../../src/thread_notifications_lackey_dll.c"
 
