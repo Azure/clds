@@ -1,6 +1,6 @@
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-set(theseTestsName thread_notifications_lackey_dll_wo_init_ut)
+set(theseTestsName thread_notif_lackey_dll_wo_init_ut)
 
 set(${theseTestsName}_test_files
 ${theseTestsName}.c

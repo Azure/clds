@@ -3,7 +3,7 @@
 #unittests
 if(${run_unittests})
     build_test_folder(thread_notifications_lackey_dll_ut)
-    build_test_folder(thread_notifications_lackey_dll_wo_init_ut)
+    build_test_folder(thread_notif_lackey_dll_wo_init_ut)
 endif()
 
 #inttests
