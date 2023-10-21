@@ -1,15 +1,19 @@
 // Copyright (C) Microsoft Corporation. All rights reserved.
 
+#include "windows.h"
+
+#include "macro_utils/macro_utils.h"
+
 #include "c_logging/logger.h"
 
 #include "c_pal/interlocked.h"
 #include "c_pal/ps_util.h"
 
-#include "windows.h"
-
 #include "thread_notifications_lackey_dll/thread_notifications_lackey_dll.h"
 
-static volatile_atomic THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC notifications_cb;
+static volatile_atomic THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC notifications_cb = NULL;
+
+MU_DEFINE_ENUM_STRINGS(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_VALUES);
 
 int thread_notifications_lackey_dll_init_callback(THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC thread_notifications_cb)
 {
@@ -28,7 +32,7 @@ int thread_notifications_lackey_dll_init_callback(THREAD_NOTIFICATIONS_LACKEY_DL
         if (existing_callback != NULL)
         {
             /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_003: [ If the callback was already initialized, thread_notifications_lackey_dll_init_callback shall fail and return a non-zero value. ] */
-            LogError("Invalid arguments: callback already set to %p", existing_callback);
+            LogError("User error: callback already set to %p, thread_notifications_cb=%p", existing_callback, thread_notifications_cb);
             result = MU_FAILURE;
         }
         else
@@ -43,7 +47,7 @@ int thread_notifications_lackey_dll_init_callback(THREAD_NOTIFICATIONS_LACKEY_DL
 void thread_notifications_lackey_dll_deinit_callback(void)
 {
     /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_004: [ thread_notifications_lackey_dll_deinit_callback shall set the callback maintained by the module to NULL. ]*/
-    interlocked_exchange_pointer((void* volatile_atomic*)&notifications_cb, NULL);
+    (void)interlocked_exchange_pointer((void* volatile_atomic*)&notifications_cb, NULL);
 }
 
 BOOL WINAPI DllMain(
@@ -73,7 +77,7 @@ BOOL WINAPI DllMain(
         }
         else
         {
-            /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [ Otherwise, DllMain shall initialize the callback maintained by the module wth NULL and return TRUE. ]*/
+            /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [ Otherwise, DllMain shall initialize the callback maintained by the module with NULL and return TRUE. ]*/
             result = TRUE;
         }
         break;
@@ -81,11 +85,11 @@ BOOL WINAPI DllMain(
     /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_011: [ If fdwReason is DLL_THREAD_ATTACH: ]*/
     case DLL_THREAD_ATTACH:
     {
-        /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH. ]*/
+        /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH. ]*/
         THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC existing_callback = (THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC)interlocked_compare_exchange_pointer((void* volatile_atomic*) & notifications_cb, NULL, NULL);
         if (existing_callback != NULL)
         {
-            existing_callback(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH);
+            existing_callback(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH);
         }
 
         /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_012: [ DllMain shall return TRUE. ]*/
@@ -96,11 +100,11 @@ BOOL WINAPI DllMain(
     /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_014: [ If fdwReason is DLL_THREAD_DETACH: ]*/
     case DLL_THREAD_DETACH:
     {
-        /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH. ]*/
+        /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH. ]*/
         THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC existing_callback = (THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC)interlocked_compare_exchange_pointer((void* volatile_atomic*) & notifications_cb, NULL, NULL);
         if (existing_callback != NULL)
         {
-            existing_callback(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH);
+            existing_callback(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH);
         }
         /* Codes_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_015: [ DllMain shall return TRUE. ]*/
         result = TRUE;

@@ -20,14 +20,14 @@ Only one callback with no context is supported. If multiple consumers of callbac
 
 ```c
 #define THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_VALUES \
-    THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH, \
-    THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH
+    THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH, \
+    THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH
 
 MU_DEFINE_ENUM(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_VALUES)
 
-typedef void (*THREAD_NOTIFICATION_LACKEY_DLL_CALLBACK_FUNC)(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason);
+typedef void (*THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC)(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason);
 
-MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_init_callback, THREAD_NOTIFICATION_LACKEY_DLL_CALLBACK_FUNC, thread_notification_cb);
+MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_init_callback, THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC, thread_notification_cb);
 MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_deinit_callback);
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
@@ -36,7 +36,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 ### thread_notifications_lackey_dll_init_callback
 
 ```c
-MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_init_callback, THREAD_NOTIFICATION_LACKEY_DLL_CALLBACK_FUNC, thread_notification_cb, void*, context);
+MOCKABLE_FUNCTION(, int, thread_notifications_lackey_dll_init_callback, THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC, thread_notification_cb, void*, context);
 ```
 
 `thread_notifications_lackey_set_callback` initializes the callback that is to be called whenever a thread attach/detach event happens.
@@ -71,7 +71,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
 - **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_008: [** If `logger_init` fails, `DllMain` shall return FALSE. **]**
 
-- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [** Otherwise, `DllMain` shall initialize the callback maintained by the module wth `NULL` and return `TRUE`. **]**
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [** Otherwise, `DllMain` shall initialize the callback maintained by the module with `NULL` and return `TRUE`. **]**
 
 **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_009: [** If `fdwReason` is `DLL_PROCESS_DETACH`: **]**
 
@@ -79,13 +79,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
 **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_011: [** If `fdwReason` is `DLL_THREAD_ATTACH`: **]**
 
-- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [** If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH`. **]**
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [** If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH`. **]**
 
 - **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_012: [** `DllMain` shall return `TRUE`. **]**
 
 **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_014: [** If `fdwReason` is `DLL_THREAD_DETACH`: **]**
 
-- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [** If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH`. **]**
+- **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [** If a callback was passed by the user through a `thread_notifications_lackey_dll_init_callback` call, the callback shall be called with `THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH`. **]**
 
 - **SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_015: [** `DllMain` shall return `TRUE`. **]**
 

@@ -49,7 +49,7 @@ TEST_FUNCTION(thread_notifications_lackey_dll_init_callback_works)
     // assert
     ASSERT_ARE_EQUAL(int, 0, thread_notifications_lackey_dll_init_callback(test_thread_notifications_callback_1));
     
-    // assert
+    // clean
     thread_notifications_lackey_dll_deinit_callback();
 }
 
@@ -114,10 +114,10 @@ TEST_FUNCTION(MU_C3(thread_notifications_lackey_dll_attach_and_detach_of_, N_THR
             ASSERT_FAIL("Wrong reason: %" PRI_MU_ENUM "", MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, thread_notifications[i].reason));
             break;
 
-        case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH:
+        case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH:
             attach_count++;
             break;
-        case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH:
+        case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH:
         {
             uint32_t j;
 
@@ -125,7 +125,7 @@ TEST_FUNCTION(MU_C3(thread_notifications_lackey_dll_attach_and_detach_of_, N_THR
             for (j = 0; j < i; j++)
             {
                 if (
-                    (thread_notifications[j].reason == THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH) &&
+                    (thread_notifications[j].reason == THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH) &&
                     (thread_notifications[i].tid == thread_notifications[j].tid)
                     )
                 {
@@ -139,6 +139,7 @@ TEST_FUNCTION(MU_C3(thread_notifications_lackey_dll_attach_and_detach_of_, N_THR
             }
             else
             {
+                // clear the attach so that if we have the same TID show up again we match properly the attach and detach notifications
                 thread_notifications[j].tid = 0;
             }
 

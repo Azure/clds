@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#include "windows.h"
+
 #include "macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"
 
@@ -84,6 +86,7 @@ TEST_FUNCTION(thread_notifications_lackey_dll_init_callback_with_NULL_thread_not
     
     // assert
     ASSERT_ARE_NOT_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_002: [ Otherwise, thread_notifications_lackey_dll_init_callback shall initialize the callback maintained by the module with thread_notification_cb, succeed and return 0. ]*/
@@ -96,6 +99,7 @@ TEST_FUNCTION(thread_notifications_lackey_dll_init_callback_succeeds)
 
     // assert
     ASSERT_ARE_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     thread_notifications_lackey_dll_deinit_callback();
@@ -112,6 +116,7 @@ TEST_FUNCTION(thread_notifications_lackey_dll_init_callback_when_already_initial
 
     // assert
     ASSERT_ARE_NOT_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     thread_notifications_lackey_dll_deinit_callback();
@@ -129,7 +134,7 @@ TEST_FUNCTION(thread_notifications_lackey_dll_deinit_callback_clears_the_callbac
     thread_notifications_lackey_dll_deinit_callback();
 
     // assert
-    // no explicit assert, no crash expected
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_004: [ thread_notifications_lackey_dll_deinit_callback shall set the callback maintained by the module to NULL. ]*/
@@ -141,14 +146,14 @@ TEST_FUNCTION(thread_notifications_lackey_dll_deinit_callback_when_not_initializ
     thread_notifications_lackey_dll_deinit_callback();
 
     // assert
-    // no explicit assert, no crash expected
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /* DllMain */
 
 /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_005: [ If fdwReason is DLL_PROCESS_ATTACH: ]*/
     /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_006: [ DllMain shall call logger_init to initialize logging for the module. ]*/
-    /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [ Otherwise, DllMain shall initialize the callback maintained by the module wth NULL and return TRUE. ]*/
+    /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_007: [ Otherwise, DllMain shall initialize the callback maintained by the module with NULL and return TRUE. ]*/
 TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_PROCESS_ATTACH_returns_TRUE)
 {
     // arrange
@@ -215,14 +220,14 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_no
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
-/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH. ]*/
+/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH. ]*/
 TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_callback_set_returns_calls_the_callback_and_returns_TRUE)
 {
     // arrange
     ASSERT_ARE_EQUAL(int, 0, thread_notifications_lackey_dll_init_callback(test_thread_notifications_callback_1));
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH));
 
     // act
     BOOL result = DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL);
@@ -232,18 +237,19 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_ca
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
+    DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL);
     thread_notifications_lackey_dll_deinit_callback();
 }
 
-/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH. ]*/
+/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH. ]*/
 TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_with_callback_set_returns_calls_the_callback_twice)
 {
     // arrange
     ASSERT_ARE_EQUAL(int, 0, thread_notifications_lackey_dll_init_callback(test_thread_notifications_callback_1));
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH));
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH));
 
     // act
     ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL));
@@ -270,14 +276,14 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_no
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
-/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH. ]*/
+/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH. ]*/
 TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_callback_set_returns_calls_the_callback_and_returns_TRUE)
 {
     // arrange
     ASSERT_ARE_EQUAL(int, 0, thread_notifications_lackey_dll_init_callback(test_thread_notifications_callback_1));
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH));
 
     // act
     BOOL result = DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL);
@@ -290,15 +296,15 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_ca
     thread_notifications_lackey_dll_deinit_callback();
 }
 
-/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH. ]*/
+/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH. ]*/
 TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_callback_set_returns_calls_the_callback_twice)
 {
     // arrange
     ASSERT_ARE_EQUAL(int, 0, thread_notifications_lackey_dll_init_callback(test_thread_notifications_callback_1));
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH));
 
     // act
     ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_DETACH, NULL));
@@ -311,16 +317,16 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_DETACH_with_ca
     thread_notifications_lackey_dll_deinit_callback();
 }
 
-/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH. ]*/
-/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH. ]*/
+/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_013: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH. ]*/
+/* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_016: [ If a callback was passed by the user through a thread_notifications_lackey_dll_init_callback call, the callback shall be called with THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH. ]*/
 TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_and_THREAD_DETACH_with_callback_set_returns_calls_the_callback)
 {
     // arrange
     ASSERT_ARE_EQUAL(int, 0, thread_notifications_lackey_dll_init_callback(test_thread_notifications_callback_1));
     umock_c_reset_all_calls();
 
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_ATTACH));
-    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_DETACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH));
+    STRICT_EXPECTED_CALL(test_thread_notifications_callback_1(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH));
 
     // act
     ASSERT_IS_TRUE(DllMain_under_test(test_module_handle, DLL_THREAD_ATTACH, NULL));
@@ -334,14 +340,13 @@ TEST_FUNCTION(thread_notifications_lackey_DllMain_with_DLL_THREAD_ATTACH_and_THR
 }
 
 /* Tests_SRS_THREAD_NOTIFICATIONS_LACKEY_DLL_01_017: [ If fdwReason is any other value, DllMain shall terminate the process. ]*/
-// We don't really know that 0xFF won't be used in the future, but atm it is not
-TEST_FUNCTION(thread_notifications_lackey_DllMain_with_0xFF_terminates_the_process)
+TEST_FUNCTION(thread_notifications_lackey_DllMain_with_an_unknown_value_terminates_the_process)
 {
     // arrange
     STRICT_EXPECTED_CALL(ps_util_terminate_process());
 
     // act
-    ASSERT_IS_FALSE(DllMain_under_test(test_module_handle, 0xFF, NULL));
+    ASSERT_IS_FALSE(DllMain_under_test(test_module_handle, MU_DIFFERENT(DLL_THREAD_ATTACH, DLL_THREAD_DETACH, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH), NULL));
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
