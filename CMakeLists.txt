@@ -157,6 +157,8 @@ set(clds_h_files
     ./inc/clds/clds_hash_table.h
     ./inc/clds/clds_singly_linked_list.h
     ./inc/clds/mpsc_lock_free_queue.h
+    ./inc/clds/tcall_dispatcher.h
+    ./inc/clds/tcall_dispatcher_ll.h
 )
 
 if (WIN32)
@@ -174,6 +176,7 @@ set(clds_c_files
     ./src/clds_hash_table.c
     ./src/clds_singly_linked_list.c
     ./src/mpsc_lock_free_queue.c
+    ./src/tcall_dispatcher.c
 )
 
 if (WIN32)
