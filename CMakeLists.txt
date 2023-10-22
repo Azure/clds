@@ -157,6 +157,8 @@ set(clds_h_files
     ./inc/clds/clds_hash_table.h
     ./inc/clds/clds_singly_linked_list.h
     ./inc/clds/mpsc_lock_free_queue.h
+    ./inc/clds/tcall_dispatcher.h
+    ./inc/clds/tcall_dispatcher_ll.h
 )
 
 if (WIN32)
@@ -174,6 +176,7 @@ set(clds_c_files
     ./src/clds_hash_table.c
     ./src/clds_singly_linked_list.c
     ./src/mpsc_lock_free_queue.c
+    ./src/tcall_dispatcher.c
 )
 
 if (WIN32)
@@ -192,21 +195,9 @@ add_library(clds
     ${clds_md_files}
     )
 
-set(clds_link_targets
-    c_util c_pal
-)
+add_subdirectory(thread_notifications_lackey_dll)
 
-if(WIN32)
-    # maybe this should make its way to c-pal at some point ... maybe
-    add_subdirectory(thread_notifications_lackey_dll)
-
-    set(clds_link_targets
-        ${clds_link_targets}
-        thread_notifications_lackey_dll
-    )
-endif()
-
-target_link_libraries(clds ${clds_link_targets})
+target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
 
 # make an install target so we can produce a Linux native client package.
 install_library_with_prefix(clds clds ${clds_h_files})
