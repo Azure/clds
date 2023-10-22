@@ -66,7 +66,26 @@ typedef struct TCALL_DISPATCHER_STRUCT_T_TAG
 #define TCALL_DISPATCHER_TYPE_DECLARE(T, ...)
 ```
 
-`TCALL_DISPATCHER_TYPE_DECLARE(T)` is a macro to be used in a header declaration. It introduces the source and target function types and several APIs (as MOCKABLE_FUNCTIONS):
+`TCALL_DISPATCHER_TYPE_DECLARE(T)` is a macro to be used in a header declaration.
+
+It introduces the APIs (as MOCKABLE_FUNCTIONS) that can be called for a `TCALL_DISPATCHER`.
+
+It introduces also the target call function type based on the arguments in `...`.
+
+It also introduces the type `TCALL_DISPATCHER_TARGET_HANDLE(T)`, which represents a handle to a call target.
+
+`...` is a list of argtype argname pairs, example usage being:
+
+```c
+TCALL_DISPATCHER_TYPE_DECLARE(FOO, int,  x, char*, y);
+```
+
+### TCALL_DISPATCHER_TYPE_DEFINE(T, ...)
+```c
+#define TCALL_DISPATCHER_TYPE_DEFINE(T, ...)
+```
+
+`TCALL_DISPATCHER_TYPE_DECLARE(T)` is a macro to be used in a .c file to define all the needed functions for `TCALL_DISPATCHER(T)`.
 
 ### TCALL_DISPATCHER_CREATE(T)
 ```c
