@@ -204,17 +204,6 @@ if(WIN32)
         ${clds_link_targets}
         thread_notifications_lackey_dll
     )
-
-    function(copy_clds_outputs target output_directory)
-        add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE_DIR:thread_notifications_lackey_dll>/thread_notifications_lackey_dll.pdb;$<TARGET_FILE_DIR:thread_notifications_lackey_dll>/thread_notifications_lackey_dll.dll
-            ${output_directory})
-        add_dependencies(${target} thread_notifications_lackey_dll)
-    endfunction()
-else()
-    function(copy_clds_outputs target output_directory)
-    endfunction()
 endif()
 
 target_link_libraries(clds ${clds_link_targets})
