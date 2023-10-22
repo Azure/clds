@@ -6,6 +6,9 @@
 
 `TCALL_DISPATCHER` is thread safe (registering/unregistering call targets and dispatching calls are thread safe).
 
+At the moment re-entrancy is not supported (the user should not call register/unregister from the call targets).
+Further improvements to the module will remove this limitation.
+
 The module provides the following functionality:
 
 - Registering a target (with an associated context) to be called when the dispatch call is executed.
@@ -70,14 +73,14 @@ typedef struct TCALL_DISPATCHER_STRUCT_T_TAG
 
 It introduces the APIs (as MOCKABLE_FUNCTIONS) that can be called for a `TCALL_DISPATCHER`.
 
-It introduces also the target call function type based on the arguments in `...`.
+It introduces also the target call function type `TCALL_DISPATCHER_TARGET_FUNC(T)` based on the arguments in `...`.
 
 It also introduces the type `TCALL_DISPATCHER_TARGET_HANDLE(T)`, which represents a handle to a call target.
 
 `...` is a list of argtype argname pairs, example usage being:
 
 ```c
-TCALL_DISPATCHER_TYPE_DECLARE(FOO, int,  x, char*, y);
+TCALL_DISPATCHER_TYPE_DECLARE(FOO, int, x, char*, y);
 ```
 
 ### TCALL_DISPATCHER_TYPE_DEFINE(T, ...)
@@ -106,7 +109,7 @@ If there are any failures then `TCALL_DISPATCHER_CREATE(T)` shall fail and retur
 
 ### TCALL_DISPATCHER_REGISTER_TARGET(T)
 ```c
-TCALL_DISPATCHER_TARGET_HANDLE(T) TCALL_DISPATCHER_REGISTER_TARGET(T)(TCALL_DISPATCHER(T) tcall_dispatcher, void* function_to_call, void* call_context)
+TCALL_DISPATCHER_TARGET_HANDLE(T) TCALL_DISPATCHER_REGISTER_TARGET(T)(TCALL_DISPATCHER(T) tcall_dispatcher, TCALL_DISPATCHER_TARGET_FUNC(T) function_to_call, void* call_context)
 ```
 
 `TCALL_DISPATCHER_REGISTER_TARGET(T)` registers a target function pointer and context.

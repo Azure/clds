@@ -195,9 +195,21 @@ add_library(clds
     ${clds_md_files}
     )
 
-add_subdirectory(thread_notifications_lackey_dll)
+set(clds_link_targets
+    c_util c_pal
+)
 
-target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
+if(WIN32)
+    # maybe this should make its way to c-pal at some point ... maybe
+    add_subdirectory(thread_notifications_lackey_dll)
+
+    set(clds_link_targets
+        ${clds_link_targets}
+        thread_notifications_lackey_dll
+    )
+endif()
+
+target_link_libraries(clds ${clds_link_targets})
 
 # make an install target so we can produce a Linux native client package.
 install_library_with_prefix(clds clds ${clds_h_files})
