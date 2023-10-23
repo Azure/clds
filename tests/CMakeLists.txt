@@ -29,6 +29,7 @@ if(WIN32)
 endif()
     build_test_folder(clds_sorted_list_int)
     build_test_folder(mpsc_lock_free_queue_int)
+    build_test_folder(tcall_dispatcher_int)
 endif()
 
 #perf tests

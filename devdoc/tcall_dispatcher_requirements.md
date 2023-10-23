@@ -97,15 +97,15 @@ static TCALL_DISPATCHER(T) TCALL_DISPATCHER_CREATE(T)(void);
 
 `TCALL_DISPATCHER_CREATE(T)` creates a new `TCALL_DISPATCHER(T)`.
 
-`TCALL_DISPATCHER_CREATE(T)` shall call `THANDLE_MALLOC` to allocate the result.
+**SRS_TCALL_DISPATCHER_01_001: [** `TCALL_DISPATCHER_CREATE(T)` shall call `THANDLE_MALLOC` to allocate the result. **]**
 
-`TCALL_DISPATCHER_CREATE(T)` shall call `srw_lock_ll_init` to initialize the lock used by the `TCALL_DISPATCHER` instance.
+**SRS_TCALL_DISPATCHER_01_002: [** `TCALL_DISPATCHER_CREATE(T)` shall call `srw_lock_ll_init` to initialize the lock used by the `TCALL_DISPATCHER` instance. **]**
 
-`TCALL_DISPATCHER_CREATE(T)` shall call `DList_InitializeListHead` to initialize the doubly linked list that holds the target call registrations.
+**SRS_TCALL_DISPATCHER_01_003: [** `TCALL_DISPATCHER_CREATE(T)` shall call `DList_InitializeListHead` to initialize the doubly linked list that holds the target call registrations. **]**
 
-`TCALL_DISPATCHER_CREATE(T)` shall succeed and return a non-`NULL` value.
+**SRS_TCALL_DISPATCHER_01_004: [** `TCALL_DISPATCHER_CREATE(T)` shall succeed and return a non-`NULL` value. **]**
 
-If there are any failures then `TCALL_DISPATCHER_CREATE(T)` shall fail and return `NULL`.
+**SRS_TCALL_DISPATCHER_01_005: [** If there are any failures then `TCALL_DISPATCHER_CREATE(T)` shall fail and return `NULL`. **]**
 
 ### TCALL_DISPATCHER_REGISTER_TARGET(T)
 ```c
@@ -114,21 +114,21 @@ TCALL_DISPATCHER_TARGET_HANDLE(T) TCALL_DISPATCHER_REGISTER_TARGET(T)(TCALL_DISP
 
 `TCALL_DISPATCHER_REGISTER_TARGET(T)` registers a target function pointer and context.
 
-If `tcall_dispatcher` is `NULL` then `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall fail and return `NULL`.
+**SRS_TCALL_DISPATCHER_01_006: [** If `tcall_dispatcher` is `NULL` then `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall fail and return `NULL`. **]**
 
-If `function_to_call` is `NULL` then `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall fail and return `NULL`.
+**SRS_TCALL_DISPATCHER_01_007: [** If `function_to_call` is `NULL` then `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall fail and return `NULL`. **]**
 
-`TCALL_DISPATCHER_REGISTER_TARGET(T)` shall allocate memory for a `TCALL_DISPATCHER_TARGET_HANDLE(T)` that holds `function_to_call` and `context`.
+**SRS_TCALL_DISPATCHER_01_008: [** `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall allocate memory for a `TCALL_DISPATCHER_TARGET_HANDLE(T)` that holds `function_to_call` and `context`. **]**
 
-`TCALL_DISPATCHER_REGISTER_TARGET(T)` shall acquire exclusivly the lock.
+**SRS_TCALL_DISPATCHER_01_009: [** `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall acquire exclusivly the lock. **]**
 
-`TCALL_DISPATCHER_REGISTER_TARGET(T)` shall add the new `TCALL_DISPATCHER_TARGET_HANDLE(T)` containing `function_to_call` and `context` in the doubly linked list.
+**SRS_TCALL_DISPATCHER_01_010: [** `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall add the new `TCALL_DISPATCHER_TARGET_HANDLE(T)` containing `function_to_call` and `context` in the doubly linked list. **]**
 
-`TCALL_DISPATCHER_REGISTER_TARGET(T)` shall release the lock.
+**SRS_TCALL_DISPATCHER_01_011: [** `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall release the lock. **]**
 
-`TCALL_DISPATCHER_REGISTER_TARGET(T)` shall succeed and return the `TCALL_DISPATCHER_TARGET_HANDLE(T)`.
+**SRS_TCALL_DISPATCHER_01_012: [** `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall succeed and return the `TCALL_DISPATCHER_TARGET_HANDLE(T)`. **]**
 
-If there are any failures then `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall fail and return `NULL`.
+**SRS_TCALL_DISPATCHER_01_013: [** If there are any failures then `TCALL_DISPATCHER_REGISTER_TARGET(T)` shall fail and return `NULL`. **]**
 
 ### TCALL_DISPATCHER_UNREGISTER_TARGET(T)
 ```c
@@ -137,19 +137,19 @@ int TCALL_DISPATCHER_UNREGISTER_TARGET(T)(TCALL_DISPATCHER(T) tcall_dispatcher, 
 
 `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` unregisters a call target.
 
-If `tcall_dispatcher` is `NULL` then `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall fail and return a non-zero value.
+**SRS_TCALL_DISPATCHER_01_014: [** If `tcall_dispatcher` is `NULL` then `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall fail and return a non-zero value. **]**
 
-If `call_target` is `NULL` then `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall fail and return a non-zero value.
+**SRS_TCALL_DISPATCHER_01_015: [** If `call_target` is `NULL` then `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall fail and return a non-zero value. **]**
 
-`TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall acquire exclusivly the lock.
+**SRS_TCALL_DISPATCHER_01_016: [** `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall acquire exclusivly the lock. **]**
 
-`TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall remove from the doubly linked list the call target `call_target`.
+**SRS_TCALL_DISPATCHER_01_017: [** `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall remove from the doubly linked list the call target `call_target`. **]**
 
-`TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall release the lock.
+**SRS_TCALL_DISPATCHER_01_018: [** `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall release the lock. **]**
 
-`TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall free the `call_target` resources.
+**SRS_TCALL_DISPATCHER_01_019: [** `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall free the `call_target` resources. **]**
 
-`TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall succeed and return 0.
+**SRS_TCALL_DISPATCHER_01_020: [** `TCALL_DISPATCHER_UNREGISTER_TARGET(T)` shall succeed and return 0. **]**
 
 ### TCALL_DISPATCHER_DISPATCH_CALL(T)
 ```c
@@ -158,12 +158,12 @@ int TCALL_DISPATCHER_DISPATCH_CALL(T)(TCALL_DISPATCHER(T) tcall_dispatcher, ...)
 
 `TCALL_DISPATCHER_DISPATCH_CALL(T)` calls each registered call target with the parameters passed in `...`.
 
-If `tcall_dispatcher` is `NULL` then `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall fail and return a non-zero value.
+**SRS_TCALL_DISPATCHER_01_021: [** If `tcall_dispatcher` is `NULL` then `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall fail and return a non-zero value. **]**
 
-Otherwise, `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall acquire the lock in shared mode.
+**SRS_TCALL_DISPATCHER_01_022: [** Otherwise, `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall acquire the lock in shared mode. **]**
 
-For each call target that was registered, `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall call  the `function_to_call` with the associated context and the parameters in `...`.
+**SRS_TCALL_DISPATCHER_01_023: [** For each call target that was registered, `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall call  the `function_to_call` with the associated context and the parameters in `...`. **]**
 
-`TCALL_DISPATCHER_DISPATCH_CALL(T)` shall release the lock.
+**SRS_TCALL_DISPATCHER_01_024: [** `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall release the lock. **]**
 
-`TCALL_DISPATCHER_DISPATCH_CALL(T)` shall succeed and return 0.
+**SRS_TCALL_DISPATCHER_01_025: [** `TCALL_DISPATCHER_DISPATCH_CALL(T)` shall succeed and return 0. **]**
