@@ -16,7 +16,10 @@ if(${run_unittests})
     build_test_folder(clds_sorted_list_ut)
     build_test_folder(clds_hash_table_ut)
     build_test_folder(mpsc_lock_free_queue_ut)
-    build_test_folder(tcall_dispatcher_ut)
+if(WIN32)
+        # this test has a problem on Linux with the lack of srw_lock_ll reals
+        build_test_folder(tcall_dispatcher_ut)
+endif()
 endif()
 
 #integration tests
