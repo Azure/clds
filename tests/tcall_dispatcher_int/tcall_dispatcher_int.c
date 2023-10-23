@@ -134,7 +134,7 @@ static int tcall_dispatcher_chaos_thread_func(void* arg)
                         TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_handle = TCALL_DISPATCHER_REGISTER_TARGET(FOO)(test_context->call_dispatcher, test_target_no_x_check, NULL);
                         ASSERT_IS_NOT_NULL(target_handle);
 
-                        (void)interlocked_exchange_pointer(&test_context->call_target_handles[index], target_handle);
+                        (void)interlocked_exchange_pointer((void* volatile_atomic*) &test_context->call_target_handles[index], target_handle);
                     }
                 }
                 break;
@@ -160,7 +160,7 @@ static int tcall_dispatcher_chaos_thread_func(void* arg)
 
                         do
                         {
-                            TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_handle = interlocked_exchange_pointer(&test_context->call_target_handles[index], NULL);
+                            TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_handle = interlocked_exchange_pointer((void* volatile_atomic*) &test_context->call_target_handles[index], NULL);
                             if (target_handle != NULL)
                             {
                                 ASSERT_ARE_EQUAL(int, 0, TCALL_DISPATCHER_UNREGISTER_TARGET(FOO)(test_context->call_dispatcher, target_handle));
@@ -208,7 +208,7 @@ TEST_FUNCTION(TCALL_DISPATCHER_chaos_knight_test)
 
     for (uint32_t i = 0; i < MAX_CALL_TARGET_HANDLES; i++)
     {
-        (void)interlocked_exchange_pointer(&test_context.call_target_handles[i], NULL);
+        (void)interlocked_exchange_pointer((void* volatile_atomic*) &test_context.call_target_handles[i], NULL);
     }
 
     (void)interlocked_exchange(&terminate_test, 0);
@@ -249,7 +249,7 @@ TEST_FUNCTION(TCALL_DISPATCHER_chaos_knight_test)
 
             // unregister
             uint32_t index = (uint64_t)current_tail % MAX_CALL_TARGET_HANDLES;
-            TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_handle = interlocked_exchange_pointer(&test_context.call_target_handles[index], NULL);
+            TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_handle = interlocked_exchange_pointer((void* volatile_atomic*)&test_context.call_target_handles[index], NULL);
             ASSERT_ARE_EQUAL(int, 0, TCALL_DISPATCHER_UNREGISTER_TARGET(FOO)(test_context.call_dispatcher, target_handle));
         }
     } while (1);
