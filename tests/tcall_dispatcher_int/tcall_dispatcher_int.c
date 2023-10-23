@@ -93,7 +93,7 @@ MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(TCALL_DISPATCHER_ACTION_TYPE, TCALL_DISPA
 typedef struct TCALL_DISPATCHER_CHAOS_TEST_CONTEXT_TAG
 {
     TCALL_DISPATCHER(FOO) call_dispatcher;
-    TCALL_DISPATCHER_TARGET_HANDLE(FOO)* volatile_atomic call_target_handles;
+    volatile_atomic TCALL_DISPATCHER_TARGET_HANDLE(FOO)* call_target_handles;
     volatile_atomic int64_t target_handles_head;
     volatile_atomic int64_t target_handles_tail;
     volatile_atomic int32_t call_number;
@@ -254,7 +254,7 @@ TEST_FUNCTION(TCALL_DISPATCHER_chaos_knight_test)
         }
     } while (1);
 
-    free(test_context.call_target_handles);
+    free((void*)test_context.call_target_handles);
     TCALL_DISPATCHER_ASSIGN(FOO)(&test_context.call_dispatcher, NULL);
 }
 
