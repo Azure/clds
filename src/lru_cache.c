@@ -24,6 +24,14 @@
 #include "clds/lru_cache.h"
 
 
+#define LRU_NODE_STATE_VALUES \
+    LRU_NODE_STATE_READY, \
+    LRU_NODE_STATE_EVICTED
+
+MU_DEFINE_ENUM(LRU_NODE_STATE, LRU_NODE_STATE_VALUES)
+MU_DEFINE_ENUM_STRINGS(LRU_NODE_STATE, LRU_NODE_STATE_VALUES)
+
+
 typedef struct LRU_CACHE_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
@@ -45,6 +53,7 @@ typedef struct LRU_NODE_TAG
     int64_t size;
     CLDS_HASH_TABLE_ITEM* value;
     DLIST_ENTRY node;
+    volatile_atomic int32_t state; /* LRU_NODE_STATE */
 } LRU_NODE;
 DECLARE_HASH_TABLE_NODE_TYPE(LRU_NODE);
 
@@ -160,6 +169,7 @@ static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CL
     new_node->key = key;
     new_node->size = size;
     new_node->value = value;
+    (void)interlocked_exchange(&new_node->state, LRU_NODE_STATE_READY);
 
     /*Codes_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
     CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, NULL);
@@ -195,7 +205,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
     do
     {
         int64_t current_size = interlocked_add_64(&lru_cache->current_size, 0);
-        if (result != LRU_CACHE_EVICT_OK || (uint64_t)current_size < lru_cache->capacity)
+        if (result != LRU_CACHE_EVICT_OK || (uint64_t)current_size <= lru_cache->capacity)
         {
             break;
         }
@@ -236,11 +246,23 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                 {
                     case CLDS_HASH_TABLE_REMOVE_OK:
                     {
+                        
                         /*Codes_SRS_LRU_CACHE_13_073: [ lru_cache_put shall acquire the lock in exclusive. ]*/
                         srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
                         {
-                            /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall decrement the least used node size from current_size and remove it from the DList by calling DList_RemoveEntryList. ]*/
-                            (void)DList_RemoveEntryList(least_used_node);
+                            int32_t state = interlocked_add(&least_used_node_value->state, 0);
+                            if (state != LRU_NODE_STATE_READY)
+                            {
+                                /*Codes_SRS_BSDL_42_037: [ If bsdl's state is not OPENED then bsdl_restart_eviction shall fail and return a non-zero value. ]*/
+                                LogError("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
+                            }
+                            else
+                            {
+                                /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall decrement the least used node size from current_size and remove it from the DList by calling DList_RemoveEntryList. ]*/
+                                (void)DList_RemoveEntryList(least_used_node);
+
+                                (void)interlocked_exchange(&least_used_node_value->state, LRU_NODE_STATE_EVICTED);
+                            }
                         }
                         /*Codes_SRS_LRU_CACHE_13_074: [ lru_cache_put shall release the lock in exclusive mode. ]*/
                         srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
@@ -324,6 +346,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                 new_node->key = key;
                 new_node->size = size;
                 new_node->value = value;
+                (void)interlocked_exchange(&new_node->state, LRU_NODE_STATE_READY);
 
                 CLDS_HASH_TABLE_ITEM* old_item;
                 /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
@@ -341,11 +364,21 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     /*Codes_SRS_LRU_CACHE_13_033: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
                     srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
 
-                    DList_RemoveEntryList(node);
-                    DList_InitializeListHead(&(new_node->node));
+                    int32_t state = interlocked_add(&current_item->state, 0);
+                    if (state != LRU_NODE_STATE_READY)
+                    {
+                        /*Codes_SRS_BSDL_42_037: [ If bsdl's state is not OPENED then bsdl_restart_eviction shall fail and return a non-zero value. ]*/
+                        LogError("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
+                    }
+                    else
+                    {
 
-                    /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
-                    DList_InsertTailList(&(lru_cache->head), &(new_node->node));
+                        DList_RemoveEntryList(node);
+                        DList_InitializeListHead(&(new_node->node));
+
+                        /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
+                        DList_InsertTailList(&(lru_cache->head), &(new_node->node));
+                    }
 
                     /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
                     srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
@@ -407,26 +440,37 @@ void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
             CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
             if (hash_table_item != NULL)
             {
+                LRU_NODE* current_item = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
 
-                LRU_NODE* doubly_value = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
-                PDLIST_ENTRY node = &(doubly_value->node);
-
-                /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
-                srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
+                int32_t state = interlocked_add(&current_item->state, 0);
+                if (state != LRU_NODE_STATE_READY)
                 {
-                    /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
-                    if (lru_cache->head.Blink != node)
-                    {
-                        /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
-                        DList_RemoveEntryList(node);
-                        DList_InitializeListHead(node);
-                        /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
-                        DList_InsertTailList(&lru_cache->head, node);
-                    }
+                    /*Codes_SRS_BSDL_42_037: [ If bsdl's state is not OPENED then bsdl_restart_eviction shall fail and return a non-zero value. ]*/
+                    LogWarning("invalid state(%" PRI_MU_ENUM "). The node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
                 }
-                /*Codes_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
-                srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
-                result = doubly_value->value;
+                else
+                {
+                    PDLIST_ENTRY node = &(current_item->node);
+                    /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
+                    srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
+                    {
+                        // Check for state here and return if evicted
+
+                        /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
+                        if (lru_cache->head.Blink != node)
+                        {
+                            /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+                            DList_RemoveEntryList(node);
+                            DList_InitializeListHead(node);
+                            /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
+                            DList_InsertTailList(&lru_cache->head, node);
+                        }
+                    }
+                    /*Codes_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
+                    srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
+                }
+                
+                result = current_item->value;
                 CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
             }
         }
