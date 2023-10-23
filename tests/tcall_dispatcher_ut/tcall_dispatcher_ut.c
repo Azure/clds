@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include "macro_utils/macro_utils.h"
 #include "testrunnerswitcher.h"

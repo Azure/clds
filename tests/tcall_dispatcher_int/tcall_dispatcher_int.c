@@ -16,7 +16,7 @@
 
 #include "clds/tcall_dispatcher.h"
 
-// This is the call dispatcher used for most tests
+// This is the call dispatcher used for the tests
 TCALL_DISPATCHER_DEFINE_CALL_TYPE(FOO, int32_t, x);
 THANDLE_TYPE_DECLARE(TCALL_DISPATCHER_TYPEDEF_NAME(FOO))
 TCALL_DISPATCHER_TYPE_DECLARE(FOO, int32_t, x);
@@ -34,6 +34,7 @@ static void test_target(void* context, int32_t x)
 
 static void test_target_no_x_check(void* context, int32_t x)
 {
+    // Not validating anything specifically
     (void)context;
     (void)x;
 }
