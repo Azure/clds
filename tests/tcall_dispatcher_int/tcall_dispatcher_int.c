@@ -77,7 +77,11 @@ TEST_FUNCTION(TCALL_DISPATCHER_DISPATCH_CALL_calls_one_target)
 }
 
 #define N_THREADS 4
+#ifdef USE_VALGRIND
 #define CHAOS_TEST_RUNTIME 5000 // ms
+#else // USE_VALGRIND
+#define CHAOS_TEST_RUNTIME 1000 // ms
+#endif
 #define MAX_CALL_TARGET_HANDLES (1 * 1024 * 1024)
 
 static volatile_atomic int32_t terminate_test;
@@ -178,6 +182,11 @@ static int tcall_dispatcher_chaos_thread_func(void* arg)
                 break;
             }
         }
+
+#ifdef USE_VALGRIND
+        // yield
+        ThreadAPI_Sleep(0);
+#endif
     }
 
     return 0;
