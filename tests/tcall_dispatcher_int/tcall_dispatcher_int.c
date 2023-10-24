@@ -209,9 +209,9 @@ static int tcall_dispatcher_chaos_thread_func(void* arg)
             {
                 int64_t current_head = interlocked_add_64(&test_context->target_handles_head, 0);
                 int64_t current_tail = interlocked_add_64(&test_context->target_handles_tail, 0);
-                if (current_head == current_tail)
+                if (current_head >= current_tail)
                 {
-                    // array is empty, do nothing
+                    // array is empty or things changed, do nothing
                 }
                 else
                 {
