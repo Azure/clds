@@ -162,7 +162,7 @@ TEST_FUNCTION(when_underlying_calls_fail_TCALL_DISPATCHER_CREATE_also_fails)
     }
 }
 
-/* TCALL_DISPATCHER_REGISTER_TARGET */
+/* TCALL_DISPATCHER_LL_FREE_{T} */
 
 static TCALL_DISPATCHER(FOO) test_create_tcall_dispatcher(void)
 {
@@ -175,6 +175,63 @@ static TCALL_DISPATCHER(FOO) test_create_tcall_dispatcher(void)
 
     return call_dispatcher;
 }
+
+/* Tests_SRS_TCALL_DISPATCHER_01_026: [ TCALL_DISPATCHER_LL_FREE_{T} shall call srw_lock_ll_deinit to de-initialize the lock. ]*/
+TEST_FUNCTION(TCALL_DISPATCHER_LL_FREE_frees_all_resources)
+{
+    // arrange
+    TCALL_DISPATCHER(FOO) call_dispatcher = test_create_tcall_dispatcher();
+
+    STRICT_EXPECTED_CALL(srw_lock_ll_deinit(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+
+    // act
+    TCALL_DISPATCHER_ASSIGN(FOO)(&call_dispatcher, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+static TCALL_DISPATCHER_TARGET_HANDLE(FOO) test_register_target(TCALL_DISPATCHER(FOO) call_dispatcher, TCALL_DISPATCHER_TARGET_FUNC(FOO) function_to_call, void* call_context)
+{
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    TCALL_DISPATCHER_TARGET_HANDLE(FOO) result = TCALL_DISPATCHER_REGISTER_TARGET(FOO)(call_dispatcher, function_to_call, call_context);
+    umock_c_reset_all_calls();
+
+    return result;
+}
+
+/* Tests_SRS_TCALL_DISPATCHER_01_027: [ For each call target in the list, TCALL_DISPATCHER_LL_FREE_{T} shall free the resources associated with the call target. ]*/
+TEST_FUNCTION(TCALL_DISPATCHER_LL_FREE_frees_all_resources_for_2_registered_call_targets)
+{
+    // arrange
+    TCALL_DISPATCHER(FOO) call_dispatcher = test_create_tcall_dispatcher();
+    TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_1_handle = test_register_target(call_dispatcher, test_target_1, (void*)0x4242);
+    ASSERT_IS_NOT_NULL(target_1_handle);
+    TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_2_handle = test_register_target(call_dispatcher, test_target_2, (void*)0x4242);
+    ASSERT_IS_NOT_NULL(target_2_handle);
+
+    STRICT_EXPECTED_CALL(srw_lock_ll_deinit(IGNORED_ARG));
+    // 1st call target
+    STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+    // 2nd call target
+    STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+
+    // act
+    TCALL_DISPATCHER_ASSIGN(FOO)(&call_dispatcher, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+/* TCALL_DISPATCHER_REGISTER_TARGET */
 
 /* Tests_SRS_TCALL_DISPATCHER_01_006: [ If tcall_dispatcher is NULL then TCALL_DISPATCHER_REGISTER_TARGET(T) shall fail and return NULL. ] */
 TEST_FUNCTION(TCALL_DISPATCHER_REGISTER_TARGET_with_NULL_tcall_dispatcher_fails)
@@ -271,19 +328,6 @@ TEST_FUNCTION(when_underlying_calls_fail_TCALL_DISPATCHER_REGISTER_TARGET_also_f
 
 /* TCALL_DISPATCHER_UNREGISTER_TARGET */
 
-static TCALL_DISPATCHER_TARGET_HANDLE(FOO) test_register_target(TCALL_DISPATCHER(FOO) call_dispatcher, TCALL_DISPATCHER_TARGET_FUNC(FOO) function_to_call, void* call_context)
-{
-    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
-
-    TCALL_DISPATCHER_TARGET_HANDLE(FOO) result = TCALL_DISPATCHER_REGISTER_TARGET(FOO)(call_dispatcher, function_to_call, call_context);
-    umock_c_reset_all_calls();
-
-    return result;
-}
-
 /* Tests_SRS_TCALL_DISPATCHER_01_014: [ If tcall_dispatcher is NULL then TCALL_DISPATCHER_UNREGISTER_TARGET(T) shall fail and return a non-zero value. ]*/
 TEST_FUNCTION(TCALL_DISPATCHER_UNREGISTER_TARGET_with_NULL_tcall_dispatcher_fails)
 {
@@ -353,8 +397,6 @@ TEST_FUNCTION(TCALL_DISPATCHER_UNREGISTER_TARGET_succeeds)
 TEST_FUNCTION(TCALL_DISPATCHER_DISPATCH_CALL_with_NULL_tcall_dispatcher_fails)
 {
     // arrange
-    TCALL_DISPATCHER(FOO) call_dispatcher = test_create_tcall_dispatcher();
-    TCALL_DISPATCHER_TARGET_HANDLE(FOO) target_1_handle = test_register_target(call_dispatcher, test_target_1, (void*)0x4242);
 
     // act
     int result = TCALL_DISPATCHER_DISPATCH_CALL(FOO)(NULL, 42);
@@ -362,10 +404,6 @@ TEST_FUNCTION(TCALL_DISPATCHER_DISPATCH_CALL_with_NULL_tcall_dispatcher_fails)
     // assert
     ASSERT_ARE_NOT_EQUAL(int, 0, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-
-    // clean
-    ASSERT_ARE_EQUAL(int, 0, TCALL_DISPATCHER_UNREGISTER_TARGET(FOO)(call_dispatcher, target_1_handle));
-    TCALL_DISPATCHER_ASSIGN(FOO)(&call_dispatcher, NULL);
 }
 
 /* Tests_SRS_TCALL_DISPATCHER_01_022: [ Otherwise, TCALL_DISPATCHER_DISPATCH_CALL(T) shall acquire the lock in shared mode. ]*/

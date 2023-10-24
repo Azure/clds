@@ -4,12 +4,6 @@
 #ifndef TCALL_DISPATCHER_LL_H
 #define TCALL_DISPATCHER_LL_H
 
-#ifdef __cplusplus
-#include <cinttypes>
-#else
-#include <inttypes.h>
-#endif
-
 #include "c_pal/interlocked.h"
 
 #include "c_pal/thandle_ll.h"
@@ -41,20 +35,18 @@
 #define TCALL_DISPATCHER_DEFINE_CALL_TYPE(T, ...)                                                                     \
 /*forward define the typedef of the TCALL_DISPATCHER struct so that it can be used for a function pointer definition*/  \
 typedef void (*TCALL_DISPATCHER_TARGET_FUNC_TYPE_NAME(T))(void* context MU_FOR_EACH_2(TCALL_DISPATCHER_ARG_IN_SIGNATURE, __VA_ARGS__)); \
-typedef struct TCALL_DISPATCHER_TARGET_STRUCT_TYPE_NAME_TAG(T) TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(T);         \
 typedef struct TCALL_DISPATCHER_TARGET_STRUCT_TYPE_NAME_TAG(T)* TCALL_DISPATCHER_TARGET_HANDLE_NAME(T);         \
-struct TCALL_DISPATCHER_TARGET_STRUCT_TYPE_NAME_TAG(T)                                                          \
+typedef struct TCALL_DISPATCHER_TARGET_STRUCT_TYPE_NAME_TAG(T)                                                  \
 {                                                                                                               \
     DLIST_ENTRY anchor;                                                                                         \
     TCALL_DISPATCHER_LL_TARGET_FUNC(T) function_to_call;                                                        \
     void* call_context;                                                                                         \
-};                                                                                                              \
-typedef struct TCALL_DISPATCHER_STRUCT_TYPE_NAME_TAG(T) TCALL_DISPATCHER_TYPEDEF_NAME(T);                       \
-struct TCALL_DISPATCHER_STRUCT_TYPE_NAME_TAG(T)                                                                 \
+} TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(T);                                                                      \
+typedef struct TCALL_DISPATCHER_STRUCT_TYPE_NAME_TAG(T)                                                         \
 {                                                                                                               \
     SRW_LOCK_LL lock;                                                                                           \
     DLIST_ENTRY call_targets;                                                                                   \
-};                                                                                                              \
+} TCALL_DISPATCHER_TYPEDEF_NAME(T);                                                                             \
 
 /*TCALL_DISPATCHER is-a THANDLE*/
 /*given a type "T" TCALL_DISPATCHER_LL(T) expands to the name of the type. */
@@ -106,17 +98,28 @@ struct TCALL_DISPATCHER_STRUCT_TYPE_NAME_TAG(T)                                 
 
 /*introduces a function definition for freeing the allocated resources for a TCALL_DISPATCHER*/
 #define TCALL_DISPATCHER_LL_FREE_DEFINE(C, T) \
-static void TCALL_DISPATCHER_LL_FREE_NAME(C)(TCALL_DISPATCHER_TYPEDEF_NAME(T)* tcall_dispatcher)                                \
-{                                                                                                                               \
-    if (tcall_dispatcher == NULL)                                                                                               \
-    {                                                                                                                           \
-        LogError("invalid arguments " MU_TOSTRING(TCALL_DISPATCHER_TYPEDEF_NAME(T)) "* tcall_dispatcher=%p",                    \
-            tcall_dispatcher);                                                                                                  \
-    }                                                                                                                           \
-    else                                                                                                                        \
-    {                                                                                                                           \
-    }                                                                                                                           \
-}                                                                                                                               \
+static void TCALL_DISPATCHER_LL_FREE_NAME(C)(TCALL_DISPATCHER_TYPEDEF_NAME(T)* tcall_dispatcher)                                                                    \
+{                                                                                                                                                                   \
+    if (tcall_dispatcher == NULL)                                                                                                                                   \
+    {                                                                                                                                                               \
+        LogError("invalid arguments " MU_TOSTRING(TCALL_DISPATCHER_TYPEDEF_NAME(T)) "* tcall_dispatcher=%p",                                                        \
+            tcall_dispatcher);                                                                                                                                      \
+    }                                                                                                                                                               \
+    else                                                                                                                                                            \
+    {                                                                                                                                                               \
+        /* Codes_SRS_TCALL_DISPATCHER_01_026: [ TCALL_DISPATCHER_LL_FREE_{T} shall call srw_lock_ll_deinit to de-initialize the lock. ]*/                           \
+        srw_lock_ll_deinit(&tcall_dispatcher->lock);                                                                                                                \
+        DLIST_ENTRY* current_entry = tcall_dispatcher->call_targets.Flink;                                                                                          \
+        while (current_entry != &tcall_dispatcher->call_targets)                                                                                                    \
+        {                                                                                                                                                           \
+            /* Codes_SRS_TCALL_DISPATCHER_01_027: [ For each call target in the list, TCALL_DISPATCHER_LL_FREE_{T} shall free the resources associated with the call target. ]*/ \
+            TCALL_DISPATCHER_TARGET_HANDLE_NAME(T) call_target_handle = CONTAINING_RECORD(current_entry, TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(T), anchor);          \
+            DList_RemoveEntryList(current_entry);                                                                                                                   \
+            free(call_target_handle);                                                                                                                               \
+            current_entry = tcall_dispatcher->call_targets.Flink;                                                                                                   \
+        }                                                                                                                                                           \
+    }                                                                                                                                                               \
+}                                                                                                                                                                   \
 
 /*introduces a function definition for tcall_dispatcher_create*/
 #define TCALL_DISPATCHER_LL_CREATE_DEFINE(C, T)                                                                                                                     \
@@ -175,7 +178,7 @@ TCALL_DISPATCHER_LL_TARGET_HANDLE(T) TCALL_DISPATCHER_LL_REGISTER_TARGET(C)(TCAL
         if (result == NULL)                                                                                                                                         \
         {                                                                                                                                                           \
             /* Codes_SRS_TCALL_DISPATCHER_01_013: [ If there are any failures then TCALL_DISPATCHER_REGISTER_TARGET(T) shall fail and return NULL. ] */             \
-            LogError("malloc(sizeof(TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(T))=%zu) failed", sizeof(TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(T)));                        \
+            LogError("malloc(sizeof(TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(" MU_TOSTRING(T) "))=%zu) failed", sizeof(TCALL_DISPATCHER_TARGET_TYPEDEF_NAME(T)));       \
             /* return as is */                                                                                                                                      \
         }                                                                                                                                                           \
         else                                                                                                                                                        \
@@ -210,7 +213,7 @@ int TCALL_DISPATCHER_LL_UNREGISTER_TARGET(C)(TCALL_DISPATCHER_LL(T) tcall_dispat
         (call_target == NULL)                                                                                                                                       \
        )                                                                                                                                                            \
     {                                                                                                                                                               \
-        LogError("Invalid arguments TCALL_DISPATCHER_LL(T) tcall_dispatcher=%p, TCALL_DISPATCHER_LL_TARGET_HANDLE(T) call_target=%p",                               \
+        LogError("Invalid arguments TCALL_DISPATCHER_LL(" MU_TOSTRING(T) ") tcall_dispatcher=%p, TCALL_DISPATCHER_LL_TARGET_HANDLE(" MU_TOSTRING(T) ") call_target=%p", \
             tcall_dispatcher, call_target);                                                                                                                         \
         result = MU_FAILURE;                                                                                                                                        \
     }                                                                                                                                                               \
@@ -238,7 +241,7 @@ int TCALL_DISPATCHER_LL_DISPATCH_CALL(C)(TCALL_DISPATCHER_LL(T) tcall_dispatcher
     if (tcall_dispatcher == NULL)                                                                                                                                   \
     {                                                                                                                                                               \
         /* Codes_SRS_TCALL_DISPATCHER_01_021: [ If tcall_dispatcher is NULL then TCALL_DISPATCHER_DISPATCH_CALL(T) shall fail and return a non-zero value. ]*/      \
-        LogError("Invalid arguments TCALL_DISPATCHER_LL(T) tcall_dispatcher=%p, ...",                                                                               \
+        LogError("Invalid arguments TCALL_DISPATCHER_LL(" MU_TOSTRING(T) ") tcall_dispatcher=%p, ...",                                                              \
             tcall_dispatcher);                                                                                                                                      \
         result = MU_FAILURE;                                                                                                                                        \
     }                                                                                                                                                               \

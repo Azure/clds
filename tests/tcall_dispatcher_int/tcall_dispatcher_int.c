@@ -15,16 +15,10 @@
 #include "c_pal/threadapi.h"
 
 #include "clds/tcall_dispatcher.h"
+#include "tcall_dispatcher_foo.h"
 
-// This is the call dispatcher used for the tests
-TCALL_DISPATCHER_DEFINE_CALL_TYPE(FOO, int32_t, x);
-THANDLE_TYPE_DECLARE(TCALL_DISPATCHER_TYPEDEF_NAME(FOO))
-TCALL_DISPATCHER_TYPE_DECLARE(FOO, int32_t, x);
-
-THANDLE_TYPE_DEFINE(TCALL_DISPATCHER_TYPEDEF_NAME(FOO));
-TCALL_DISPATCHER_TYPE_DEFINE(FOO, int32_t, x);
-
-TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
+// TCALL_DISPATCHER_(FOO) is used for most int tests
+// It is declared and defined in its own .h/.c files in order to emulate usage in the wilderness
 
 static void test_target(void* context, int32_t x)
 {
@@ -38,6 +32,39 @@ static void test_target_no_x_check(void* context, int32_t x)
     (void)context;
     (void)x;
 }
+
+// This is a call dispatcher with no args
+TCALL_DISPATCHER_DEFINE_CALL_TYPE(CALL_DISPATCHER_NO_ARGS);
+THANDLE_TYPE_DECLARE(TCALL_DISPATCHER_TYPEDEF_NAME(CALL_DISPATCHER_NO_ARGS))
+TCALL_DISPATCHER_TYPE_DECLARE(CALL_DISPATCHER_NO_ARGS);
+
+THANDLE_TYPE_DEFINE(TCALL_DISPATCHER_TYPEDEF_NAME(CALL_DISPATCHER_NO_ARGS));
+TCALL_DISPATCHER_TYPE_DEFINE(CALL_DISPATCHER_NO_ARGS);
+
+static void test_target_no_args(void* context)
+{
+    // Not validating anything specifically
+    (void)context;
+}
+
+// This is a call dispatcher with 3 args (out of which one is a const char* just for kicks)
+TCALL_DISPATCHER_DEFINE_CALL_TYPE(CALL_DISPATCHER_3_ARGS, bool, arg1, double, arg2, const char*, arg3);
+THANDLE_TYPE_DECLARE(TCALL_DISPATCHER_TYPEDEF_NAME(CALL_DISPATCHER_3_ARGS))
+TCALL_DISPATCHER_TYPE_DECLARE(CALL_DISPATCHER_3_ARGS, bool, arg1, double, arg2, const char*, arg3);
+
+THANDLE_TYPE_DEFINE(TCALL_DISPATCHER_TYPEDEF_NAME(CALL_DISPATCHER_3_ARGS));
+TCALL_DISPATCHER_TYPE_DEFINE(CALL_DISPATCHER_3_ARGS, bool, arg1, double, arg2, const char*, arg3);
+
+static void test_target_3_args(void* context, bool arg1, double arg2, const char* arg3)
+{
+    // Not validating anything specifically
+    (void)context;
+    (void)arg1;
+    (void)arg2;
+    (void)arg3;
+}
+
+TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
@@ -74,6 +101,41 @@ TEST_FUNCTION(TCALL_DISPATCHER_DISPATCH_CALL_calls_one_target)
     // clean
     ASSERT_ARE_EQUAL(int, 0, TCALL_DISPATCHER_UNREGISTER_TARGET(FOO)(call_dispatcher, target_handle));
     TCALL_DISPATCHER_ASSIGN(FOO)(&call_dispatcher, NULL);
+}
+
+TEST_FUNCTION(TCALL_DISPATCHER_DISPATCH_CALL_calls_a_target_with_no_args)
+{
+    // arrange
+    TCALL_DISPATCHER(CALL_DISPATCHER_NO_ARGS) call_dispatcher = TCALL_DISPATCHER_CREATE(CALL_DISPATCHER_NO_ARGS)();
+    TCALL_DISPATCHER_TARGET_HANDLE(CALL_DISPATCHER_NO_ARGS) target_1_handle = TCALL_DISPATCHER_REGISTER_TARGET(CALL_DISPATCHER_NO_ARGS)(call_dispatcher, test_target_no_args, (void*)0x4242);
+
+    // act
+    int result = TCALL_DISPATCHER_DISPATCH_CALL(CALL_DISPATCHER_NO_ARGS)(call_dispatcher);
+
+    // assert
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // clean
+    ASSERT_ARE_EQUAL(int, 0, TCALL_DISPATCHER_UNREGISTER_TARGET(CALL_DISPATCHER_NO_ARGS)(call_dispatcher, target_1_handle));
+    TCALL_DISPATCHER_ASSIGN(CALL_DISPATCHER_NO_ARGS)(&call_dispatcher, NULL);
+}
+
+TEST_FUNCTION(TCALL_DISPATCHER_DISPATCH_CALL_calls_a_target_with_3_args)
+{
+    // arrange
+    const char* test_string = "muma padurilor";
+    TCALL_DISPATCHER(CALL_DISPATCHER_3_ARGS) call_dispatcher = TCALL_DISPATCHER_CREATE(CALL_DISPATCHER_3_ARGS)();
+    TCALL_DISPATCHER_TARGET_HANDLE(CALL_DISPATCHER_3_ARGS) target_1_handle = TCALL_DISPATCHER_REGISTER_TARGET(CALL_DISPATCHER_3_ARGS)(call_dispatcher, test_target_3_args, (void*)0x4242);
+
+    // act
+    int result = TCALL_DISPATCHER_DISPATCH_CALL(CALL_DISPATCHER_3_ARGS)(call_dispatcher, true, 0.42, test_string);
+
+    // assert
+    ASSERT_ARE_EQUAL(int, 0, result);
+
+    // clean
+    ASSERT_ARE_EQUAL(int, 0, TCALL_DISPATCHER_UNREGISTER_TARGET(CALL_DISPATCHER_3_ARGS)(call_dispatcher, target_1_handle));
+    TCALL_DISPATCHER_ASSIGN(CALL_DISPATCHER_3_ARGS)(&call_dispatcher, NULL);
 }
 
 #define N_THREADS 4

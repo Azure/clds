@@ -88,7 +88,13 @@ TCALL_DISPATCHER_TYPE_DECLARE(FOO, int, x, char*, y);
 #define TCALL_DISPATCHER_TYPE_DEFINE(T, ...)
 ```
 
-`TCALL_DISPATCHER_TYPE_DECLARE(T)` is a macro to be used in a .c file to define all the needed functions for `TCALL_DISPATCHER(T)`.
+`TCALL_DISPATCHER_TYPE_DEFINE(T)` is a macro to be used in a .c file to define all the needed functions for `TCALL_DISPATCHER(T)`.
+
+`...` is a list of argtype argname pairs, example usage being:
+
+```c
+TCALL_DISPATCHER_TYPE_DEFINE(FOO, int, x, char*, y);
+```
 
 ### TCALL_DISPATCHER_CREATE(T)
 ```c
@@ -97,7 +103,7 @@ static TCALL_DISPATCHER(T) TCALL_DISPATCHER_CREATE(T)(void);
 
 `TCALL_DISPATCHER_CREATE(T)` creates a new `TCALL_DISPATCHER(T)`.
 
-**SRS_TCALL_DISPATCHER_01_001: [** `TCALL_DISPATCHER_CREATE(T)` shall call `THANDLE_MALLOC` to allocate the result. **]**
+**SRS_TCALL_DISPATCHER_01_001: [** `TCALL_DISPATCHER_CREATE(T)` shall call `THANDLE_MALLOC` with `TCALL_DISPATCHER_LL_FREE_{T}` as dispose function. **]**
 
 **SRS_TCALL_DISPATCHER_01_002: [** `TCALL_DISPATCHER_CREATE(T)` shall call `srw_lock_ll_init` to initialize the lock used by the `TCALL_DISPATCHER` instance. **]**
 
@@ -106,6 +112,18 @@ static TCALL_DISPATCHER(T) TCALL_DISPATCHER_CREATE(T)(void);
 **SRS_TCALL_DISPATCHER_01_004: [** `TCALL_DISPATCHER_CREATE(T)` shall succeed and return a non-`NULL` value. **]**
 
 **SRS_TCALL_DISPATCHER_01_005: [** If there are any failures then `TCALL_DISPATCHER_CREATE(T)` shall fail and return `NULL`. **]**
+
+### TCALL_DISPATCHER_LL_FREE_{T}
+
+```c
+static void TCALL_DISPATCHER_LL_FREE_{T}(TCALL_DISPATCHER_TYPEDEF_NAME(T)* tcall_dispatcher)
+```
+
+`TCALL_DISPATCHER_LL_FREE_{T}` disposes of the resources used by the `TCALL_DISPATCHER(T)`.
+
+**SRS_TCALL_DISPATCHER_01_026: [** `TCALL_DISPATCHER_LL_FREE_{T}` shall call `srw_lock_ll_deinit` to de-initialize the lock. **]**
+
+**SRS_TCALL_DISPATCHER_01_027: [** For each call target in the list, `TCALL_DISPATCHER_LL_FREE_{T}` shall free the resources associated with the call target. **]**
 
 ### TCALL_DISPATCHER_REGISTER_TARGET(T)
 ```c
