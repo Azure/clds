@@ -636,6 +636,7 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_029: [ lru_cache_put shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
 /*Tests_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
 /*Tests_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
 /*Tests_SRS_LRU_CACHE_13_046: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
@@ -676,13 +677,15 @@ TEST_FUNCTION(lru_cache_put_succeeds)
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_029: [ lru_cache_put shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
-/*Tests_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
-/*Tests_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
-/*Tests_SRS_LRU_CACHE_13_046: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
-/*Tests_SRS_LRU_CACHE_13_047: [ lru_cache_put shall append the node to the tail ]*/
-/*Tests_SRS_LRU_CACHE_13_048: [ lru_cache_put shall release the lock in exclusive mode. ]*/
-/*Tests_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
-/*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
+/*Tests_SRS_LRU_CACHE_13_064: [ lru_cache_put shall create LRU Node item to be updated in the hash table. ]*/
+/*Tests_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
+/*Tests_SRS_LRU_CACHE_13_033: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_077: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
+/*Tests_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
+/*Tests_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_070: [ lru_cache_put shall update the current_size with the new size and removes the old value size. ]*/
+/*Tests_SRS_LRU_CACHE_13_067: [ lru_cache_put shall free the old value. ]*/
+/*Tests_SRS_LRU_CACHE_13_068: [ lru_cache_put shall return with LRU_CACHE_PUT_OK. ]*/
 TEST_FUNCTION(lru_cache_put_twice_succeeds)
 {
     // arrange
@@ -904,6 +907,7 @@ TEST_FUNCTION(lru_cache_put_set_value_does_not_call_remove_list_on_evicted_state
 
 /*Tests_SRS_LRU_CACHE_13_030: [ If the key is found: ]*/
 /*Tests_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
+/*Tests_SRS_LRU_CACHE_13_064: [ lru_cache_put shall create LRU Node item to be updated in the hash table. ]*/
 /*Tests_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
 TEST_FUNCTION(lru_cache_put_set_value_fails)
 {
@@ -1399,6 +1403,36 @@ TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
         // assert
         ASSERT_ARE_EQUAL(int, get_value, value);
     }
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_061: [ If there are any failures, lru_cache_get shall return NULL. ]*/
+TEST_FUNCTION(lru_cache_get_return_NULL_hazard_pointers_return_NULL)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    size_t bucket_size = 1024;
+    int key = 10;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG)).SetReturn(NULL);
+
+    // act
+    void* get_value_ptr = lru_cache_get(lru_cache, &key);
+
+    // assert
+    ASSERT_IS_NULL(get_value_ptr);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
 
     // cleanup
     lru_cache_destroy(lru_cache);

@@ -400,6 +400,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
             }
             else
             {
+                /*Codes_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
                 result = add_to_cache_internal(lru_cache, hazard_pointers_thread, key, value, size);
             }
 
