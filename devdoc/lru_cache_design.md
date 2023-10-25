@@ -15,14 +15,12 @@ All operations can be concurrent with other operations of the same or different 
 typedef struct LRU_CACHE_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread;
+    CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE clds_hazard_pointers_thread_helper;
     CLDS_HASH_TABLE_HANDLE table;
-    int64_t current_size;
-    int64_t capacity;
-    DWORD tls_slot;
-    volatile_atomic int64_t* seq_no;
+    volatile_atomic int64_t current_size;
+    uint64_t capacity;
     DLIST_ENTRY head;
-    SRW_LOCK_HANDLE lock;
+    SRW_LOCK_LL srw_lock;
 } LRU_CACHE;
 
 typedef struct LRU_NODE_TAG
@@ -31,9 +29,11 @@ typedef struct LRU_NODE_TAG
     int64_t size;
     CLDS_HASH_TABLE_ITEM* value;
     DLIST_ENTRY node;
+    volatile_atomic int32_t state; /* LRU_NODE_STATE */
 } LRU_NODE;
 
-typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status);
+typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
+
 ```
 
 LRU Cache uses a `clds_hash_table`, a `srw_lock`, and a `doubly_linked_list`.
@@ -43,61 +43,81 @@ LRU Cache uses a `clds_hash_table`, a `srw_lock`, and a `doubly_linked_list`.
 
 ### Inserting Items into the Cache
 
-The `lru_cache_put` function is used to insert or update an item in the cache. If the item already exists in the cache, it is removed and reinserted in the cache and moved to head position of `doubly_linked_list` to maintain the LRU order. If the cache is full, it performs eviction by removing the least recently used item until there is enough space for the new item.
+The `lru_cache_put` function is used to insert or update an item in the cache. If the item already exists in the cache, it is reinserted in the cache and moved to head position of `doubly_linked_list` to maintain the LRU order. If the cache is full, it performs eviction by removing the least recently used item until there is enough space for the new item.
 
 ```mermaid
 graph TD
     A[Input: lru_cache, key, value, size]
-    B[Acquire Lock]
-    C[Find item in cache]
-    D[If item exists]
-    E[Remove item from cache]
-    F[Eviction logic]
-    G[Add item to cache]
-    H[Update DList]
-    I[Update cache current size]
-    J[Release Lock]
-    K[Output: Result]
+    B[Find item in cache]
+    C[If item exists]
+    E[Add item to cache]
+    F[Acquire Lock]
+    G[Update DList Entry Position]
+    H[Update cache current size]
+    I[Release Lock]
+    J[Update item to cache]
+    K[Acquire Lock]
+    L[Remove DList Entry]
+    M[Update DList Entry Position]
+    P[Release Lock]
+    N[Update cache current size]
+    O[Eviction logic]
+    Z[Output: Result]
 
-    A --> C
-    C --> D
-    D -->|Yes| E
-    D -->|No| F
+    A --> B
+    B --> C
+    C -->|Yes| J
+    C -->|No| E
+    E --> F
     F --> G
-    E --> G
-    G --> B
-    B --> H
-    H --> I
-    I --> J
+    G --> I
+    I --> H
     J --> K
+    K --> L
+    L --> M
+    M --> P
+    P --> N
+    N --> O
+    H --> O
+    O --> Z
+
 ```
 
 ### Eviction Logic
 
-To evict the least recently used item from the cache, the key from the tail of the `doubly_linked_list` is removed from the `table`, and the node is removed from the `doubly_linked_list`. When an item gets evicted, the provided callback is triggered to report the eviction status. This is done in a loop until there is enough space in the cache.
+The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. This is done in a loop until there is enough space in the cache. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
+For example: 
+
+LRU Cache (Capacity: 2)
+- put(key1, value1)
+  - Head -> Node (key1)
+- put(key2, value2)
+  - Head -> Node (key1) -> Node (key2)
+- put(key3, value3)
+  - Head -> Node (key2) -> Node (key3) (`key1` is evicted)
 
 ```mermaid
 sequenceDiagram
     participant Cache as "LRU Cache"
     participant HashTable as "Hash Table (Cache)"
     participant DoublyLinkedList as "Doubly Linked List"
-    Cache ->> DoublyLinkedList: Find the last LRU_NODE (which contains the key) in the cache (i.e., tail)
-    DoublyLinkedList -->> Cache: Found the last item
+    Cache ->> DoublyLinkedList: Find the least recently used LRU_NODE (which contains the key) in the cache (i.e., the node next to the head)
+    DoublyLinkedList -->> Cache: Found the item
+    Cache ->> Cache: Update the current size
     Cache ->> HashTable: Remove the key item from the cache
     HashTable -->> Cache: Item removed successfully
     Cache ->> DoublyLinkedList: Acquire an exclusive lock
     DoublyLinkedList -->> Cache: Acquired lock successfully
-    Cache ->> DoublyLinkedList: Remove the last item from the doubly linked list
+    Cache ->> DoublyLinkedList: Remove the node next to the head from the doubly linked list
     DoublyLinkedList -->> Cache: Item removed from the list
     Cache ->> DoublyLinkedList: Release the exclusive lock
     DoublyLinkedList -->> Cache: Released the lock successfully
-    Cache ->> Cache: Update the current size
     Cache ->> Cache: Call the callback provided with the eviction status
     Note left of Cache: Eviction Logic` 
 ```
 ### Getting Items from the Cache
 
-This operation retrieves items from the cache and rearranges the order in the `doubly_linked_list` by moving the found item to its head. It ensures that recently accessed items are placed at the front of the list to maintain the LRU order.
+This operation retrieves items from the cache and rearranges the order in the `doubly_linked_list` by moving the found item to its tail. It ensures that recently accessed items are placed at the tail of the list to maintain the LRU order.
 
 ```mermaid
 sequenceDiagram
@@ -110,7 +130,7 @@ sequenceDiagram
     LRUList -->> Cache: Current item position
     LRUList ->> LRUList: Check the item's position in the list
     LRUList ->> LRUList: Acquire an exclusive lock
-    LRUList ->> LRUList: Move the item to the front if needed
+    LRUList ->> LRUList: Move the item to the back (tail) if needed
     LRUList ->> LRUList: Release the exclusive lock
     Cache -->> Cache: Return the hash_table_item from LRU_NODE` 
 ```

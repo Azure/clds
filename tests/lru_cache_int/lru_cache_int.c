@@ -4,39 +4,23 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include <time.h>
-
 
 #include "testrunnerswitcher.h"
 
 #include "macro_utils/macro_utils.h"
 
 #include "c_pal/interlocked.h"
-#include "c_pal/sync.h"
-#include "c_pal/uuid.h"
-
 #include "c_pal/interlocked_hl.h"
 
 #include "c_logging/logger.h"
 
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
-#include "c_pal/timer.h"
-#include "c_pal/threadapi.h"
 
 #include "clds/clds_hazard_pointers.h"
-
 #include "clds/clds_hash_table.h"
 
 #include "clds/lru_cache.h"
-
-#define XTEST_FUNCTION(A) void A(void)
-
-#define SEQ_NO_STATE_VALUES \
-    SEQ_NO_NOT_USED, \
-    SEQ_NO_USED
-
-MU_DEFINE_ENUM(SEQ_NO_STATE, SEQ_NO_STATE_VALUES);
 
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
@@ -44,8 +28,6 @@ TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESU
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
-TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
-TEST_DEFINE_ENUM_TYPE(SEQ_NO_STATE, SEQ_NO_STATE_VALUES);
 TEST_DEFINE_ENUM_TYPE(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_RESULT_VALUES);
 
 
@@ -194,7 +176,7 @@ TEST_FUNCTION(test_put_calls_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 2);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -261,7 +243,7 @@ TEST_FUNCTION(test_put_same_item_multiple_times_triggers_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 2);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -480,7 +462,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     test_large_item->key = 100013;
     test_large_item->appendix = 110013;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 10, on_evict_callback, &count_context);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 11, on_evict_callback, &count_context);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // assert

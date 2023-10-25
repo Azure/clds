@@ -70,8 +70,8 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         (initial_bucket_size == 0) ||
         /*Codes_SRS_LRU_CACHE_13_004: [ If clds_hazard_pointers is NULL, lru_cache_create shall fail and return NULL. ]*/
         (clds_hazard_pointers == NULL) ||
-        /*Codes_SRS_LRU_CACHE_13_010: [ If capacity less than or equals to 0, then lru_cache_create shall fail and return NULL. ]*/
-        (capacity <= 0))
+        /*Codes_SRS_LRU_CACHE_13_010: [ If capacity is 0, then lru_cache_create shall fail and return NULL. ]*/
+        (capacity == 0))
     {
         LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, size_t initial_bucket_size=%zu, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t size=%" PRIu64 "",
             compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, capacity);
@@ -112,7 +112,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
                 }
                 else
                 {
-                    /*Codes_SRS_LRU_CACHE_13_016: [ lru_cache_create shall allocate SRW_LOCK_HANDLE by calling srw_lock_create. ]*/
+                    /*Codes_SRS_LRU_CACHE_13_016: [ lru_cache_create shall allocate SRW_LOCK_LL by calling srw_lock_ll_init. ]*/
                     if (srw_lock_ll_init(&lru_cache->srw_lock) != 0)
                     {
                         /*Codes_SRS_LRU_CACHE_13_020: [ If there are any failures then lru_cache_create shall fail and return NULL. ]*/
@@ -219,6 +219,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                 /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
                 LogError("Something is wrong. The cache is empty but there is no capacity");
                 srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
+                evict_callback(context, LRU_CACHE_EVICT_ERROR, NULL);
                 result = LRU_CACHE_EVICT_ERROR;
                 break;
             }
@@ -253,14 +254,12 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                             int32_t state = interlocked_add(&least_used_node_value->state, 0);
                             if (state != LRU_NODE_STATE_READY)
                             {
-                                /*Codes_SRS_BSDL_42_037: [ If bsdl's state is not OPENED then bsdl_restart_eviction shall fail and return a non-zero value. ]*/
-                                LogError("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
+                                LogWarning("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
                             }
                             else
                             {
-                                /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall decrement the least used node size from current_size and remove it from the DList by calling DList_RemoveEntryList. ]*/
+                                /*Codes_SRS_LRU_CACHE_13_041: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
                                 (void)DList_RemoveEntryList(least_used_node);
-
                                 (void)interlocked_exchange(&least_used_node_value->state, LRU_NODE_STATE_EVICTED);
                             }
                         }
@@ -276,6 +275,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
 
                     case CLDS_HASH_TABLE_REMOVE_NOT_FOUND:
                     {
+                        /*Codes_SRS_LRU_CACHE_13_078: [ If clds_hash_table_remove returns CLDS_HASH_TABLE_REMOVE_NOT_FOUND, then lru_cache_put shall retry eviction. ]*/
                         LogError("item has already been evicted.");
                         (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
                         break;
@@ -308,21 +308,25 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
         /*Codes_SRS_LRU_CACHE_13_025: [ If value is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         value == NULL ||
         /*Codes_SRS_LRU_CACHE_13_026: [ If size is 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
-        size == 0)
+        size == 0 ||
+        /*Codes_SRS_LRU_CACHE_13_075: [ If evict_callback is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+        evict_callback == NULL)
     {
         LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRIu64 "", lru_cache, key, value, size);
         result = LRU_CACHE_PUT_ERROR;
     }
     else
     {
+        /*Codes_SRS_LRU_CACHE_13_027: [ If size is greater than capacity of lru cache, then lru_cache_put shall fail and return LRU_CACHE_PUT_VALUE_INVALID_SIZE. ]*/
         if (lru_cache->capacity < size)
         {
-            /*Codes_SRS_LRU_CACHE_13_027: [ If size is greater than capacity of lru cache, then lru_cache_put shall fail and return LRU_CACHE_PUT_VALUE_INVALID_SIZE. ]*/
             LogError("value size is larger than capacity.");
             result = LRU_CACHE_PUT_VALUE_INVALID_SIZE;
         }
         else
         {
+            /*Codes_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
+
             /*Codes_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
             CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
             if (hazard_pointers_thread == NULL)
@@ -367,18 +371,18 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     int32_t state = interlocked_add(&current_item->state, 0);
                     if (state != LRU_NODE_STATE_READY)
                     {
-                        /*Codes_SRS_BSDL_42_037: [ If bsdl's state is not OPENED then bsdl_restart_eviction shall fail and return a non-zero value. ]*/
-                        LogError("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
+                        LogWarning("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
                     }
                     else
                     {
-
+                        /*Codes_SRS_LRU_CACHE_13_077: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
                         DList_RemoveEntryList(node);
-                        DList_InitializeListHead(&(new_node->node));
-
-                        /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
-                        DList_InsertTailList(&(lru_cache->head), &(new_node->node));
                     }
+
+                    DList_InitializeListHead(&(new_node->node));
+
+                    /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
+                    DList_InsertTailList(&(lru_cache->head), &(new_node->node));
 
                     /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/
                     srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
@@ -389,8 +393,8 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     /*Codes_SRS_LRU_CACHE_13_067: [ lru_cache_put shall free the old value. ]*/
                     CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
 
-                    /*Codes_SRS_LRU_CACHE_13_068: [ lru_cache_put shall return with LRU_CACHE_EVICT_OK. ]*/
-                    result = LRU_CACHE_EVICT_OK;
+                    /*Codes_SRS_LRU_CACHE_13_068: [ lru_cache_put shall return with LRU_CACHE_PUT_OK. ]*/
+                    result = LRU_CACHE_PUT_OK;
                 }
                 CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
             }
@@ -441,11 +445,10 @@ void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
             if (hash_table_item != NULL)
             {
                 LRU_NODE* current_item = (LRU_NODE*)CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
-
                 int32_t state = interlocked_add(&current_item->state, 0);
                 if (state != LRU_NODE_STATE_READY)
                 {
-                    /*Codes_SRS_BSDL_42_037: [ If bsdl's state is not OPENED then bsdl_restart_eviction shall fail and return a non-zero value. ]*/
+                    /*Codes_SRS_LRU_CACHE_13_079: [ If the LRU Node is already evicted with the state LRU_NODE_STATE_EVICTED, then lru_cache_get shall return CLDS_HASH_TABLE_ITEM value of the key. ]*/
                     LogWarning("invalid state(%" PRI_MU_ENUM "). The node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
                 }
                 else
@@ -454,8 +457,6 @@ void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
                     /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
                     srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
                     {
-                        // Check for state here and return if evicted
-
                         /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
                         if (lru_cache->head.Blink != node)
                         {

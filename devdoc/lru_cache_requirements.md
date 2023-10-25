@@ -13,14 +13,13 @@ typedef struct LRU_CACHE_TAG* LRU_CACHE_HANDLE;
     LRU_CACHE_PUT_OK, \
     LRU_CACHE_PUT_ERROR, \
     LRU_CACHE_PUT_VALUE_INVALID_SIZE
-
 MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 #define LRU_CACHE_EVICT_RESULT_VALUES \
     LRU_CACHE_EVICT_OK, \
     LRU_CACHE_EVICT_ERROR
-
 MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
+
 
 typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
 
@@ -59,7 +58,7 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 
 **SRS_LRU_CACHE_13_015: [** `lru_cache_create` shall allocate `clds_hash_table` by calling `clds_hash_table_create`. **]**
 
-**SRS_LRU_CACHE_13_016: [** `lru_cache_create` shall allocate `SRW_LOCK_HANDLE` by calling `srw_lock_create`. **]**
+**SRS_LRU_CACHE_13_016: [** `lru_cache_create` shall allocate `SRW_LOCK_LL` by calling `srw_lock_ll_init`. **]**
 
 **SRS_LRU_CACHE_13_017: [** `lru_cache_create` shall initialize `head` by calling `DList_InitializeListHead`. **]**
 
@@ -91,16 +90,6 @@ MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_h
 
 The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache  and performs eviction if necessary. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
 
-For example: 
-
-LRU Cache (Capacity: 2)
-- put(key1, value1)
-  - Head -> Node (key1)
-- put(key2, value2)
-  - Head -> Node (key1) -> Node (key2)
-- put(key3, value3)
-  - Head -> Node (key2) -> Node (key3) (`key1` is evicted)
-
 Note: The `size` of the value needs to be precalculated in terms of the `capacity` mentioned at the creation of the cache.
 
 **SRS_LRU_CACHE_13_023: [** If `lru_handle` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
@@ -110,6 +99,10 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 **SRS_LRU_CACHE_13_025: [** If `value` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
 **SRS_LRU_CACHE_13_026: [** If `size` is `0`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_075: [** If `evict_callback` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_076: [** `context` may be `NULL`. **]**
 
 **SRS_LRU_CACHE_13_027: [** If `size` is greater than `capacity` of lru cache, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_VALUE_INVALID_SIZE`. **]**
 
@@ -125,6 +118,8 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
 
+- **SRS_LRU_CACHE_13_077: [** If LRU Node state is `LRU_NODE_STATE_READY` only then the old Node is removed from list by calling `DList_RemoveEntryList`. **]**
+
 - **SRS_LRU_CACHE_13_066: [** `lru_cache_put` shall append the updated node to the tail to maintain the order. **]**
 
 - **SRS_LRU_CACHE_13_036: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
@@ -133,7 +128,7 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_067: [** `lru_cache_put` shall free the old value. **]**
 
-- **SRS_LRU_CACHE_13_068: [** `lru_cache_put` shall return with `LRU_CACHE_EVICT_OK`. **]**
+- **SRS_LRU_CACHE_13_068: [** `lru_cache_put` shall return with `LRU_CACHE_PUT_OK`. **]**
 
 **SRS_LRU_CACHE_13_071: [** Otherwise, if the `key` is not found: **]**
 
@@ -161,9 +156,11 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_039: [** The least used node is removed from `clds_hash_table` by calling `clds_hash_table_remove`. **]**
 
+- **SRS_LRU_CACHE_13_078: [** If `clds_hash_table_remove` returns `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`, then `lru_cache_put` shall retry eviction. **]**
+
 - **SRS_LRU_CACHE_13_073: [** `lru_cache_put` shall acquire the lock in exclusive. **]**
 
-- **SRS_LRU_CACHE_13_041: [** `lru_cache_put` shall remove the least used node from the DList by calling `DList_RemoveEntryList`. **]**
+- **SRS_LRU_CACHE_13_041: [** If LRU Node state is `LRU_NODE_STATE_READY` only then the old Node is removed from list by calling `DList_RemoveEntryList`. **]**
 
 - **SRS_LRU_CACHE_13_074: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 
@@ -189,6 +186,8 @@ Gets the `value` of the `key` from the cache. If the `key` is found, the node is
 **SRS_LRU_CACHE_13_053: [** `lru_cache_get` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
 
 **SRS_LRU_CACHE_13_054: [** `lru_cache_get` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**
+
+**SRS_LRU_CACHE_13_079: [** If the LRU Node is already evicted with the state `LRU_NODE_STATE_EVICTED`, then `lru_cache_get` shall return `CLDS_HASH_TABLE_ITEM` value of the `key`. **]**
 
 **SRS_LRU_CACHE_13_055: [**  If the `key` is found and the node from the `key` is not recently used: **]**
 
