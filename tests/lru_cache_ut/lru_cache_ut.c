@@ -424,7 +424,7 @@ TEST_FUNCTION(when_underlying_calls_fail_lru_cache_create_fails)
 
     umock_c_negative_tests_snapshot();
 
-    for (int i = 0; i < umock_c_negative_tests_call_count(); i++)
+    for (size_t i = 0; i < umock_c_negative_tests_call_count(); i++)
     {
 
         if (umock_c_negative_tests_can_call_fail(i))
