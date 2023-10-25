@@ -17,6 +17,11 @@ if(${run_unittests})
     build_test_folder(clds_hash_table_ut)
     build_test_folder(lru_cache_ut)
     build_test_folder(mpsc_lock_free_queue_ut)
+if(WIN32)
+        # this test has a problem on Linux with the lack of srw_lock_ll reals
+        # https://msazure.visualstudio.com/One/_backlogs/backlog/Azure%20Messaging%20Store/Backlog%20items/?workitem=25563889
+        build_test_folder(tcall_dispatcher_ut)
+endif()
 endif()
 
 #integration tests
@@ -30,6 +35,7 @@ if(WIN32)
 endif()
     build_test_folder(clds_sorted_list_int)
     build_test_folder(mpsc_lock_free_queue_int)
+    build_test_folder(tcall_dispatcher_int)
 endif()
 
 #perf tests
