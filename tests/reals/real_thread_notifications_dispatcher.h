@@ -18,7 +18,7 @@
     MU_FOR_EACH_1(R2, \
         thread_notifications_dispatcher_init, \
         thread_notifications_dispatcher_deinit, \
-        thread_notifications_dispatcher_get_call_dispatcher, \
+        thread_notifications_dispatcher_get_call_dispatcher \
     )
 
 #include "umock_c/umock_c_prod.h"
