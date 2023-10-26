@@ -24,6 +24,8 @@
 #include "../tests/reals/real_clds_hazard_pointers.h"
 #if WIN32
 #include "../tests/reals/real_clds_hazard_pointers_thread_helper.h"
+#include "../tests/reals/real_tcall_dispatcher_thread_notification_call.h"
+#include "../tests/reals/real_thread_notifications_dispatcher.h"
 #endif
 #include "../tests/reals/real_clds_hash_table.h"
 #include "../tests/reals/real_clds_singly_linked_list.h"
@@ -31,8 +33,6 @@
 #include "../tests/reals/real_clds_st_hash_set.h"
 #include "../tests/reals/real_lock_free_set.h"
 #include "../tests/reals/real_mpsc_lock_free_queue.h"
-#include "../tests/reals/real_tcall_dispatcher_thread_notification_call.h"
-#include "../tests/reals/real_thread_notifications_dispatcher.h"
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
