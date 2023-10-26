@@ -74,6 +74,8 @@ TEST_DEFINE_ENUM_TYPE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, THREAD_NOTIFICATIO
 TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_RESULT_VALUES);
 
+// This is a callback that is fired for all threads that are spun twice
+// one time for attach, one time for detach
 static void test_thread_notification_cb(void* context, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason)
 {
     ASSERT_IS_NOT_NULL(context);

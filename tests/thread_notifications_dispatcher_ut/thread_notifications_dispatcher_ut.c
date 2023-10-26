@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 #include <stdlib.h>
-#include <stdbool.h>
 #include <inttypes.h>
 
 #include "macro_utils/macro_utils.h"
@@ -48,7 +47,6 @@ TEST_SUITE_INITIALIZE(suite_init)
 
     REGISTER_GLOBAL_MOCK_FAIL_RETURN(malloc, NULL);
 
-    REGISTER_UMOCK_ALIAS_TYPE(THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(THREAD_NOTIFICATIONS_LACKEY_DLL_CALLBACK_FUNC, void*);
     REGISTER_UMOCK_ALIAS_TYPE(TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL), void*);
 
