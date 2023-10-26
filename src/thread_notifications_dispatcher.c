@@ -75,6 +75,8 @@ int thread_notifications_dispatcher_init(void)
             {
                 /* Codes_SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_002: [ Otherwise, thread_notifications_dispatcher_init shall initialize the module: ]*/
                 thread_notifications_dispatcher.state = THREAD_NOTIFICATIONS_DISPATCHER_INITIALIZED;
+
+                /* Codes_SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_006: [ thread_notifications_dispatcher_init shall succeed and return 0. ]*/
                 result = 0;
                 goto all_ok;
             }
