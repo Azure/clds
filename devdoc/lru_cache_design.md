@@ -39,7 +39,7 @@ typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESU
 LRU Cache uses a `clds_hash_table`, a `srw_lock`, and a `doubly_linked_list`.
 
 1. The table contains `LRU_NODE` instances as the value corresponding to the supplied keys. The `LRU_NODE` contains a `DLIST_ENTRY` which points to a node in the `doubly_linked_list`. A pointer to the `LRU_NODE` is stored in the `doubly_linked_list` as well.
-2.  The `lock` is used to exclusively lock the `doubly_linked_list` while changing the order or removing the node from the list.
+2. During eviction process, all operations to `clds_hash_table` and `doubly_linked_list` are performed under an exclusive lock, ensuring that changes are made together. This is to ensure, both `clds_hash_table` and `doubly_linked_list` are in sync with each other and also, to keep the design simple and to avoid unseen memory errors. 
 
 ### Inserting Items into the Cache
 
@@ -86,8 +86,10 @@ graph TD
 ### Eviction Logic
 
 The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. This is done in a loop until there is enough space in the cache. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
-For example: 
 
+Note: As mentioned above, an exclusive lock is used when removing item from both the `clds_hash_table` and `doubly_linked_list`. 
+
+For example: 
 LRU Cache (Capacity: 2)
 - put(key1, value1)
   - Head -> Node (key1)
@@ -101,13 +103,13 @@ sequenceDiagram
     participant Cache as "LRU Cache"
     participant HashTable as "Hash Table (Cache)"
     participant DoublyLinkedList as "Doubly Linked List"
+    Cache ->> DoublyLinkedList: Acquire an exclusive lock
+    DoublyLinkedList -->> Cache: Acquired lock successfully
     Cache ->> DoublyLinkedList: Find the least recently used LRU_NODE (which contains the key) in the cache (i.e., the node next to the head)
     DoublyLinkedList -->> Cache: Found the item
     Cache ->> Cache: Update the current size
     Cache ->> HashTable: Remove the key item from the cache
     HashTable -->> Cache: Item removed successfully
-    Cache ->> DoublyLinkedList: Acquire an exclusive lock
-    DoublyLinkedList -->> Cache: Acquired lock successfully
     Cache ->> DoublyLinkedList: Remove the node next to the head from the doubly linked list
     DoublyLinkedList -->> Cache: Item removed from the list
     Cache ->> DoublyLinkedList: Release the exclusive lock
@@ -123,15 +125,17 @@ This operation retrieves items from the cache and rearranges the order in the `d
 sequenceDiagram
     participant Cache as "LRU Cache"
     participant HashTable as "Hash Table (Cache)"
-    participant LRUList as "Doubly Linked List"
+    participant LRUList as "Doubly Linked List"    
     Cache ->> HashTable: Find the item in the hash table (key)
     HashTable -->> Cache: Found the item (hash_table_item)
+    Cache ->> LRUList: Acquire an exclusive lock
+    LRUList -->> Cache: Acquired lock successfully
     Cache ->> LRUList: Extract LRU_NODE from the item
     LRUList -->> Cache: Current item position
     LRUList ->> LRUList: Check the item's position in the list
-    LRUList ->> LRUList: Acquire an exclusive lock
     LRUList ->> LRUList: Move the item to the back (tail) if needed
-    LRUList ->> LRUList: Release the exclusive lock
+    Cache ->> LRUList: Release the exclusive lock
+    LRUList -->> Cache: Released the lock successfully
     Cache -->> Cache: Return the hash_table_item from LRU_NODE` 
 ```
 

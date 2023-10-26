@@ -436,7 +436,7 @@ TEST_FUNCTION(when_underlying_calls_fail_lru_cache_create_fails)
             lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity);
 
             // assert
-            ASSERT_IS_NULL(lru_cache, "On failed call %u", i);
+            ASSERT_IS_NULL(lru_cache, "On failed call %zu", i);
         }
     }
 

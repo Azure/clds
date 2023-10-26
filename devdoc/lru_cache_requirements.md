@@ -150,7 +150,6 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_038: [** `lru_cache_put` shall get the least used node which is `Flink` of head node. **]**
 
-- **SRS_LRU_CACHE_13_042: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 
 - **SRS_LRU_CACHE_13_072: [** `lru_cache_put` shall decrement the least used node size from `current_size`. **]**
 
@@ -158,13 +157,11 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_078: [** If `clds_hash_table_remove` returns `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`, then `lru_cache_put` shall retry eviction. **]**
 
-- **SRS_LRU_CACHE_13_073: [** `lru_cache_put` shall acquire the lock in exclusive. **]**
-
 - **SRS_LRU_CACHE_13_041: [** If LRU Node state is `LRU_NODE_STATE_READY` only then the old Node is removed from list by calling `DList_RemoveEntryList`. **]**
 
-- **SRS_LRU_CACHE_13_074: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
-
 - **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the status `LRU_CACHE_EVICT_OK` and the evicted item. **]**
+
+- **SRS_LRU_CACHE_13_042: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 
 **SRS_LRU_CACHE_13_049: [** On success, `lru_cache_put` shall return `LRU_CACHE_PUT_OK`. **]**
 
