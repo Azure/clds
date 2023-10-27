@@ -166,6 +166,7 @@ if (WIN32)
         ${clds_h_files}
         ./inc/clds/clds_hazard_pointers_thread_helper.h # Windows only until there is a PAL for thread local storage
         ./inc/clds/thread_notifications_dispatcher.h
+        ./inc/clds/tcall_dispatcher_thread_notification_call.h
     )
 endif()
 
@@ -185,6 +186,7 @@ if (WIN32)
         ${clds_c_files}
         ./src/clds_hazard_pointers_thread_helper.c # Windows only until there is a PAL for thread local storage
         ./src/thread_notifications_dispatcher.c
+        ./src/tcall_dispatcher_thread_notification_call.c
     )
 endif()
 

@@ -37,15 +37,19 @@ MOCKABLE_FUNCTION(, int, thread_notifications_dispatcher_init);
 
 `thread_notifications_dispatcher_init` initializes the module.
 
-If the module is already initialized, `thread_notifications_dispatcher_init` shall fail and return a non-zero value.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_001: [** If the module is already initialized, `thread_notifications_dispatcher_init` shall fail and return a non-zero value. **]**
 
-Otherwise, `thread_notifications_dispatcher_init` shall create a `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_002: [** Otherwise, `thread_notifications_dispatcher_init` shall initialize the module: **]**
 
-`thread_notifications_dispatcher_init` shall store in a global variable the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`, succeed and return 0.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_003: [** `thread_notifications_dispatcher_init` shall create a `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`. **]**
 
-`thread_notifications_dispatcher_init` shall call `thread_notifications_lackey_dll_init_callback` to register `thread_notifications_lackey_dll_cb` as the thread notifications callback.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_004: [** `thread_notifications_dispatcher_init` shall store in a global variable the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`. **]**
 
-If any error occurrs, `thread_notifications_dispatcher_init` shall fail and return a non-zero value.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_005: [** `thread_notifications_dispatcher_init` shall call `thread_notifications_lackey_dll_init_callback` to register `thread_notifications_lackey_dll_cb` as the thread notifications callback. **]**
+
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_006: [** `thread_notifications_dispatcher_init` shall succeed and return 0. **]**
+
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_007: [** If any error occurrs, `thread_notifications_dispatcher_init` shall fail and return a non-zero value. **]**
 
 ### thread_notifications_dispatcher_init
 
@@ -55,13 +59,13 @@ MOCKABLE_FUNCTION(, void, thread_notifications_dispatcher_deinit);
 
 `thread_notifications_dispatcher_deinit` de-initializes the module.
 
-If the module is not initialized, `thread_notifications_dispatcher_deinit` shall return.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_008: [** If the module is not initialized, `thread_notifications_dispatcher_deinit` shall return. **]**
 
-Otherwise, `thread_notifications_dispatcher_init` shall call `thread_notifications_lackey_dll_deinit_callback` to clear the thread notifications callback.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_009: [** Otherwise, `thread_notifications_dispatcher_init` shall call `thread_notifications_lackey_dll_deinit_callback` to clear the thread notifications callback. **]**
 
-`thread_notifications_dispatcher_deinit` shall release the reference to the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_010: [** `thread_notifications_dispatcher_deinit` shall release the reference to the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`. **]**
 
-`thread_notifications_dispatcher_deinit` shall de-initialize the module.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_011: [** `thread_notifications_dispatcher_deinit` shall de-initialize the module. **]**
 
 ### thread_notifications_dispatcher_get_call_dispatcher
 
@@ -71,7 +75,7 @@ MOCKABLE_FUNCTION(, TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL), thread_notificat
 
 `thread_notifications_dispatcher_get_call_dispatcher` gets the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` singleton.
 
-`TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` shall return the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` created in `thread_notifications_dispatcher_init`.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_012: [** `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` shall return the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` created in `thread_notifications_dispatcher_init`. **]**
 
 ### thread_notifications_lackey_dll_cb
 
@@ -81,8 +85,4 @@ static void thread_notifications_lackey_dll_cb(THREAD_NOTIFICATIONS_LACKEY_DLL_R
 
 `thread_notifications_lackey_dll_cb` is called by the thread notifications lackey whenever a thread attach/detach occurs.
 
-`thread_notifications_lackey_dll_cb` shall `TCALL_DISPATCHER_ASSIGN(THREAD_NOTIFICATION_CALL)` into a local variable the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` created in `thread_notifications_dispatcher_init`.
-
-`thread_notifications_lackey_dll_cb` shall dispatch the call by calling `TCALL_DISPATCHER_DISPATCH_CALL(THREAD_NOTIFICATION_CALL)` with `reason` as argument.
-
-`thread_notifications_lackey_dll_cb` shall release the local variable reference to the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`.
+**SRS_THREAD_NOTIFICATIONS_DISPATCHER_01_013: [** `thread_notifications_lackey_dll_cb` shall dispatch the call by calling `TCALL_DISPATCHER_DISPATCH_CALL(THREAD_NOTIFICATION_CALL)` with `reason` as argument. **]**

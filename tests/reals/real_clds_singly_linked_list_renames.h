@@ -1,3 +1,4 @@
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #define clds_singly_linked_list_create real_clds_singly_linked_list_create
