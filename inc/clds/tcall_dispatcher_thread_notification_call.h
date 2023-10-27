@@ -1,4 +1,5 @@
-// Copyright (C) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #ifndef TCALL_DISPATCHER_THREAD_NOTIFICATION_CALL_H
 #define TCALL_DISPATCHER_THREAD_NOTIFICATION_CALL_H
