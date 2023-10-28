@@ -96,12 +96,12 @@ TQUEUE_TYPE_DEFINE(int32_t);
 
 ### TQUEUE_CREATE(T)
 ```c
-static TQUEUE(T) TQUEUE_CREATE(T)(void);
+static TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size);
 ```
 
 `TQUEUE_CREATE(T)` creates a new `TQUEUE(T)`.
 
-`TQUEUE_CREATE(T)` shall call `THANDLE_MALLOC_WITH_EXTRA_SIZE` with `NULL` as dispose function.
+`TQUEUE_CREATE(T)` shall call `THANDLE_MALLOC_WITH_EXTRA_SIZE` with `NULL` as dispose function and the extra size set to `queue_size` * sizeof(T).
 
 `TQUEUE_CREATE(T)` shall initialize the head and tail of the list with 0.
 
