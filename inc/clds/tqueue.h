@@ -10,10 +10,10 @@
 
 #include "umock_c/umock_c_prod.h"
 
-/*macro to be used in headers*/                                                                                                 \
-#define TQUEUE_TYPE_DECLARE(T, ...)                                                                                 \
+/*macro to be used in headers*/                                                                                             \
+#define TQUEUE_TYPE_DECLARE(T, ...)                                                                                         \
 
-/*macro to be used in .c*/                                                                                                      \
-#define TQUEUE_TYPE_DEFINE(T, ...)                                                                                  \
+/*macro to be used in .c*/                                                                                                  \
+#define TQUEUE_TYPE_DEFINE(T, ...)                                                                                          \
 
 #endif // TQUEUE_H

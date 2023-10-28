@@ -22,11 +22,11 @@ MU_DEFINE_ENUM(TQUEUE_POP_RESULT, TQUEUE_POP_RESULT_VALUES);
 
 MU_DEFINE_ENUM(TQUEUE_POP_IF_RESULT, TQUEUE_POP_IF_RESULT_VALUES);
 
-/*macro to be used in headers*/                                                                                                 \
-#define TQUEUE_LL_TYPE_DECLARE(C, T, ...)                                                                             \
-    /*hint: have TQUEUE_DEFINE_STRUCT_TYPE(T) before TQUEUE_LL_TYPE_DECLARE*/                                 \
+/*macro to be used in headers*/                                                                                         \
+#define TQUEUE_LL_TYPE_DECLARE(C, T, ...)                                                                               \
+    /*hint: have TQUEUE_DEFINE_STRUCT_TYPE(T) before TQUEUE_LL_TYPE_DECLARE*/                                           \
 
-/*macro to be used in .c*/                                                                                                      \
-#define TQUEUE_LL_TYPE_DEFINE(C, T, ...)                                                                              \
+/*macro to be used in .c*/                                                                                              \
+#define TQUEUE_LL_TYPE_DEFINE(C, T, ...)                                                                                \
 
 #endif  /*TQUEUE_LL_H*/
