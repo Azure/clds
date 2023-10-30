@@ -90,12 +90,12 @@ MU_DEFINE_ENUM(TQUEUE_POP_CB_FUNCTION_RESULT, TQUEUE_POP_CB_FUNCTION_RESULT_VALU
 The macros expand to these useful somewhat more useful APIs:
 
 ```c
-TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_function, TQUEUE_POP_CB_FUNC(T) pop_function, TQUEUE_DISPOSE_FUNC(T) dispose_function, void* dispose_function_context);
+TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_function, TQUEUE_POP_CB_FUNC(T) pop_function, TQUEUE_DISPOSE_ITEM_FUNC(T) dispose_item_function, void* dispose_function_context);
 int TQUEUE_PUSH(T)(TQUEUE(T) tqueue, const T item, void* push_function_context)
 TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item, void* pop_function_context, TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T), condition_function, void*, condition_function_context);
 ```
 
-The signature of the push callback function is:
+The signature of the push callback function `TQUEUE_PUSH_CB_FUNC(T)` is:
 
 ```c
 void TQUEUE_DEFINE_PUSH_CB_FUNCTION_TYPE_NAME(T)(void* context, T* push_dst, const T* push_src);
@@ -103,7 +103,7 @@ void TQUEUE_DEFINE_PUSH_CB_FUNCTION_TYPE_NAME(T)(void* context, T* push_dst, con
 
 Note that `push_dst` is the pointer in the queue memory, `push_src` is the pointer to the user owned `T` being pushed in the queue.
 
-The signature of the pop callback function is:
+The signature of the pop callback function `TQUEUE_POP_CB_FUNC(T)` is:
 
 ```c
 TQUEUE_POP_CB_FUNCTION_RESULT TQUEUE_DEFINE_POP_CB_FUNCTION_TYPE_NAME(T)(void* context, T* pop_dst, const T* pop_src);
@@ -111,7 +111,7 @@ TQUEUE_POP_CB_FUNCTION_RESULT TQUEUE_DEFINE_POP_CB_FUNCTION_TYPE_NAME(T)(void* c
 
 Note that `pop_dst` is the user T pointer which receives the popped item, `pop_src` is the pointer to the queue memory.
 
-The signature of the dispose function is:
+The signature of the dispose function `TQUEUE_DISPOSE_FUNC(T)` is:
 
 ```c
 void TQUEUE_DEFINE_DISPOSE_FUNCTION_TYPE_NAME(T)(void* context, const T* item);
@@ -160,14 +160,14 @@ TQUEUE_TYPE_DEFINE(int32_t);
 
 ### TQUEUE_CREATE(T)
 ```c
-TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_cb_function, TQUEUE_POP_CB_FUNC(T) pop_cb_function, TQUEUE_DISPOSE_FUNC(T) dispose_function, void* dispose_function_context);
+TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_cb_function, TQUEUE_POP_CB_FUNC(T) pop_cb_function, TQUEUE_DISPOSE_ITEM_FUNC(T) dispose_item_function, void* dispose_function_context);
 ```
 
 `TQUEUE_CREATE(T)` creates a new `TQUEUE(T)`.
 
-If any of `push_cb_function`, `pop_cb_function` and `dispose_function` is `NULL` and at least one of them is not `NULL`, `TQUEUE_CREATE(T)` shall fail and return `NULL`.
+If any of `push_cb_function`, `pop_cb_function` and `dispose_item_function` is `NULL` and at least one of them is not `NULL`, `TQUEUE_CREATE(T)` shall fail and return `NULL`.
 
-`TQUEUE_CREATE(T)` shall call `THANDLE_MALLOC_FLEX` with `NULL` as dispose function, `nmemb` set to `queue_size` and `size` set to `sizeof(T)`.
+`TQUEUE_CREATE(T)` shall call `THANDLE_MALLOC_FLEX` with `TQUEUE_DISPOSE_FUNC(T)` as dispose function, `nmemb` set to `queue_size` and `size` set to `sizeof(T)`.
 
 `TQUEUE_CREATE(T)` shall initialize the head and tail of the list with 0 by using `interlocked_exchange_64`.
 
@@ -176,6 +176,21 @@ If any of `push_cb_function`, `pop_cb_function` and `dispose_function` is `NULL`
 `TQUEUE_CREATE(T)` shall succeed and return a non-`NULL` value.
 
 If there are any failures then `TQUEUE_CREATE(T)` shall fail and return `NULL`.
+
+### TQUEUE_DISPOSE_FUNC(T)
+```c
+void TQUEUE_DISPOSE_FUNC(T)(TQUEUE(T) tqueue);
+```
+
+`TQUEUE_DISPOSE_FUNC(T)` is called when there are no more references to the queue and the contents of it should be disposed of.
+
+If `dispose_item_function` passed to `TQUEUE_CREATE(T)` is `NULL`, `TQUEUE_DISPOSE_FUNC(T)` shall return.
+
+Otherwise, `TQUEUE_DISPOSE_FUNC(T)` shall obtain the current head queue by calling `interlocked_add_64`.
+
+`TQUEUE_DISPOSE_FUNC(T)` shall obtain the current tail queue by calling `interlocked_add_64`.
+
+For each item in the queue, `dispose_item_function` shall be called with `dispose_function_context` and a pointer to the array entry value (T*).
 
 ### TQUEUE_PUSH(T)
 ```c
