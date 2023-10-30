@@ -219,7 +219,7 @@ If `tqueue` is `NULL` then `TQUEUE_PUSH(T)` shall fail and return a non-zero val
 
   - If no `push_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_PUSH(T)` shall copy the value of `item` into the array entry value whose state was changed to `PUSHING`.
 
-  - If a `push_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_PUSH(T)` shall call the `push_cb_function` with `push_cb_function_context` and a pointer to the array entry value whose state was changed to `PUSHING`.
+  - If a `push_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_PUSH(T)` shall call the `push_cb_function` with `push_cb_function_context` as `context`, a pointer to the array entry value whose state was changed to `PUSHING` as `push_dst` and `item` as `push_src`.
 
   - `TQUEUE_PUSH(T)` shall set the state to `USED` by using `interlocked_exchange`.
 
@@ -256,7 +256,7 @@ If `tqueue` is `NULL` then `TQUEUE_POP(T)` shall fail and return `TQUEUE_POP_ERR
 
     - `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
 
-  - If a `pop_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_POP(T)` shall call `pop_cb_function` with `pop_cb_function_context` and the array entry value whose state was changed to `POPPING` to `item`.
+  - If a `pop_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_POP(T)` shall call `pop_cb_function` with `pop_cb_function_context` as `context`, the array entry value whose state was changed to `POPPING` to `item` as `pop_src` and `item` as `pop_dst`.
 
     - If `pop_cb_function` returns `TQUEUE_POP_FUNCTION_OK`, `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
 
