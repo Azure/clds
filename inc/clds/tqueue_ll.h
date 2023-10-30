@@ -11,16 +11,16 @@
 #define TQUEUE_POP_RESULT_VALUES \
     TQUEUE_POP_OK, \
     TQUEUE_POP_ERROR, \
-    TQUEUE_POP_QUEUE_EMPTY
+    TQUEUE_POP_QUEUE_EMPTY, \
+    TQUEUE_POP_REJECTED
 
 MU_DEFINE_ENUM(TQUEUE_POP_RESULT, TQUEUE_POP_RESULT_VALUES);
 
-#define TQUEUE_POP_IF_RESULT_VALUES \
-    TQUEUE_POP_IF_OK, \
-    TQUEUE_POP_IF_ERROR, \
-    TQUEUE_POP_IF_QUEUE_EMPTY
+#define TQUEUE_POP_FUNCTION_RESULT_VALUES \
+    TQUEUE_POP_FUNCTION_OK, \
+    TQUEUE_POP_FUNCTION_POP_REJECTED
 
-MU_DEFINE_ENUM(TQUEUE_POP_IF_RESULT, TQUEUE_POP_IF_RESULT_VALUES);
+MU_DEFINE_ENUM(TQUEUE_POP_FUNCTION_RESULT, TQUEUE_POP_FUNCTION_RESULT_VALUES);
 
 /*macro to be used in headers*/                                                                                         \
 #define TQUEUE_LL_TYPE_DECLARE(C, T, ...)                                                                               \

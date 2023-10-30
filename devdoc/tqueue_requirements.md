@@ -6,7 +6,7 @@
 
 `TQUEUE` is thread safe (push/pop calls are thread safe).
 
-`TQUEUE` aims at allowing producers and consumers make independent progress as much as possible (producers can push in the queue while the queue is not full without getting blocked).
+`TQUEUE` aims at allowing producers and consumers to make independent progress as much as possible (producers can push in the queue while the queue is not full without getting blocked).
 
 Same for consumers: consumers can pop from the queue without getting blocked on producers while there are items in the queue.
 
@@ -15,12 +15,21 @@ The module provides the following functionality:
 - Create a queue with a given size.
 - Push an element at the head of the queue.
 - Pop an element from the tail of the queue. Pop returns the oldest element in the queue.
-- Pop an element if it matches a given condition (a user condition function and a context are supplied as arguments to the call)
 
-The module provides 2 flavors of push/pop/pop_if APIs:
+The module allows the user to specify 3 different callback functions:
 
-- A flavor that copies data (which can be used for simple types where convenience when coding is appreciated)
-- A flavor that allows the user to set the value directly in the memory provided by the queue when pushing and get the value directly from the memory provided by the queue when popping.
+- A push callback (which is invoked by the queue as a result of a push call, allowing the user to fill in the information in T rather than performing a memory copy).
+A typical use for a queue of a `THANDLE` would be to have a `THANDLE_INITIALIZE` call performed in the push function callback.
+
+- A pop callback (which is invoked by the queue as a result of a pop call, allowing the user to extract any information from T rather than performing a memory copy).
+A typical use for a queue of a `THANDLE` would be to have a `THANDLE_MOVE` or `THANDLE_INITIALIZE_MOVE` call performed in the push function callback.
+
+- A dispose function (which is invoked by the queue when the queue is disposed and there are still items in the queue).
+A typical use for a queue of a `THANDLE` would be to have a `THANDLE_ASSIGN` with `NULL` performed in the dispose function callback.
+
+If no push/pop/dispose callbacks functions are sepcified by the user, the queue copies the memory of T passed to `TQUEUE_PUSH`, respectively `TQUEUE_POP`.
+
+When using a pop callback function the queue also allows the user to reject a pop (thus effectively implementing a conditional pop).
 
 Because `TQUEUE` is a kind of `THANDLE`, all of `THANDLE`'s APIs apply to `TQUEUE`. For convenience the following macros are provided out of the box with the same semantics as those of `THANDLE`'s:
 
@@ -54,6 +63,20 @@ Note: plans exist to extend this queue into a growable queue.
 
 ```c
 
+#define TQUEUE_POP_RESULT_VALUES \
+    TQUEUE_POP_OK, \
+    TQUEUE_POP_ERROR, \
+    TQUEUE_POP_QUEUE_EMPTY, \
+    TQUEUE_POP_REJECTED
+
+MU_DEFINE_ENUM(TQUEUE_POP_RESULT, TQUEUE_POP_RESULT_VALUES);
+
+#define TQUEUE_POP_CB_FUNCTION_RESULT_VALUES \
+    TQUEUE_POP_CB_FUNCTION_OK, \
+    TQUEUE_POP_CB_FUNCTION_POP_REJECTED
+
+MU_DEFINE_ENUM(TQUEUE_POP_CB_FUNCTION_RESULT, TQUEUE_POP_CB_FUNCTION_RESULT_VALUES);
+
 /*to be used as the type of handle*/
 #define TQUEUE(T)
 
@@ -67,31 +90,31 @@ Note: plans exist to extend this queue into a growable queue.
 The macros expand to these useful somewhat more useful APIs:
 
 ```c
-TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size);
-int TQUEUE_PUSH_WITH_SET_FUNC(T)(TQUEUE(T) tqueue, const T item);
-TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item);
-TQUEUE_POP_IF_RESULT TQUEUE_POP_IF(T)(TQUEUE(T) tqueue, T* item, TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T), condition_function, void*, condition_function_context);
-int TQUEUE_PUSH(T)(TQUEUE(T) tqueue, const T item);
-TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item);
-TQUEUE_POP_IF_RESULT TQUEUE_POP_IF(T)(TQUEUE(T) tqueue, T* item, TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T), condition_function, void*, condition_function_context);
+TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_function, TQUEUE_POP_CB_FUNC(T) pop_function, TQUEUE_DISPOSE_FUNC(T) dispose_function, void* dispose_function_context);
+int TQUEUE_PUSH(T)(TQUEUE(T) tqueue, const T item, void* push_function_context)
+TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item, void* pop_function_context, TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T), condition_function, void*, condition_function_context);
 ```
 
-The signature of the condition function is:
+The signature of the push callback function is:
 
 ```c
-bool TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T)(void* context, const T* item);
+void TQUEUE_DEFINE_PUSH_CB_FUNCTION_TYPE_NAME(T)(void* context, T* push_dst, const T* push_src);
 ```
 
-The signature of the set function is:
+Note that `push_dst` is the pointer in the queue memory, `push_src` is the pointer to the user owned `T` being pushed in the queue.
+
+The signature of the pop callback function is:
 
 ```c
-bool TQUEUE_DEFINE_SET_FUNCTION_TYPE_NAME(T)(void* context, T* item);
+TQUEUE_POP_CB_FUNCTION_RESULT TQUEUE_DEFINE_POP_CB_FUNCTION_TYPE_NAME(T)(void* context, T* pop_dst, const T* pop_src);
 ```
 
-The signature of the get function is:
+Note that `pop_dst` is the user T pointer which receives the popped item, `pop_src` is the pointer to the queue memory.
+
+The signature of the dispose function is:
 
 ```c
-bool TQUEUE_DEFINE_GET_FUNCTION_TYPE_NAME(T)(void* context, const T* item);
+void TQUEUE_DEFINE_DISPOSE_FUNCTION_TYPE_NAME(T)(void* context, const T* item);
 ```
 
 ### TQUEUE(T)
@@ -137,16 +160,18 @@ TQUEUE_TYPE_DEFINE(int32_t);
 
 ### TQUEUE_CREATE(T)
 ```c
-static TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size);
+TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_cb_function, TQUEUE_POP_CB_FUNC(T) pop_cb_function, TQUEUE_DISPOSE_FUNC(T) dispose_function, void* dispose_function_context);
 ```
 
 `TQUEUE_CREATE(T)` creates a new `TQUEUE(T)`.
 
-`TQUEUE_CREATE(T)` shall call `THANDLE_MALLOC_WITH_EXTRA_SIZE` with `NULL` as dispose function and the extra size set to `queue_size` * sizeof(T).
+If any of `push_cb_function`, `pop_cb_function` and `dispose_function` is `NULL` and at least one of them is not `NULL`, `TQUEUE_CREATE(T)` shall fail and return `NULL`.
 
-`TQUEUE_CREATE(T)` shall initialize the head and tail of the list with 0.
+`TQUEUE_CREATE(T)` shall call `THANDLE_MALLOC_FLEX` with `NULL` as dispose function, `nmemb` set to `queue_size` and `size` set to `sizeof(T)`.
 
-`TQUEUE_CREATE(T)` shall initialize the state for each entry in the array used for the queue with `NOT_USED`.
+`TQUEUE_CREATE(T)` shall initialize the head and tail of the list with 0 by using `interlocked_exchange_64`.
+
+`TQUEUE_CREATE(T)` shall initialize the state for each entry in the array used for the queue with `NOT_USED` by using `interlocked_exchange`.
 
 `TQUEUE_CREATE(T)` shall succeed and return a non-`NULL` value.
 
@@ -154,7 +179,7 @@ If there are any failures then `TQUEUE_CREATE(T)` shall fail and return `NULL`.
 
 ### TQUEUE_PUSH(T)
 ```c
-int TQUEUE_PUSH(T)(TQUEUE(T) tqueue, const T item)
+int TQUEUE_PUSH(T)(TQUEUE(T) tqueue, const T item, void* push_cb_function_context)
 ```
 
 `TQUEUE_PUSH(T)` pushes an item in the queue.
@@ -177,7 +202,9 @@ If `tqueue` is `NULL` then `TQUEUE_PUSH(T)` shall fail and return a non-zero val
 
   - `TQUEUE_PUSH(T)` shall replace the head value with the head value obtained earlier + 1 by using `interlocked_exchange_64`.
 
-  - `TQUEUE_PUSH(T)` shall copy the value of `item` into the array entry value that whose state was changed to `PUSHING`.
+  - If no `push_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_PUSH(T)` shall copy the value of `item` into the array entry value whose state was changed to `PUSHING`.
+
+  - If a `push_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_PUSH(T)` shall call the `push_cb_function` with `push_cb_function_context` and a pointer to the array entry value whose state was changed to `PUSHING`.
 
   - `TQUEUE_PUSH(T)` shall set the state to `USED` by using `interlocked_exchange`.
 
@@ -185,7 +212,7 @@ If `tqueue` is `NULL` then `TQUEUE_PUSH(T)` shall fail and return a non-zero val
 
 ### TQUEUE_POP(T)
 ```c
-TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item)
+TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item, void* pop_cb_function_context)
 ```
 
 `TQUEUE_POP(T)` pops an item from the queue if available.
@@ -208,136 +235,14 @@ If `tqueue` is `NULL` then `TQUEUE_POP(T)` shall fail and return `TQUEUE_POP_ERR
 
   - `TQUEUE_POP(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
 
-  - `TQUEUE_POP(T)` shall copy array entry value that whose state was changed to `POPPING` to `item`.
+  - If a `pop_cb_function` was not specified in `TQUEUE_CREATE(T)`:
+  
+    - `TQUEUE_POP(T)` shall copy array entry value whose state was changed to `POPPING` to `item`.
 
-  - `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`.
+    - `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
 
-  - `TQUEUE_POP(T)` shall succeed and return `TQUEUE_POP_OK`.
+  - If a `pop_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_POP(T)` shall call `pop_cb_function` with `pop_cb_function_context` and the array entry value whose state was changed to `POPPING` to `item`.
 
-### TQUEUE_POP_IF(T)
-```c
-TQUEUE_POP_IF_RESULT TQUEUE_POP_IF(T)(TQUEUE(T) tqueue, T* item, TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T), condition_function, void*, condition_function_context)
-```
+    - If `pop_cb_function` returns `TQUEUE_POP_FUNCTION_OK`, `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
 
-`TQUEUE_POP_IF(T)` pops an item from the queue conditionally.
-
-If `tqueue` is `NULL` then `TQUEUE_POP_IF(T)` shall fail and return `TQUEUE_POP_IF_ERROR`.
-
-`TQUEUE_POP_IF(T)` shall execute the following actions until it is either able to pop the item from the queue or it fails:
-
-- `TQUEUE_POP_IF(T)` shall obtain the current head and tail of the queue.
-
-- If the queue is empty (current tail == current head), `TQUEUE_POP_IF(T)` shall fail and return `TQUEUE_POP_IF_QUEUE_EMPTY`.
-
-- If the state of the array entry corresponding to the tail is not `USED`, `TQUEUE_POP_IF(T)` shall try again.
-
-- If the state of the array entry corresponding to the tail is `USED`:
-
-  - `TQUEUE_POP_IF(T)` shall set the state to `POPPING` (from `USED`) by using `interlocked_compare_exchange`.
-
-  - `TQUEUE_POP_IF(T)` shall call `condition_function`, passing to it `condition_function_context` and the address of the `T` value in the array entry corresponding to the tail of the queue.
-
-  - If `condition_function` returns `false`, `TQUEUE_POP_IF(T)` shall change the state back to `USED` and return `TQUEUE_POP_IF_DOES_NOT_MATCH`.
-
-  - Otherwise, `TQUEUE_POP_IF(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
-
-  - `TQUEUE_POP_IF(T)` shall copy array entry value that whose state was changed to `POPPING` to `item`.
-
-  - `TQUEUE_POP_IF(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`.
-
-  - `TQUEUE_POP_IF(T)` shall succeed and return `TQUEUE_POP_IF_OK`.
-
-### TQUEUE_PUSH_WITH_SET_FUNC(T)
-```c
-int TQUEUE_PUSH_WITH_SET_FUNC(T)(TQUEUE(T) tqueue, TQUEUE_SET_FUNC(T) set_function, void* set_function_context)
-```
-
-`TQUEUE_PUSH_WITH_SET_FUNC(T)` pushes an item in the queue.
-
-If `tqueue` is `NULL` then `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall fail and return a non-zero value.
-
-`TQUEUE_PUSH_WITH_SET_FUNC(T)` shall execute the following actions until it is either able to push the item in the queue or it fails:
-
-- `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall obtain the current head queue by calling `interlocked_add_64`.
-
-- `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall obtain the current tail queue by calling `interlocked_add_64`.
-
-- If the queue is full (current head >= current tail + queue size), `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall fail and return a non-zero value.
-
-- If the state of the array entry corresponding to the head is not `NOT_USED`, `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall try again.
-
-- If the state of the array entry corresponding to the head is `NOT_USED`:
-
-  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall set the state to `PUSHING` (from `NOT_USED`) by using `interlocked_compare_exchange`.
-
-  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall replace the head value with the head value obtained earlier + 1 by using `interlocked_exchange_64`.
-
-  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall call `set_function` with `set_function_context` and the pointer to the array entry value that whose state was changed to `PUSHING`.
-
-  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall set the state to `USED` by using `interlocked_exchange`.
-
-  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall succeed and return 0.
-
-### TQUEUE_POP_WITH_GET_FUNC(T)
-```c
-TQUEUE_POP_RESULT TQUEUE_POP_WITH_GET_FUNC(T)(TQUEUE(T) tqueue, T* item, TQUEUE_SET_FUNC(T) get_function, void* get_function_context)
-```
-
-`TQUEUE_POP_WITH_GET_FUNC(T)` pops an item from the queue if available.
-
-If `tqueue` is `NULL` then `TQUEUE_POP_WITH_GET_FUNC(T)` shall fail and return `TQUEUE_POP_WITH_GET_FUNC_ERROR`.
-
-`TQUEUE_POP_WITH_GET_FUNC(T)` shall execute the following actions until it is either able to pop the item from the queue or it fails:
-
-- `TQUEUE_POP_WITH_GET_FUNC(T)` shall obtain the current head queue by calling `interlocked_add_64`.
-
-- `TQUEUE_POP_WITH_GET_FUNC(T)` shall obtain the current tail queue by calling `interlocked_add_64`.
-
-- If the queue is empty (current tail == current head), `TQUEUE_POP_WITH_GET_FUNC(T)` shall fail and return `TQUEUE_POP_WITH_GET_FUNC_QUEUE_EMPTY`.
-
-- If the state of the array entry corresponding to the tail is not `USED`, `TQUEUE_POP_WITH_GET_FUNC(T)` shall try again.
-
-- If the state of the array entry corresponding to the tail is `USED`:
-
-  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall set the state to `POPPING` (from `USED`) by using `interlocked_compare_exchange`.
-
-  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
-
-  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall call `get_function` with `get_function_context` and the pointer to the array entry value that whose state was changed to `POPPING`.
-
-  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`.
-
-  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall succeed and return `TQUEUE_POP_WITH_GET_FUNC_OK`.
-
-### TQUEUE_POP_IF_WITH_GET_FUNC_WITH_GET_FUNC(T)
-```c
-TQUEUE_POP_IF_RESULT TQUEUE_POP_IF_WITH_GET_FUNC(T)(TQUEUE(T) tqueue, T* item, TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T), condition_function, void*, condition_function_context, TQUEUE_SET_FUNC(T) get_function, void* get_function_context)
-```
-
-`TQUEUE_POP_IF_WITH_GET_FUNC(T)` pops an item from the queue conditionally by using a get function to access the data.
-
-If `tqueue` is `NULL` then `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall fail and return `TQUEUE_POP_IF_WITH_GET_FUNC_ERROR`.
-
-`TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall execute the following actions until it is either able to pop the item from the queue or it fails:
-
-- `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall obtain the current head and tail of the queue.
-
-- If the queue is empty (current tail == current head), `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall fail and return `TQUEUE_POP_IF_WITH_GET_FUNC_QUEUE_EMPTY`.
-
-- If the state of the array entry corresponding to the tail is not `USED`, `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall try again.
-
-- If the state of the array entry corresponding to the tail is `USED`:
-
-  - `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall set the state to `POPPING` (from `USED`) by using `interlocked_compare_exchange`.
-
-  - `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall call `condition_function`, passing to it `condition_function_context` and the address of the `T` value in the array entry corresponding to the tail of the queue.
-
-  - If `condition_function` returns `false`, `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall change the state back to `USED` and return `TQUEUE_POP_IF_WITH_GET_FUNC_DOES_NOT_MATCH`.
-
-  - Otherwise, `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
-
-  - `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall call `get_function` with `get_function_context` and the pointer to the array entry value that whose state was changed to `POPPING`.
-
-  - `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`.
-
-  - `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall succeed and return `TQUEUE_POP_IF_WITH_GET_FUNC_OK`.
+    - If `pop_cb_function` returns `TQUEUE_POP_FUNCTION_POP_REJECTED`, `TQUEUE_POP(T)` shall set the state to `USED` by using `interlocked_exchange` and return `TQUEUE_POP_REJECTED`.
