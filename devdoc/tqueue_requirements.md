@@ -27,7 +27,7 @@ A typical use for a queue of a `THANDLE` would be to have a `THANDLE_MOVE` or `T
 - A dispose item function (which is invoked by the queue when the queue is disposed and there are still items in the queue).
 A typical use for a queue of a `THANDLE` would be to have a `THANDLE_ASSIGN` with `NULL` performed in the dispose function callback.
 
-If no push/pop/dispose callbacks functions are sepcified by the user, the queue copies the memory of T passed to `TQUEUE_PUSH`, respectively `TQUEUE_POP`.
+If no push/pop/dispose callbacks functions are specified by the user, the queue copies the memory of T passed to `TQUEUE_PUSH`, respectively `TQUEUE_POP`.
 
 The callbacks used for push/pop/dispose item are not re-entrant, they should not call `TQUEUE` APIs on the same queue.
 
@@ -173,6 +173,8 @@ TQUEUE(T) TQUEUE_CREATE(T)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_cb_f
 ```
 
 `TQUEUE_CREATE(T)` creates a new `TQUEUE(T)`.
+
+If `queue_size` is 0, `TQUEUE_CREATE(T)` shall fail and return `NULL`.
 
 If any of `push_cb_function`, `pop_cb_function` and `dispose_item_function` is `NULL` and at least one of them is not `NULL`, `TQUEUE_CREATE(T)` shall fail and return `NULL`.
 
