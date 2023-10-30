@@ -33,13 +33,13 @@ Because `TQUEUE` is a kind of `THANDLE`, all of `THANDLE`'s APIs apply to `TQUEU
 
 `TQUEUE` uses an array of type `T` to store the elements in the queue.
 
-The head and tail of the queue are `int64_t` values.
+The head and tail of the queue are `int64_t` values accessed through `interlocked_xx_64` functions.
 
 When pushing, the head value modulo queue size is used as array index where the element is written.
 
 When popping, the tail value modulo queue size is used as array index where the element is read from.
 
-A state is associated with each array entry.
+A state is associated with each array entry, stored as an `int32_t` accessed through `interlocked_xx` functions.
 
 The possible states for an array entry are:
 
@@ -175,7 +175,7 @@ If `tqueue` is `NULL` then `TQUEUE_PUSH(T)` shall fail and return a non-zero val
 
   - `TQUEUE_PUSH(T)` shall set the state to `PUSHING` (from `NOT_USED`) by using `interlocked_compare_exchange`.
 
-  - `TQUEUE_PUSH(T)` shall increment the head value.
+  - `TQUEUE_PUSH(T)` shall replace the head value with the head value obtained earlier + 1 by using `interlocked_exchange_64`.
 
   - `TQUEUE_PUSH(T)` shall copy the value of `item` into the array entry value that whose state was changed to `PUSHING`.
 
@@ -206,7 +206,7 @@ If `tqueue` is `NULL` then `TQUEUE_POP(T)` shall fail and return `TQUEUE_POP_ERR
 
   - `TQUEUE_POP(T)` shall set the state to `POPPING` (from `USED`) by using `interlocked_compare_exchange`.
 
-  - `TQUEUE_POP(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_compare_exchange`.
+  - `TQUEUE_POP(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
 
   - `TQUEUE_POP(T)` shall copy array entry value that whose state was changed to `POPPING` to `item`.
 
@@ -239,7 +239,7 @@ If `tqueue` is `NULL` then `TQUEUE_POP_IF(T)` shall fail and return `TQUEUE_POP_
 
   - If `condition_function` returns `false`, `TQUEUE_POP_IF(T)` shall change the state back to `USED` and return `TQUEUE_POP_IF_DOES_NOT_MATCH`.
 
-  - Otherwise, `TQUEUE_POP_IF(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_compare_exchange`.
+  - Otherwise, `TQUEUE_POP_IF(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
 
   - `TQUEUE_POP_IF(T)` shall copy array entry value that whose state was changed to `POPPING` to `item`.
 
@@ -270,7 +270,7 @@ If `tqueue` is `NULL` then `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall fail and return 
 
   - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall set the state to `PUSHING` (from `NOT_USED`) by using `interlocked_compare_exchange`.
 
-  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall increment the head value.
+  - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall replace the head value with the head value obtained earlier + 1 by using `interlocked_exchange_64`.
 
   - `TQUEUE_PUSH_WITH_SET_FUNC(T)` shall call `set_function` with `set_function_context` and the pointer to the array entry value that whose state was changed to `PUSHING`.
 
@@ -301,7 +301,7 @@ If `tqueue` is `NULL` then `TQUEUE_POP_WITH_GET_FUNC(T)` shall fail and return `
 
   - `TQUEUE_POP_WITH_GET_FUNC(T)` shall set the state to `POPPING` (from `USED`) by using `interlocked_compare_exchange`.
 
-  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_compare_exchange`.
+  - `TQUEUE_POP_WITH_GET_FUNC(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
 
   - `TQUEUE_POP_WITH_GET_FUNC(T)` shall call `get_function` with `get_function_context` and the pointer to the array entry value that whose state was changed to `POPPING`.
 
@@ -334,7 +334,7 @@ If `tqueue` is `NULL` then `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall fail and retur
 
   - If `condition_function` returns `false`, `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall change the state back to `USED` and return `TQUEUE_POP_IF_WITH_GET_FUNC_DOES_NOT_MATCH`.
 
-  - Otherwise, `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_compare_exchange`.
+  - Otherwise, `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
 
   - `TQUEUE_POP_IF_WITH_GET_FUNC(T)` shall call `get_function` with `get_function_context` and the pointer to the array entry value that whose state was changed to `POPPING`.
 
