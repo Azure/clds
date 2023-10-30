@@ -220,7 +220,7 @@ If `tqueue` is `NULL` then `TQUEUE_PUSH(T)` shall fail and return `TQUEUE_PUSH_I
 
 - If the state of the array entry corresponding to the head is not `NOT_USED`, `TQUEUE_PUSH(T)` shall try again.
 
-- Part of the same `interlocked_compare_exchange`, if the state of the array entry corresponding to the head is `NOT_USED`:
+- Part of the same `interlocked_compare_exchange` as above, if the state of the array entry corresponding to the head is `NOT_USED`:
 
   - `TQUEUE_PUSH(T)` shall set the state to `PUSHING` (from `NOT_USED`) by using `interlocked_compare_exchange`.
 
@@ -253,20 +253,26 @@ If `tqueue` is `NULL` then `TQUEUE_POP(T)` shall fail and return `TQUEUE_POP_INV
 
 - If the state of the array entry corresponding to the tail is not `USED`, `TQUEUE_POP(T)` shall try again.
 
-- Part of the same `interlocked_compare_exchange`, if the state of the array entry corresponding to the tail is `USED`:
+- Part of the same `interlocked_compare_exchange` as above, if the state of the array entry corresponding to the tail is `USED`:
 
   - `TQUEUE_POP(T)` shall set the state to `POPPING` (from `USED`).
 
-  - `TQUEUE_POP(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
-
   - If a `pop_cb_function` was not specified in `TQUEUE_CREATE(T)`:
   
+    - `TQUEUE_POP(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
+
     - `TQUEUE_POP(T)` shall copy array entry value whose state was changed to `POPPING` to `item`.
 
     - `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
 
-  - If a `pop_cb_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_POP(T)` shall call `pop_cb_function` with `pop_cb_function_context` as `context`, the array entry value whose state was changed to `POPPING` to `item` as `pop_src` and `item` as `pop_dst`.
+  - If a `pop_cb_function` was specified in `TQUEUE_CREATE(T)`:
+  
+    - `TQUEUE_POP(T)` shall call `pop_cb_function` with `pop_cb_function_context` as `context`, the array entry value whose state was changed to `POPPING` to `item` as `pop_src` and `item` as `pop_dst`.
 
-    - If `pop_cb_function` returns `TQUEUE_POP_CB_FUNCTION_OK`, `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
+    - If `pop_cb_function` returns `TQUEUE_POP_CB_FUNCTION_OK`:
+
+      - `TQUEUE_POP(T)` shall replace the tail value with the tail value obtained earlier + 1 by using `interlocked_exchange_64`.
+    
+      - `TQUEUE_POP(T)` shall set the state to `NOT_USED` by using `interlocked_exchange`, succeed and return `TQUEUE_POP_OK`.
 
     - If `pop_cb_function` returns `TQUEUE_POP_CB_FUNCTION_POP_REJECTED`, `TQUEUE_POP(T)` shall set the state to `USED` by using `interlocked_exchange` and return `TQUEUE_POP_REJECTED`.
