@@ -12,7 +12,6 @@
 
 #include "umock_c/umock_c.h"
 #include "umock_c/umocktypes_stdint.h"
-#include "umock_c/umocktypes_bool.h"
 #include "umock_c/umock_c_negative_tests.h"
 
 #define ENABLE_MOCKS
@@ -286,9 +285,9 @@ static void set_lru_get_value_expectations(void* key)
 /*Tests_SRS_LRU_CACHE_13_013: [ lru_cache_create shall assign clds_hazard_pointers to LRU_CACHE_HANDLE. ]*/
 /*Tests_SRS_LRU_CACHE_13_014: [ lru_cache_create shall allocate CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE by calling clds_hazard_pointers_thread_helper_create. ]*/
 /*Tests_SRS_LRU_CACHE_13_015: [ lru_cache_create shall allocate clds_hash_table by calling clds_hash_table_create. ]*/
-/*Tests_SRS_LRU_CACHE_13_016: [ lru_cache_create shall allocate SRW_LOCK_LL by calling srw_lock_ll_init. ]*/
-/*Tests_SRS_LRU_CACHE_13_017: [ lru_cache_create shall initialize head by calling DList_InitializeListHead. ]*/
-/*Tests_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign default value of 0 to current_size and the capacity to capacity. ]*/
+/*Tests_SRS_LRU_CACHE_13_016: [ lru_cache_create shall initialize SRW_LOCK_LL by calling srw_lock_ll_init. ]*/
+/*Tests_SRS_LRU_CACHE_13_017: [ lru_cache_create shall initialize the doubly linked list by calling DList_InitializeListHead. ]*/
+/*Tests_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign 0 to current_size and the capacity to capacity. ]*/
 /*Tests_SRS_LRU_CACHE_13_019: [ On success, lru_cache_create shall return LRU_CACHE_HANDLE. ]*/
 TEST_FUNCTION(lru_cache_create_succeeds)
 {

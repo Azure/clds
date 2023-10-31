@@ -39,28 +39,31 @@ typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESU
 LRU Cache uses a `clds_hash_table`, a `srw_lock`, and a `doubly_linked_list`.
 
 1. The table contains `LRU_NODE` instances as the value corresponding to the supplied keys. The `LRU_NODE` contains a `DLIST_ENTRY` which points to a node in the `doubly_linked_list`. A pointer to the `LRU_NODE` is stored in the `doubly_linked_list` as well.
-2. During eviction process, all operations to `clds_hash_table` and `doubly_linked_list` are performed under an exclusive lock, ensuring that changes are made together. This is to ensure, both `clds_hash_table` and `doubly_linked_list` are in sync with each other and also, to keep the design simple and to avoid unseen memory errors. 
+
+2. All operations to `clds_hash_table` and `doubly_linked_list` are performed under an exclusive lock, ensuring that changes are made together. 
+This is to ensure, both `clds_hash_table` and `doubly_linked_list` are in sync with each other and also, to keep the design simple and to avoid unseen memory errors. 
 
 ### Inserting Items into the Cache
 
-The `lru_cache_put` function is used to insert or update an item in the cache. If the item already exists in the cache, it is reinserted in the cache and moved to head position of `doubly_linked_list` to maintain the LRU order. If the cache is full, it performs eviction by removing the least recently used item until there is enough space for the new item.
+The `lru_cache_put` function is used to insert or update an item in the cache. If the item already exists in the cache, it is reinserted in the cache and moved to head position of `doubly_linked_list` to maintain the LRU order. 
+If the cache is full, it performs eviction by removing the least recently used item until there is enough space for the new item.
 
 ```mermaid
 graph TD
     A[Input: lru_cache, key, value, size]
     B[Find item in cache]
     C[If item exists]
-    E[Add item to cache]
-    F[Acquire Lock]
+    E[Acquire Lock]
+    F[Add item to cache]
     G[Update DList Entry Position]
-    H[Update cache current size]
-    I[Release Lock]
-    J[Update item to cache]
-    K[Acquire Lock]
+    H[Release Lock]
+    I[Update cache current size]
+    J[Acquire Lock]
+    K[Update item to cache]
     L[Remove DList Entry]
     M[Update DList Entry Position]
-    P[Release Lock]
-    N[Update cache current size]
+    P[Update cache current size]
+    N[Release Lock]
     O[Eviction logic]
     Z[Output: Result]
 
@@ -85,7 +88,9 @@ graph TD
 
 ### Eviction Logic
 
-The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. This is done in a loop until there is enough space in the cache. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
+The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. 
+During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. This is done in a loop until there is enough space in the cache. 
+It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
 
 Note: As mentioned above, an exclusive lock is used when removing item from both the `clds_hash_table` and `doubly_linked_list`. 
 
@@ -126,10 +131,10 @@ sequenceDiagram
     participant Cache as "LRU Cache"
     participant HashTable as "Hash Table (Cache)"
     participant LRUList as "Doubly Linked List"    
-    Cache ->> HashTable: Find the item in the hash table (key)
-    HashTable -->> Cache: Found the item (hash_table_item)
     Cache ->> LRUList: Acquire an exclusive lock
     LRUList -->> Cache: Acquired lock successfully
+    Cache ->> HashTable: Find the item in the hash table (key)
+    HashTable -->> Cache: Found the item (hash_table_item)
     Cache ->> LRUList: Extract LRU_NODE from the item
     LRUList -->> Cache: Current item position
     LRUList ->> LRUList: Check the item's position in the list
@@ -145,7 +150,12 @@ sequenceDiagram
 - One area of improvement lies in the management of the `doubly_linked_list`, which is currently protected by a lock. To further optimize concurrent access to the cache, a lock-free `doubly_linked_list` can be used and remove `srw_lock` in its entirety. 
 
 
-- Another potential enhancement involves moving `doubly_linked_list` updates to a background thread. Instead of immediately updating the list within cache operations like `get` we could use a queue for deferred processing. This approach enhances concurrency but may introduce race conditions between eviction and `doubly_linked_list` updates as the cache nears capacity. This might occasionally lead to extra waits during `put` operations, depending on whether the LRU cache must never exceed the capacity, or if it's acceptable to temporarily exceed (so puts can go ahead and the eviction will eventually catch up). (See this [comment](https://github.com/Azure/clds/pull/178#discussion_r1326092733) for more context)
+- Another potential enhancement involves moving `doubly_linked_list` updates to a background thread. Instead of immediately updating the list within cache operations like `get` we could use a queue for deferred processing. 
+This approach enhances concurrency but may introduce race conditions between eviction and `doubly_linked_list` updates as the cache nears capacity. 
+This might occasionally lead to extra waits during `put` operations, depending on whether the LRU cache must never exceed the capacity, or if it's acceptable to temporarily exceed 
+(so puts can go ahead and the eviction will eventually catch up). (See this [comment](https://github.com/Azure/clds/pull/178#discussion_r1326092733) for more context)
 
 
-- While `clds_singly_linked_list` handles insertions and deletions efficiently and lockless, evicting the 'tail' element can be relatively slow, as it requires traversing the list. One potential optimization is to offload this eviction process onto a separate thread. This could be done using `clds_singly_linked_list_find` with a callback that counts nodes until it reaches the desired eviction size and stores them in its `item_compare_context`. Once identified, these nodes can be efficiently removed, improving eviction performance. (See this [comment](https://github.com/Azure/clds/pull/178#discussion_r1326312429) for more context)
+- While `clds_singly_linked_list` handles insertions and deletions efficiently and lockless, evicting the 'tail' element can be relatively slow, as it requires traversing the list. One potential optimization is to offload this eviction process onto a separate thread. 
+This could be done using `clds_singly_linked_list_find` with a callback that counts nodes until it reaches the desired eviction size and stores them in its `item_compare_context`. 
+Once identified, these nodes can be efficiently removed, improving eviction performance. (See this [comment](https://github.com/Azure/clds/pull/178#discussion_r1326312429) for more context)
