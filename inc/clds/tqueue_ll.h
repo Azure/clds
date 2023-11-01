@@ -48,13 +48,9 @@ MU_DEFINE_ENUM(QUEUE_ENTRY_STATE, QUEUE_ENTRY_STATE_VALUES);
 #define TQUEUE_ENTRY_STRUCT_TYPE_NAME_TAG(T) MU_C2(TQUEUE_ENTRY_STRUCT_TYPE_NAME(T), _TAG)
 #define TQUEUE_ENTRY_STRUCT_TYPE_NAME(T) MU_C2(TQUEUE_ENTRY_STRUCT_, T)
 
-/* This introduces the name for the push cb function */
-#define TQUEUE_DEFINE_PUSH_CB_FUNCTION_TYPE_NAME(T) MU_C2(TQUEUE_PUSH_CB_FUNC_TYPE_, T)
-#define TQUEUE_PUSH_CB_FUNC(T) TQUEUE_DEFINE_PUSH_CB_FUNCTION_TYPE_NAME(T)
-
-/* This introduces the name for the pop cb function */
-#define TQUEUE_DEFINE_POP_CB_FUNCTION_TYPE_NAME(T) MU_C2(TQUEUE_POP_CB_FUNC_TYPE_, T)
-#define TQUEUE_POP_CB_FUNC(T) TQUEUE_DEFINE_POP_CB_FUNCTION_TYPE_NAME(T)
+/* This introduces the name for the copy item function */
+#define TQUEUE_DEFINE_COPY_ITEM_FUNCTION_TYPE_NAME(T) MU_C2(TQUEUE_COPY_ITEM_FUNC_TYPE_, T)
+#define TQUEUE_COPY_ITEM_FUNC(T) TQUEUE_DEFINE_COPY_ITEM_FUNCTION_TYPE_NAME(T)
 
 /* This introduces the name for the dispose item function */
 #define TQUEUE_DEFINE_DISPOSE_ITEM_FUNCTION_TYPE_NAME(T) MU_C2(TQUEUE_DISPOSE_ITEM_FUNC_TYPE_, T)
@@ -66,8 +62,7 @@ MU_DEFINE_ENUM(QUEUE_ENTRY_STATE, QUEUE_ENTRY_STATE_VALUES);
 
 /*TQUEUE_DEFINE_STRUCT_TYPE(T) introduces the base type that holds the queue typed as T*/
 #define TQUEUE_DEFINE_STRUCT_TYPE(T)                                                                            \
-typedef void (*TQUEUE_DEFINE_PUSH_CB_FUNCTION_TYPE_NAME(T))(void* context, T* push_dst, T* push_src);           \
-typedef void (*TQUEUE_DEFINE_POP_CB_FUNCTION_TYPE_NAME(T))(void* context, T* pop_dst, T* pop_src);              \
+typedef void (*TQUEUE_DEFINE_COPY_ITEM_FUNCTION_TYPE_NAME(T))(void* context, T* dst, T* src);                   \
 typedef void (*TQUEUE_DEFINE_DISPOSE_ITEM_FUNCTION_TYPE_NAME(T))(void* context, T* item);                       \
 typedef bool (*TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T))(void* context, T* item);                          \
 typedef struct TQUEUE_ENTRY_STRUCT_TYPE_NAME_TAG(T)                                                             \
@@ -79,8 +74,7 @@ typedef struct TQUEUE_STRUCT_TYPE_NAME_TAG(T)                                   
 {                                                                                                               \
     volatile_atomic int64_t head;                                                                               \
     volatile_atomic int64_t tail;                                                                               \
-    TQUEUE_PUSH_CB_FUNC(T) push_cb_function;                                                                    \
-    TQUEUE_POP_CB_FUNC(T) pop_cb_function;                                                                      \
+    TQUEUE_COPY_ITEM_FUNC(T) copy_item_function;                                                                \
     TQUEUE_DISPOSE_ITEM_FUNC(T) dispose_item_function;                                                          \
     void* dispose_item_function_context;                                                                        \
     uint32_t queue_size;                                                                                        \
@@ -111,13 +105,13 @@ typedef struct TQUEUE_STRUCT_TYPE_NAME_TAG(T)                                   
 #define TQUEUE_LL_POP(C) TQUEUE_LL_POP_NAME(C)
 
 /*introduces a function declaration for tqueue_create*/
-#define TQUEUE_LL_CREATE_DECLARE(C, T) MOCKABLE_FUNCTION(, TQUEUE_LL(T), TQUEUE_LL_CREATE(C), uint32_t, queue_size, TQUEUE_PUSH_CB_FUNC(T), push_cb_function, TQUEUE_POP_CB_FUNC(T), pop_cb_function, TQUEUE_DISPOSE_ITEM_FUNC(T), dispose_item_function, void*, dispose_item_function_context);
+#define TQUEUE_LL_CREATE_DECLARE(C, T) MOCKABLE_FUNCTION(, TQUEUE_LL(T), TQUEUE_LL_CREATE(C), uint32_t, queue_size, TQUEUE_COPY_ITEM_FUNC(T), copy_item_function, TQUEUE_DISPOSE_ITEM_FUNC(T), dispose_item_function, void*, dispose_item_function_context);
 
 /*introduces a function declaration for tqueue_push*/
-#define TQUEUE_LL_PUSH_DECLARE(C, T) MOCKABLE_FUNCTION(, TQUEUE_PUSH_RESULT, TQUEUE_LL_PUSH(C), TQUEUE_LL(T), tqueue, T*, item, void*, push_cb_function_context);
+#define TQUEUE_LL_PUSH_DECLARE(C, T) MOCKABLE_FUNCTION(, TQUEUE_PUSH_RESULT, TQUEUE_LL_PUSH(C), TQUEUE_LL(T), tqueue, T*, item, void*, copy_item_function_context);
 
 /*introduces a function declaration for tqueue_pop*/
-#define TQUEUE_LL_POP_DECLARE(C, T) MOCKABLE_FUNCTION(, TQUEUE_POP_RESULT, TQUEUE_LL_POP(C), TQUEUE_LL(T), tqueue, T*, item, void*, pop_cb_function_context, TQUEUE_CONDITION_FUNC(T), condition_function, void*, condition_function_context);
+#define TQUEUE_LL_POP_DECLARE(C, T) MOCKABLE_FUNCTION(, TQUEUE_POP_RESULT, TQUEUE_LL_POP(C), TQUEUE_LL(T), tqueue, T*, item, void*, copy_item_function_context, TQUEUE_CONDITION_FUNC(T), condition_function, void*, condition_function_context);
 
 /*introduces a name for the function that free's a TQUEUE when it's ref count got to 0*/
 #define TQUEUE_LL_FREE_NAME(C) MU_C2(TQUEUE_LL_FREE_, C)
@@ -154,23 +148,22 @@ static void TQUEUE_LL_FREE_NAME(C)(TQUEUE_TYPEDEF_NAME(T)* tqueue)              
 }                                                                                                                                                                   \
 
 /*introduces a function definition for tqueue_create*/
-#define TQUEUE_LL_CREATE_DEFINE(C, T)                                                                                                                     \
-TQUEUE_LL(T) TQUEUE_LL_CREATE(C)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) push_cb_function, TQUEUE_POP_CB_FUNC(T) pop_cb_function, TQUEUE_DISPOSE_ITEM_FUNC(T) dispose_item_function, void* dispose_item_function_context) \
+#define TQUEUE_LL_CREATE_DEFINE(C, T)                                                                                                                               \
+TQUEUE_LL(T) TQUEUE_LL_CREATE(C)(uint32_t queue_size, TQUEUE_COPY_ITEM_FUNC(T) copy_item_function, TQUEUE_DISPOSE_ITEM_FUNC(T) dispose_item_function, void* dispose_item_function_context) \
 {                                                                                                                                                                   \
     TQUEUE_TYPEDEF_NAME(T)* result;                                                                                                                                 \
-    bool is_push_cb_function_NULL = (push_cb_function == NULL);                                                                                                     \
-    bool is_pop_cb_function_NULL = (pop_cb_function == NULL);                                                                                                       \
+    bool is_copy_item_function_NULL = (copy_item_function == NULL);                                                                                                 \
     bool is_dispose_item_function_NULL = (dispose_item_function == NULL);                                                                                           \
     if (                                                                                                                                                            \
         /* Codes_SRS_TQUEUE_01_001: [ If queue_size is 0, TQUEUE_CREATE(T) shall fail and return NULL. ]*/                                                          \
         (queue_size == 0) ||                                                                                                                                        \
-        /* Codes_SRS_TQUEUE_01_002: [ If any of push_cb_function, pop_cb_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/ \
-        ((is_push_cb_function_NULL || is_pop_cb_function_NULL || is_dispose_item_function_NULL) &&                                                                  \
-         !(is_push_cb_function_NULL && is_pop_cb_function_NULL && is_dispose_item_function_NULL))                                                                   \
+        /* Codes_SRS_TQUEUE_01_002: [ If any of copy_item_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/ \
+        ((is_copy_item_function_NULL || is_dispose_item_function_NULL) &&                                                                                           \
+         !(is_copy_item_function_NULL && is_dispose_item_function_NULL))                                                                                            \
        )                                                                                                                                                            \
     {                                                                                                                                                               \
-        LogError("Invalid arguments: uint32_t queue_size=%" PRIu32 ", " MU_TOSTRING(TQUEUE_PUSH_CB_FUNC(T)) " push_cb_function=%p," MU_TOSTRING(TQUEUE_POP_CB_FUNC(T)) " pop_cb_function=%p, " MU_TOSTRING(TQUEUE_DISPOSE_ITEM_FUNC(T)) " dispose_item_function=%p, void* dispose_item_function_context=%p", \
-            queue_size, push_cb_function, pop_cb_function, dispose_item_function, dispose_item_function_context);                                                        \
+        LogError("Invalid arguments: uint32_t queue_size=%" PRIu32 ", " MU_TOSTRING(TQUEUE_COPY_ITEM_FUNC(T)) " copy_item_function=%p, " MU_TOSTRING(TQUEUE_DISPOSE_ITEM_FUNC(T)) " dispose_item_function=%p, void* dispose_item_function_context=%p", \
+            queue_size, copy_item_function, dispose_item_function, dispose_item_function_context);                                                        \
         result = NULL;                                                                                                                                              \
     }                                                                                                                                                               \
     else                                                                                                                                                            \
@@ -187,10 +180,9 @@ TQUEUE_LL(T) TQUEUE_LL_CREATE(C)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) pus
         else                                                                                                                                                        \
         {                                                                                                                                                           \
             result->queue_size = queue_size;                                                                                                                        \
-            result->push_cb_function = push_cb_function;                                                                                                                        \
-            result->pop_cb_function = pop_cb_function;                                                                                                                        \
-            result->dispose_item_function = dispose_item_function;                                                                                                                        \
-            result->dispose_item_function_context = dispose_item_function_context;                                                                                                                        \
+            result->copy_item_function = copy_item_function;                                                                                                        \
+            result->dispose_item_function = dispose_item_function;                                                                                                  \
+            result->dispose_item_function_context = dispose_item_function_context;                                                                                  \
             /* Codes_SRS_TQUEUE_01_004: [ TQUEUE_CREATE(T) shall initialize the head and tail of the list with 0 by using interlocked_exchange_64. ]*/              \
             (void)interlocked_exchange_64(&result->head, 0);                                                                                                        \
             (void)interlocked_exchange_64(&result->tail, 0);                                                                                                        \
@@ -208,7 +200,7 @@ TQUEUE_LL(T) TQUEUE_LL_CREATE(C)(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(T) pus
 
 /*introduces a function definition for tqueue_push*/
 #define TQUEUE_LL_PUSH_DEFINE(C, T)                                                                                                                                 \
-TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* push_cb_function_context)                                                                  \
+TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_item_function_context)                                                                \
 {                                                                                                                                                                   \
     TQUEUE_PUSH_RESULT result;                                                                                                                                      \
     if (                                                                                                                                                            \
@@ -218,8 +210,8 @@ TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* push_cb
         (item == NULL)                                                                                                                                              \
        )                                                                                                                                                            \
     {                                                                                                                                                               \
-        LogError("Invalid arguments: TQUEUE_LL(" MU_TOSTRING(T) ") tqueue=%p, const " MU_TOSTRING(T) "* item=%p, void* push_cb_function_context=%p",                \
-            tqueue, item, push_cb_function_context);                                                                                                                \
+        LogError("Invalid arguments: TQUEUE_LL(" MU_TOSTRING(T) ") tqueue=%p, const " MU_TOSTRING(T) "* item=%p, void* copy_item_function_context=%p",              \
+            tqueue, item, copy_item_function_context);                                                                                                              \
         result = TQUEUE_PUSH_INVALID_ARG;                                                                                                                           \
     }                                                                                                                                                               \
     else                                                                                                                                                            \
@@ -262,15 +254,15 @@ TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* push_cb
                         }                                                                                                                                           \
                     } while (1);                                                                                                                                    \
                                                                                                                                                                     \
-                    if (tqueue->push_cb_function == NULL)                                                                                                           \
+                    if (tqueue->copy_item_function == NULL)                                                                                                         \
                     {                                                                                                                                               \
-                        /* Codes_SRS_TQUEUE_01_019: [ If no push_cb_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/ \
+                        /* Codes_SRS_TQUEUE_01_019: [ If no copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/ \
                         (void)memcpy((void*)(T*)&tqueue->queue[index].value, (void*)item, sizeof(T));                                                               \
                     }                                                                                                                                               \
                     else                                                                                                                                            \
                     {                                                                                                                                               \
-                        /* Codes_SRS_TQUEUE_01_024: [ If a push_cb_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the push_cb_function with push_cb_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */ \
-                        tqueue->push_cb_function(push_cb_function_context, (T*)&tqueue->queue[index].value, item);                                                  \
+                        /* Codes_SRS_TQUEUE_01_024: [ If a copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the copy_item_function with copy_item_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */ \
+                        tqueue->copy_item_function(copy_item_function_context, (T*)&tqueue->queue[index].value, item);                                              \
                     }                                                                                                                                               \
                     /* Codes_SRS_TQUEUE_01_020: [ TQUEUE_PUSH(T) shall set the state to USED by using interlocked_exchange. ]*/                                     \
                     (void)interlocked_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_USED);                                      \
@@ -286,9 +278,9 @@ TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* push_cb
 
 /*introduces a function definition for tqueue_pop*/
 #define TQUEUE_LL_POP_DEFINE(C, T)                                                                                                                                  \
-TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* pop_cb_function_context, TQUEUE_CONDITION_FUNC(T) condition_function, void* condition_function_context) \
+TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_item_function_context, TQUEUE_CONDITION_FUNC(T) condition_function, void* condition_function_context) \
 {                                                                                                                                                                   \
-    TQUEUE_POP_RESULT result;                                                                                                                                                     \
+    TQUEUE_POP_RESULT result;                                                                                                                                       \
     if (                                                                                                                                                            \
         /* Codes_SRS_TQUEUE_01_025: [ If tqueue is NULL then TQUEUE_POP(T) shall fail and return TQUEUE_POP_INVALID_ARG. ]*/                                        \
         (tqueue == NULL) ||                                                                                                                                         \
@@ -296,9 +288,9 @@ TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* pop_cb_fu
         (item == NULL)                                                                                                                                              \
        )                                                                                                                                                            \
     {                                                                                                                                                               \
-        LogError("Invalid arguments: TQUEUE_LL(" MU_TOSTRING(T) ") tqueue=%p, " MU_TOSTRING(T) "*=%p, void* pop_cb_function_context, TQUEUE_CONDITION_FUNC(T) condition_function, void* condition_function_context", \
+        LogError("Invalid arguments: TQUEUE_LL(" MU_TOSTRING(T) ") tqueue=%p, " MU_TOSTRING(T) "*=%p, void* copy_item_function_context, TQUEUE_CONDITION_FUNC(T) condition_function, void* condition_function_context", \
             tqueue, item);                                                                                                                                          \
-        result = TQUEUE_POP_INVALID_ARG;                                                                                                                                        \
+        result = TQUEUE_POP_INVALID_ARG;                                                                                                                            \
     }                                                                                                                                                               \
     else                                                                                                                                                            \
     {                                                                                                                                                               \
@@ -332,7 +324,7 @@ TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* pop_cb_fu
                     if (condition_function != NULL)                                                                                                                 \
                     {                                                                                                                                               \
                         /* Codes_SRS_TQUEUE_01_040: [ TQUEUE_POP(T) shall call condition_function with condition_function_context and a pointer to the array entry value whose state was changed to POPPING. ] */ \
-                        should_pop = condition_function(condition_function_context, (T*)&tqueue->queue[index].value);                                                   \
+                        should_pop = condition_function(condition_function_context, (T*)&tqueue->queue[index].value);                                               \
                     }                                                                                                                                               \
                     else                                                                                                                                            \
                     {                                                                                                                                               \
@@ -356,17 +348,22 @@ TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* pop_cb_fu
                         }                                                                                                                                           \
                         else                                                                                                                                        \
                         {                                                                                                                                           \
-                            if (tqueue->pop_cb_function == NULL)                                                                                                    \
+                            if (tqueue->copy_item_function == NULL)                                                                                                 \
                             {                                                                                                                                       \
-                                /* Codes_SRS_TQUEUE_01_032: [ If a pop_cb_function was not specified in TQUEUE_CREATE(T): ]*/                                       \
+                                /* Codes_SRS_TQUEUE_01_032: [ If a copy_item_function was not specified in TQUEUE_CREATE(T): ]*/                                    \
                                 /* Codes_SRS_TQUEUE_01_033: [ TQUEUE_POP(T) shall copy array entry value whose state was changed to POPPING to item. ]*/            \
-                                (void)memcpy((void*)item, (void*)(T*)&tqueue->queue[index].value, sizeof(T));                                                                    \
+                                (void)memcpy((void*)item, (void*)(T*)&tqueue->queue[index].value, sizeof(T));                                                       \
                             }                                                                                                                                       \
                             else                                                                                                                                    \
                             {                                                                                                                                       \
-                                /* Codes_SRS_TQUEUE_01_037: [ If a pop_cb_function was specified in TQUEUE_CREATE(T): ]*/                                           \
-                                /* Codes_SRS_TQUEUE_01_038: [ TQUEUE_POP(T) shall call pop_cb_function with pop_cb_function_context as context, the array entry value whose state was changed to POPPING to item as pop_src and item as pop_dst. ]*/ \
-                                tqueue->pop_cb_function(pop_cb_function_context, item, (T*)&tqueue->queue[index].value);                                            \
+                                /* Codes_SRS_TQUEUE_01_037: [ If copy_item_function and sispose_item_function were specified in TQUEUE_CREATE(T): ]*/               \
+                                /* Codes_SRS_TQUEUE_01_038: [ TQUEUE_POP(T) shall call copy_item_function with copy_item_function_context as context, the array entry value whose state was changed to POPPING to item as pop_src and item as pop_dst. ]*/ \
+                                tqueue->copy_item_function(copy_item_function_context, item, (T*)&tqueue->queue[index].value);                                      \
+                            }                                                                                                                                       \
+                            if (tqueue->dispose_item_function != NULL)                                                                                              \
+                            {                                                                                                                                       \
+                                /* Codes_SRS_TQUEUE_01_045: [ TQUEUE_POP(T) shall call dispose_item_function with dispose_item_function_context as context and the array entry value whose state was changed to POPPING as item. ]*/ \
+                                tqueue->dispose_item_function(tqueue->dispose_item_function_context, (T*)&tqueue->queue[index].value);                              \
                             }                                                                                                                                       \
                             /* Codes_SRS_TQUEUE_01_034: [ TQUEUE_POP(T) shall set the state to NOT_USED by using interlocked_exchange, succeed and return TQUEUE_POP_OK. ]*/ \
                             (void)interlocked_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_NOT_USED);                          \

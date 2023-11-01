@@ -46,12 +46,8 @@ TQUEUE_TYPE_DECLARE(int32_t);
 THANDLE_TYPE_DEFINE(TQUEUE_TYPEDEF_NAME(int32_t))
 TQUEUE_TYPE_DEFINE(int32_t);
 
-MOCK_FUNCTION_WITH_CODE(, void, test_push_cb, void*, context, int32_t*, push_dst, int32_t*, push_src)
-    *push_dst = *push_src;
-MOCK_FUNCTION_END();
-
-MOCK_FUNCTION_WITH_CODE(, void, test_pop_cb, void*, context, int32_t*, pop_dst, int32_t*, pop_src)
-    *pop_dst = *pop_src;
+MOCK_FUNCTION_WITH_CODE(, void, test_copy_item, void*, context, int32_t*, dst, int32_t*, src)
+    *dst = *src;
 MOCK_FUNCTION_END();
 
 MOCK_FUNCTION_WITH_CODE(, void, test_dispose_item, void*, context, int32_t*, item)
@@ -112,72 +108,33 @@ TEST_FUNCTION(TQUEUE_CREATE_with_0_queue_size_fails)
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(0, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(0, test_copy_item, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
-/* Tests_SRS_TQUEUE_01_002: [ If any of push_cb_function, pop_cb_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
-TEST_FUNCTION(TQUEUE_CREATE_with_only_push_cb_being_NULL_fails)
+/* Tests_SRS_TQUEUE_01_002: [ If any of copy_item_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
+TEST_FUNCTION(TQUEUE_CREATE_with_only_copy_item_function_being_NULL_fails)
 {
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
-/* Tests_SRS_TQUEUE_01_002: [ If any of push_cb_function, pop_cb_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
-TEST_FUNCTION(TQUEUE_CREATE_with_only_pop_cb_being_NULL_fails)
-{
-    // arrange
-
-    // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, NULL, test_dispose_item, (void*)0x4242);
-
-    // assert
-    ASSERT_IS_NULL(queue);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-}
-
-/* Tests_SRS_TQUEUE_01_002: [ If any of push_cb_function, pop_cb_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
+/* Tests_SRS_TQUEUE_01_002: [ If any of copy_item_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
 TEST_FUNCTION(TQUEUE_CREATE_with_only_dispose_item_being_NULL_fails)
 {
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, test_pop_cb, NULL, (void*)0x4242);
-
-    // assert
-    ASSERT_IS_NULL(queue);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-}
-
-/* Tests_SRS_TQUEUE_01_002: [ If any of push_cb_function, pop_cb_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
-TEST_FUNCTION(TQUEUE_CREATE_with_push_and_pop_cb_NULL_fails)
-{
-    // arrange
-
-    // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, NULL, test_dispose_item, (void*)0x4242);
-
-    // assert
-    ASSERT_IS_NULL(queue);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-}
-
-/* Tests_SRS_TQUEUE_01_002: [ If any of push_cb_function, pop_cb_function and dispose_item_function is NULL and at least one of them is not NULL, TQUEUE_CREATE(T) shall fail and return NULL. ]*/
-TEST_FUNCTION(TQUEUE_CREATE_with_push_cb_and_dispose_item_NULL_fails)
-{
-    // arrange
-
-    // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_pop_cb, NULL, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_copy_item, NULL, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
@@ -201,7 +158,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_all_functions_non_NULL_succeeds)
     }
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NOT_NULL(queue);
@@ -228,7 +185,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_all_functions_NULL_succeeds)
     }
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, NULL, NULL, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, NULL, (void*)0x4242);
 
     // assert
     ASSERT_IS_NOT_NULL(queue);
@@ -265,7 +222,7 @@ TEST_FUNCTION(when_underlying_calls_fail_TQUEUE_CREATE_also_fails)
             umock_c_negative_tests_fail_call(i);
 
             // act
-            TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+            TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
             // assert
             ASSERT_IS_NULL(queue, "test failed for call %" PRIu32 "", i);
@@ -275,7 +232,7 @@ TEST_FUNCTION(when_underlying_calls_fail_TQUEUE_CREATE_also_fails)
 
 /* TQUEUE_DISPOSE_FUNC(T) */
 
-static TQUEUE(int32_t) test_queue_create(uint32_t queue_size, TQUEUE_PUSH_CB_FUNC(int32_t) push_cb_function, TQUEUE_POP_CB_FUNC(int32_t) pop_cb_function, TQUEUE_DISPOSE_ITEM_FUNC(int32_t) dispose_item_function, void* dispose_function_context)
+static TQUEUE(int32_t) test_queue_create(uint32_t queue_size, TQUEUE_COPY_ITEM_FUNC(int32_t) copy_item_function, TQUEUE_DISPOSE_ITEM_FUNC(int32_t) dispose_item_function, void* dispose_function_context)
 {
     STRICT_EXPECTED_CALL(malloc_flex(IGNORED_ARG, queue_size, IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
@@ -286,7 +243,7 @@ static TQUEUE(int32_t) test_queue_create(uint32_t queue_size, TQUEUE_PUSH_CB_FUN
         STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED));
     }
 
-    TQUEUE(int32_t) result = TQUEUE_CREATE(int32_t)(queue_size, push_cb_function, pop_cb_function, dispose_item_function, dispose_function_context);
+    TQUEUE(int32_t) result = TQUEUE_CREATE(int32_t)(queue_size, copy_item_function, dispose_item_function, dispose_function_context);
     ASSERT_IS_NOT_NULL(result);
     umock_c_reset_all_calls();
 
@@ -297,7 +254,7 @@ static TQUEUE(int32_t) test_queue_create(uint32_t queue_size, TQUEUE_PUSH_CB_FUN
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_NULL_dispose_item_returns)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_decrement(IGNORED_ARG));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
@@ -315,7 +272,7 @@ TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_NULL_dispose_item_returns)
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_empty_queue_does_not_call_dispose_item)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_decrement(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -364,7 +321,7 @@ static int32_t test_queue_pop_rejected(TQUEUE(int32_t) queue)
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_1_item_calls_dispose_item_once)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_decrement(IGNORED_ARG));
@@ -386,7 +343,7 @@ TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_1_item_calls_d
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_2_items_calls_dispose_item_2_times)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
     test_queue_push(queue, 42);
 
@@ -424,7 +381,7 @@ TEST_FUNCTION(TQUEUE_PUSH_with_NULL_queue_fails)
 TEST_FUNCTION(TQUEUE_PUSH_with_NULL_item_fails)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
     // act
     TQUEUE_PUSH_RESULT result = TQUEUE_PUSH(int32_t)(queue, NULL, (void*)0x4243);
@@ -442,14 +399,14 @@ TEST_FUNCTION(TQUEUE_PUSH_with_NULL_item_fails)
     /* Tests_SRS_TQUEUE_01_016: [ TQUEUE_PUSH(T) shall obtain the current tail queue by calling interlocked_add_64. ]*/
     /* Tests_SRS_TQUEUE_01_017: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall change the head array entry state to PUSHING (from NOT_USED). ]*/
     /* Tests_SRS_TQUEUE_01_018: [ Using interlocked_compare_exchange_64, TQUEUE_PUSH(T) shall replace the head value with the head value obtained earlier + 1. ]*/
-    /* Tests_SRS_TQUEUE_01_019: [ If no push_cb_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/
+    /* Tests_SRS_TQUEUE_01_019: [ If no copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/
     /* Tests_SRS_TQUEUE_01_020: [ TQUEUE_PUSH(T) shall set the state to USED by using interlocked_exchange. ]*/
     /* Tests_SRS_TQUEUE_01_021: [ TQUEUE_PUSH(T) shall succeed and return TQUEUE_PUSH_OK. ]*/
 TEST_FUNCTION(TQUEUE_PUSH_with_valid_args_without_push_cb_func_copies_the_data_in)
 {
     // arrange
     int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
@@ -473,7 +430,7 @@ TEST_FUNCTION(TQUEUE_PUSH_with_valid_args_without_push_cb_func_copies_the_data_i
     /* Tests_SRS_TQUEUE_01_016: [ TQUEUE_PUSH(T) shall obtain the current tail queue by calling interlocked_add_64. ]*/
     /* Tests_SRS_TQUEUE_01_017: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall change the head array entry state to PUSHING (from NOT_USED). ]*/
     /* Tests_SRS_TQUEUE_01_018: [ Using interlocked_compare_exchange_64, TQUEUE_PUSH(T) shall replace the head value with the head value obtained earlier + 1. ]*/
-    /* Tests_SRS_TQUEUE_01_019: [ If no push_cb_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/
+    /* Tests_SRS_TQUEUE_01_019: [ If no copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/
     /* Tests_SRS_TQUEUE_01_020: [ TQUEUE_PUSH(T) shall set the state to USED by using interlocked_exchange. ]*/
     /* Tests_SRS_TQUEUE_01_021: [ TQUEUE_PUSH(T) shall succeed and return TQUEUE_PUSH_OK. ]*/
 TEST_FUNCTION(TQUEUE_PUSH_twice_copies_the_data_in)
@@ -481,7 +438,7 @@ TEST_FUNCTION(TQUEUE_PUSH_twice_copies_the_data_in)
     // arrange
     int32_t item_1 = 42;
     int32_t item_2 = 43;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
@@ -513,7 +470,7 @@ TEST_FUNCTION(TQUEUE_PUSH_twice_for_queue_size_1_returns_QUEUE_FULL)
 {
     // arrange
     int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(1, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1, NULL, NULL, NULL);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -535,7 +492,7 @@ TEST_FUNCTION(when_head_changes_TQUEUE_PUSH_tries_again)
 {
     // arrange
     int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(2, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(2, NULL, NULL, NULL);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
@@ -563,7 +520,7 @@ static void test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_a
 {
     // arrange
     int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
@@ -604,18 +561,18 @@ TEST_FUNCTION(TQUEUE_PUSH_when_entry_state_is_USED_tries_again)
     test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_again(QUEUE_ENTRY_STATE_USED);
 }
 
-/* Tests_SRS_TQUEUE_01_024: [ If a push_cb_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the push_cb_function with push_cb_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */
-TEST_FUNCTION(TQUEUE_PUSH_with_push_cb_function_calls_the_cb_function)
+/* Tests_SRS_TQUEUE_01_024: [ If a copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the copy_item_function with copy_item_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */
+TEST_FUNCTION(TQUEUE_PUSH_with_copy_item_function_calls_the_cb_function)
 {
     // arrange
     int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(test_push_cb((void*)0x4243, IGNORED_ARG, &item)); // entry state
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, IGNORED_ARG, &item)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -629,26 +586,26 @@ TEST_FUNCTION(TQUEUE_PUSH_with_push_cb_function_calls_the_cb_function)
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_024: [ If a push_cb_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the push_cb_function with push_cb_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */
-TEST_FUNCTION(TQUEUE_PUSH_with_push_cb_function_calls_the_cb_function_2_items)
+/* Tests_SRS_TQUEUE_01_024: [ If a copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the copy_item_function with copy_item_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */
+TEST_FUNCTION(TQUEUE_PUSH_with_copy_item_function_calls_the_cb_function_2_items)
 {
     // arrange
     int32_t item_1 = 42;
     int32_t item_2 = 43;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(test_push_cb((void*)0x4243, IGNORED_ARG, &item_1)); // entry state
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, IGNORED_ARG, &item_1)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(test_push_cb((void*)0x4244, IGNORED_ARG, &item_2)); // entry state
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4244, IGNORED_ARG, &item_2)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -684,7 +641,7 @@ TEST_FUNCTION(TQUEUE_POP_with_NULL_tqueue_fails)
 TEST_FUNCTION(TQUEUE_POP_with_NULL_item_fails)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
 
     // act
     TQUEUE_POP_RESULT result = TQUEUE_POP(int32_t)(queue, NULL, (void*)0x4243, test_condition_function_true, (void*)0x4244);
@@ -702,14 +659,14 @@ TEST_FUNCTION(TQUEUE_POP_with_NULL_item_fails)
     /* Tests_SRS_TQUEUE_01_029: [ TQUEUE_POP(T) shall obtain the current tail queue by calling interlocked_add_64. ]*/
     /* Tests_SRS_TQUEUE_01_030: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall set the tail array entry state to POPPING (from USED). ]*/
     /* Tests_SRS_TQUEUE_01_031: [ TQUEUE_POP(T) shall replace the tail value with the tail value obtained earlier + 1 by using interlocked_exchange_64. ]*/
-    /* Tests_SRS_TQUEUE_01_032: [ If a pop_cb_function was not specified in TQUEUE_CREATE(T): ]*/
+    /* Tests_SRS_TQUEUE_01_032: [ If a copy_item_function was not specified in TQUEUE_CREATE(T): ]*/
     /* Tests_SRS_TQUEUE_01_033: [ TQUEUE_POP(T) shall copy array entry value whose state was changed to POPPING to item. ]*/
     /* Tests_SRS_TQUEUE_01_034: [ TQUEUE_POP(T) shall set the state to NOT_USED by using interlocked_exchange, succeed and return TQUEUE_POP_OK. ]*/
-TEST_FUNCTION(TQUEUE_POP_with_NULL_pop_cb_function_and_NULL_condition_function_succeeds)
+TEST_FUNCTION(TQUEUE_POP_with_NULL_copy_item_function_and_NULL_condition_function_succeeds)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -735,15 +692,15 @@ TEST_FUNCTION(TQUEUE_POP_with_NULL_pop_cb_function_and_NULL_condition_function_s
     /* Tests_SRS_TQUEUE_01_029: [ TQUEUE_POP(T) shall obtain the current tail queue by calling interlocked_add_64. ]*/
     /* Tests_SRS_TQUEUE_01_030: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall set the tail array entry state to POPPING (from USED). ]*/
     /* Tests_SRS_TQUEUE_01_031: [ TQUEUE_POP(T) shall replace the tail value with the tail value obtained earlier + 1 by using interlocked_exchange_64. ]*/
-    /* Tests_SRS_TQUEUE_01_032: [ If a pop_cb_function was not specified in TQUEUE_CREATE(T): ]*/
+    /* Tests_SRS_TQUEUE_01_032: [ If a copy_item_function was not specified in TQUEUE_CREATE(T): ]*/
     /* Tests_SRS_TQUEUE_01_033: [ TQUEUE_POP(T) shall copy array entry value whose state was changed to POPPING to item. ]*/
     /* Tests_SRS_TQUEUE_01_034: [ TQUEUE_POP(T) shall set the state to NOT_USED by using interlocked_exchange, succeed and return TQUEUE_POP_OK. ]*/
-TEST_FUNCTION(TQUEUE_POP_twice_with_NULL_pop_cb_function_and_NULL_condition_function_succeeds)
+TEST_FUNCTION(TQUEUE_POP_twice_with_NULL_copy_item_function_and_NULL_condition_function_succeeds)
 {
     // arrange
     int32_t item_1 = 45;
     int32_t item_2 = 46;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
     test_queue_push(queue, 42);
     test_queue_push(queue, 43);
 
@@ -779,7 +736,7 @@ TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_returns_QUEUE_EMPTY)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
@@ -801,7 +758,7 @@ TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_and_queue_size_1_returns_QUEUE_EMPT
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1, NULL, NULL, NULL);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
@@ -822,7 +779,7 @@ TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_and_queue_size_1_returns_QUEUE_EMPT
 TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_after_a_push_and_a_pop_and_queue_size_1_returns_QUEUE_EMPTY)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1, NULL, NULL, NULL);
     test_queue_push(queue, 42);
     ASSERT_ARE_EQUAL(int32_t, 42, test_queue_pop(queue));
 
@@ -846,7 +803,7 @@ static void test_TQUEUE_POP_when_entry_state_is_different_than_USED_tries_again(
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -890,20 +847,22 @@ TEST_FUNCTION(TQUEUE_POP_when_entry_state_is_NOT_USED_tries_again)
     test_TQUEUE_POP_when_entry_state_is_different_than_USED_tries_again(QUEUE_ENTRY_STATE_NOT_USED);
 }
 
-/* Tests_SRS_TQUEUE_01_037: [ If a pop_cb_function was specified in TQUEUE_CREATE(T): ]*/
-/* Tests_SRS_TQUEUE_01_038: [ TQUEUE_POP(T) shall call pop_cb_function with pop_cb_function_context as context, the array entry value whose state was changed to POPPING to item as pop_src and item as pop_dst. ]*/
-TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_succeeds)
+/* Tests_SRS_TQUEUE_01_037: [ If copy_item_function and sispose_item_function were specified in TQUEUE_CREATE(T): ]*/
+/* Tests_SRS_TQUEUE_01_038: [ TQUEUE_POP(T) shall call copy_item_function with copy_item_function_context as context, the array entry value whose state was changed to POPPING to item as pop_src and item as pop_dst. ]*/
+/* Tests_SRS_TQUEUE_01_045: [ TQUEUE_POP(T) shall call dispose_item_function with dispose_item_function_context as context and the array entry value whose state was changed to POPPING as item. ]*/
+TEST_FUNCTION(TQUEUE_POP_with_copy_item_function_succeeds)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4243, &item, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, &item, IGNORED_ARG)); // copy
+    STRICT_EXPECTED_CALL(test_dispose_item((void*)0x4242, IGNORED_ARG)); // dispose
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     // act
@@ -918,14 +877,14 @@ TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_succeeds)
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_037: [ If a pop_cb_function was specified in TQUEUE_CREATE(T): ]*/
-/* Tests_SRS_TQUEUE_01_038: [ TQUEUE_POP(T) shall call pop_cb_function with pop_cb_function_context as context, the array entry value whose state was changed to POPPING to item as pop_src and item as pop_dst. ]*/
-TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_twice_succeeds)
+/* Tests_SRS_TQUEUE_01_037: [ If copy_item_function and sispose_item_function were specified in TQUEUE_CREATE(T): ]*/
+/* Tests_SRS_TQUEUE_01_038: [ TQUEUE_POP(T) shall call copy_item_function with copy_item_function_context as context, the array entry value whose state was changed to POPPING to item as pop_src and item as pop_dst. ]*/
+TEST_FUNCTION(TQUEUE_POP_with_copy_item_function_twice_succeeds)
 {
     // arrange
     int32_t item_1 = 45;
     int32_t item_2 = 46;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
     test_queue_push(queue, 43);
 
@@ -933,14 +892,16 @@ TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_twice_succeeds)
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4243, &item_1, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, &item_1, IGNORED_ARG)); // copy
+    STRICT_EXPECTED_CALL(test_dispose_item((void*)0x4242, IGNORED_ARG)); // dispose
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4244, &item_2, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4244, &item_2, IGNORED_ARG)); //copy
+    STRICT_EXPECTED_CALL(test_dispose_item((void*)0x4242, IGNORED_ARG)); // dispose
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     // act
@@ -961,11 +922,11 @@ TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_twice_succeeds)
 /* Tests_SRS_TQUEUE_01_039: [ If condition_function is not NULL: ]*/
 /* Tests_SRS_TQUEUE_01_040: [ TQUEUE_POP(T) shall call condition_function with condition_function_context and a pointer to the array entry value whose state was changed to POPPING. ] */ \
 /* Tests_SRS_TQUEUE_01_042: [ Otherwise, shall proceed with the pop. ]*/
-TEST_FUNCTION(TQUEUE_POP_with_NULL_pop_cb_function_and_non_NULL_condition_function_succeeds)
+TEST_FUNCTION(TQUEUE_POP_with_NULL_copy_item_function_and_non_NULL_condition_function_succeeds)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -988,11 +949,11 @@ TEST_FUNCTION(TQUEUE_POP_with_NULL_pop_cb_function_and_non_NULL_condition_functi
 }
 
 /* Tests_SRS_TQUEUE_01_041: [ If condition_function returns false, TQUEUE_POP(T) shall set the state to USED by using interlocked_exchange and return TQUEUE_POP_REJECTED. ]*/
-TEST_FUNCTION(TQUEUE_POP_with_NULL_pop_cb_function_and_non_NULL_condition_function_returning_false_does_not_pop)
+TEST_FUNCTION(TQUEUE_POP_with_NULL_copy_item_function_and_non_NULL_condition_function_returning_false_does_not_pop)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -1020,7 +981,7 @@ TEST_FUNCTION(TQUEUE_POP_after_a_POP_that_was_rejected_succeeds)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL, NULL);
+    TQUEUE(int32_t) queue = test_queue_create(1024, NULL, NULL, NULL);
     test_queue_push(queue, 42);
     test_queue_pop_rejected(queue);
 
@@ -1048,7 +1009,7 @@ TEST_FUNCTION(when_switching_the_tail_does_not_succeed_TQUEUE_POP_retries)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_copy_item, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -1063,7 +1024,8 @@ TEST_FUNCTION(when_switching_the_tail_does_not_succeed_TQUEUE_POP_retries)
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4243, &item, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, &item, IGNORED_ARG)); // copy
+    STRICT_EXPECTED_CALL(test_dispose_item((void*)0x4242, IGNORED_ARG)); // dispose
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     // act

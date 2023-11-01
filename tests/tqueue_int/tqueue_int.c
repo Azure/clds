@@ -67,7 +67,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_NULL_callbacks_succeds)
     // arrange
 
     // act
-    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL, NULL);
+    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL);
 
     // assert
     ASSERT_IS_NOT_NULL(queue);
@@ -79,7 +79,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_NULL_callbacks_succeds)
 TEST_FUNCTION(TQUEUE_PUSH_succeeds)
 {
     // arrange
-    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL, NULL);
+    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL);
     ASSERT_IS_NOT_NULL(queue);
     FOO foo_1 = { 42 };
 
@@ -96,7 +96,7 @@ TEST_FUNCTION(TQUEUE_PUSH_succeeds)
 TEST_FUNCTION(TQUEUE_POP_succeeds)
 {
     // arrange
-    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL, NULL);
+    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL);
     ASSERT_IS_NOT_NULL(queue);
     FOO foo_1 = { 42 };
     FOO foo_1_popped;
@@ -128,7 +128,7 @@ static bool pop_condition_function_43(void* context, FOO* foo)
 TEST_FUNCTION(TQUEUE_POP_IF_succeeds)
 {
     // arrange
-    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL, NULL);
+    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL);
     ASSERT_IS_NOT_NULL(queue);
     FOO foo_1 = { 42 };
     FOO foo_1_popped;
@@ -226,7 +226,7 @@ TEST_FUNCTION(TQUEUE_chaos_knight_test)
 {
     // arrange
     TQUEUE_CHAOS_TEST_CONTEXT test_context;
-    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL, NULL);
+    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL);
     ASSERT_IS_NOT_NULL(queue);
     TQUEUE_INITIALIZE_MOVE(FOO)(&test_context.queue, &queue);
 
@@ -350,7 +350,7 @@ TEST_FUNCTION(TQUEUE_test_with_1_pusher_and_1_popper)
 {
     // arrange
     ONE_PUSHER_ONE_POPPER_TEST_CONTEXT test_context;
-    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL, NULL);
+    TQUEUE(FOO) queue = TQUEUE_CREATE(FOO)(16, NULL, NULL, NULL);
     ASSERT_IS_NOT_NULL(queue);
     TQUEUE_INITIALIZE_MOVE(FOO)(&test_context.queue, &queue);
 
@@ -490,16 +490,10 @@ static int tqueue_chaos_thread_THANDLE_func(void* arg)
     return 0;
 }
 
-static void TEST_THANDLE_push(void* context, THANDLE(TEST_THANDLE)* push_dst, THANDLE(TEST_THANDLE)* push_src)
+static void TEST_THANDLE_copy_item(void* context, THANDLE(TEST_THANDLE)* dst, THANDLE(TEST_THANDLE)* src)
 {
     (void)context;
-    THANDLE_INITIALIZE(TEST_THANDLE)(push_dst, *push_src);
-}
-
-static void TEST_THANDLE_pop(void* context, THANDLE(TEST_THANDLE)* pop_dst, THANDLE(TEST_THANDLE)* pop_src)
-{
-    (void)context;
-    THANDLE_MOVE(TEST_THANDLE)(pop_dst, pop_src);
+    THANDLE_INITIALIZE(TEST_THANDLE)(dst, *src);
 }
 
 static void TEST_THANDLE_dispose(void* context, THANDLE(TEST_THANDLE)* item)
@@ -515,7 +509,7 @@ TEST_FUNCTION(TQUEUE_chaos_knight_test_with_THANDLE)
 {
     // arrange
     TQUEUE_CHAOS_TEST_THANDLE_CONTEXT test_context;
-    TQUEUE(THANDLE(TEST_THANDLE)) queue = TQUEUE_CREATE(THANDLE(TEST_THANDLE))(16, TEST_THANDLE_push, TEST_THANDLE_pop, TEST_THANDLE_dispose, NULL);
+    TQUEUE(THANDLE(TEST_THANDLE)) queue = TQUEUE_CREATE(THANDLE(TEST_THANDLE))(16, TEST_THANDLE_copy_item, TEST_THANDLE_dispose, NULL);
     ASSERT_IS_NOT_NULL(queue);
     TQUEUE_INITIALIZE_MOVE(THANDLE(TEST_THANDLE))(&test_context.queue, &queue);
 
