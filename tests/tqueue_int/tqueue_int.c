@@ -415,7 +415,7 @@ static bool TEST_THANDLE_should_pop(void* context, THANDLE(TEST_THANDLE)* item)
 {
     (void)context;
     (void)item;
-    int should_pop = (rand() * 2 / (RAND_MAX + 1));
+    int should_pop = ((uint32_t)rand() * 2 / ((uint32_t)RAND_MAX + 1));
     return (should_pop != 0);
 }
 
