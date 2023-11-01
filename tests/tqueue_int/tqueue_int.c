@@ -169,7 +169,7 @@ static int tqueue_chaos_thread_func(void* arg)
 
     while (interlocked_add(&terminate_test, 0) == 0)
     {
-        TQUEUE_ACTION_TYPE action_type = (TQUEUE_ACTION_TYPE)(rand() * ((MU_COUNT_ARG(TQUEUE_ACTION_TYPE_VALUES))) / (RAND_MAX + 1));
+        TQUEUE_ACTION_TYPE action_type = (TQUEUE_ACTION_TYPE)((uint32_t)rand() * ((MU_COUNT_ARG(TQUEUE_ACTION_TYPE_VALUES))) / ((uint32_t)RAND_MAX + 1));
 
         switch (action_type)
         {
@@ -346,7 +346,7 @@ static int popper_thread_func(void* arg)
 }
 
 // This test has one pusher and one popper and validates the fact that order is preserved in this case
-XTEST_FUNCTION(TQUEUE_test_with_1_pusher_and_1_popper)
+TEST_FUNCTION(TQUEUE_test_with_1_pusher_and_1_popper)
 {
     // arrange
     ONE_PUSHER_ONE_POPPER_TEST_CONTEXT test_context;
@@ -433,7 +433,7 @@ static int tqueue_chaos_thread_THANDLE_func(void* arg)
 
     while (interlocked_add(&terminate_test, 0) == 0)
     {
-        TQUEUE_ACTION_TYPE_THANDLE_TEST action_type = (TQUEUE_ACTION_TYPE_THANDLE_TEST)(rand() * ((MU_COUNT_ARG(TQUEUE_ACTION_TYPE_THANDLE_TEST_VALUES))) / (RAND_MAX + 1));
+        TQUEUE_ACTION_TYPE_THANDLE_TEST action_type = (TQUEUE_ACTION_TYPE_THANDLE_TEST)((uint32_t)rand() * ((MU_COUNT_ARG(TQUEUE_ACTION_TYPE_THANDLE_TEST_VALUES))) / ((uint32_t)RAND_MAX + 1));
 
         switch (action_type)
         {
