@@ -19,7 +19,7 @@ The module provides the following functionality:
 The module allows the user to specify 3 different callback functions:
 
 - A copy item callback (which is invoked by the queue as a result of a push call or a pop call, allowing the user to fill in the information in/from T rather than performing a memory copy).
-A typical use for a queue of a `THANDLE` would be to have a `THANDLE_ASSIGN` from the source to the destination parameters.
+A typical use for a queue of a `THANDLE` would be to have a `THANDLE_INITIALIZE`, initializing the `dst` with the `src`.
 
 - A dispose item function (which is invoked by the queue when the queue is disposed and there are still items in the queue).
 A typical use for a queue of a `THANDLE` would be to have a `THANDLE_ASSIGN` with `NULL` performed in the dispose function callback.
