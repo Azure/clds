@@ -113,13 +113,13 @@ TEST_FUNCTION(TQUEUE_POP_succeeds)
     TQUEUE_ASSIGN(FOO)(&queue, NULL);
 }
 
-static bool pop_condition_function_42(void* context, const FOO* foo)
+static bool pop_condition_function_42(void* context, FOO* foo)
 {
     (void)context;
     return (foo->x == 42) ? true : false;
 }
 
-static bool pop_condition_function_43(void* context, const FOO* foo)
+static bool pop_condition_function_43(void* context, FOO* foo)
 {
     (void)context;
     return (foo->x == 43) ? true : false;
