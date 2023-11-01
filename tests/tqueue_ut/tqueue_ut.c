@@ -46,21 +46,21 @@ TQUEUE_TYPE_DECLARE(int32_t);
 THANDLE_TYPE_DEFINE(TQUEUE_TYPEDEF_NAME(int32_t))
 TQUEUE_TYPE_DEFINE(int32_t);
 
-MOCK_FUNCTION_WITH_CODE(, void, test_push_cb, void*, context, int32_t*, push_dst, const int32_t*, push_src)
+MOCK_FUNCTION_WITH_CODE(, void, test_push_cb, void*, context, int32_t*, push_dst, int32_t*, push_src)
     *push_dst = *push_src;
 MOCK_FUNCTION_END();
 
-MOCK_FUNCTION_WITH_CODE(, void, test_pop_cb, void*, context, int32_t*, pop_dst, const int32_t*, pop_src)
+MOCK_FUNCTION_WITH_CODE(, void, test_pop_cb, void*, context, int32_t*, pop_dst, int32_t*, pop_src)
     *pop_dst = *pop_src;
 MOCK_FUNCTION_END();
 
-MOCK_FUNCTION_WITH_CODE(, void, test_dispose_item, void*, context, const int32_t*, item)
+MOCK_FUNCTION_WITH_CODE(, void, test_dispose_item, void*, context, int32_t*, item)
 MOCK_FUNCTION_END();
 
-MOCK_FUNCTION_WITH_CODE(, bool, test_condition_function_true, void*, context, const int32_t*, item)
+MOCK_FUNCTION_WITH_CODE(, bool, test_condition_function_true, void*, context, int32_t*, item)
 MOCK_FUNCTION_END(true);
 
-MOCK_FUNCTION_WITH_CODE(, bool, test_condition_function_false, void*, context, const int32_t*, item)
+MOCK_FUNCTION_WITH_CODE(, bool, test_condition_function_false, void*, context, int32_t*, item)
 MOCK_FUNCTION_END(false);
 
 static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
