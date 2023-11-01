@@ -18,7 +18,7 @@
 #include "clds/tcall_dispatcher.h"
 #include "tcall_dispatcher_foo.h"
 
-// TCALL_DISPATCHER_(FOO) is used for most int tests
+// TCALL_DISPATCHER(FOO) is used for most int tests
 // It is declared and defined in its own .h/.c files in order to emulate usage in the wilderness
 
 static void test_target(void* context, int32_t x)
