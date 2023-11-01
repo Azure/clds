@@ -46,11 +46,11 @@ TQUEUE_TYPE_DECLARE(int32_t);
 THANDLE_TYPE_DEFINE(TQUEUE_TYPEDEF_NAME(int32_t))
 TQUEUE_TYPE_DEFINE(int32_t);
 
-MOCK_FUNCTION_WITH_CODE(, void, test_push_cb_1, void*, context, int32_t*, push_dst, const int32_t*, push_src)
+MOCK_FUNCTION_WITH_CODE(, void, test_push_cb, void*, context, int32_t*, push_dst, const int32_t*, push_src)
     *push_dst = *push_src;
 MOCK_FUNCTION_END();
 
-MOCK_FUNCTION_WITH_CODE(, void, test_pop_cb_1, void*, context, int32_t*, pop_dst, const int32_t*, pop_src)
+MOCK_FUNCTION_WITH_CODE(, void, test_pop_cb, void*, context, int32_t*, pop_dst, const int32_t*, pop_src)
     *pop_dst = *pop_src;
 MOCK_FUNCTION_END();
 
@@ -112,7 +112,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_0_queue_size_fails)
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(0, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(0, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
@@ -125,7 +125,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_only_push_cb_being_NULL_fails)
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
@@ -138,7 +138,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_only_pop_cb_being_NULL_fails)
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb_1, NULL, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, NULL, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
@@ -151,7 +151,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_only_dispose_item_being_NULL_fails)
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb_1, test_pop_cb_1, NULL, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, test_pop_cb, NULL, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
@@ -177,7 +177,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_push_cb_and_dispose_item_NULL_fails)
     // arrange
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_pop_cb_1, NULL, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, test_pop_cb, NULL, (void*)0x4242);
 
     // assert
     ASSERT_IS_NULL(queue);
@@ -201,7 +201,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_all_functions_non_NULL_succeeds)
     }
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     // assert
     ASSERT_IS_NOT_NULL(queue);
@@ -265,7 +265,7 @@ TEST_FUNCTION(when_underlying_calls_fail_TQUEUE_CREATE_also_fails)
             umock_c_negative_tests_fail_call(i);
 
             // act
-            TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+            TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
             // assert
             ASSERT_IS_NULL(queue, "test failed for call %" PRIu32 "", i);
@@ -315,7 +315,7 @@ TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_NULL_dispose_item_returns)
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_empty_queue_does_not_call_dispose_item)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_decrement(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -364,7 +364,7 @@ static int32_t test_queue_pop_rejected(TQUEUE(int32_t) queue)
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_1_item_calls_dispose_item_once)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_decrement(IGNORED_ARG));
@@ -386,7 +386,7 @@ TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_1_item_calls_d
 TEST_FUNCTION(TQUEUE_DISPOSE_FUNC_with_non_NULL_dispose_item_with_2_items_calls_dispose_item_2_times)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
     test_queue_push(queue, 42);
 
@@ -424,7 +424,7 @@ TEST_FUNCTION(TQUEUE_PUSH_with_NULL_queue_fails)
 TEST_FUNCTION(TQUEUE_PUSH_with_NULL_item_fails)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     // act
     TQUEUE_PUSH_RESULT result = TQUEUE_PUSH(int32_t)(queue, NULL, (void*)0x4243);
@@ -609,13 +609,13 @@ TEST_FUNCTION(TQUEUE_PUSH_with_push_cb_function_calls_the_cb_function)
 {
     // arrange
     int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(test_push_cb_1((void*)0x4243, IGNORED_ARG, &item)); // entry state
+    STRICT_EXPECTED_CALL(test_push_cb((void*)0x4243, IGNORED_ARG, &item)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -635,20 +635,20 @@ TEST_FUNCTION(TQUEUE_PUSH_with_push_cb_function_calls_the_cb_function_2_items)
     // arrange
     int32_t item_1 = 42;
     int32_t item_2 = 43;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(test_push_cb_1((void*)0x4243, IGNORED_ARG, &item_1)); // entry state
+    STRICT_EXPECTED_CALL(test_push_cb((void*)0x4243, IGNORED_ARG, &item_1)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(test_push_cb_1((void*)0x4244, IGNORED_ARG, &item_2)); // entry state
+    STRICT_EXPECTED_CALL(test_push_cb((void*)0x4244, IGNORED_ARG, &item_2)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -684,7 +684,7 @@ TEST_FUNCTION(TQUEUE_POP_with_NULL_tqueue_fails)
 TEST_FUNCTION(TQUEUE_POP_with_NULL_item_fails)
 {
     // arrange
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
 
     // act
     TQUEUE_POP_RESULT result = TQUEUE_POP(int32_t)(queue, NULL, (void*)0x4243, test_condition_function_true, (void*)0x4244);
@@ -896,14 +896,14 @@ TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_succeeds)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb_1((void*)0x4243, &item, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4243, &item, IGNORED_ARG)); // tail
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     // act
@@ -925,7 +925,7 @@ TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_twice_succeeds)
     // arrange
     int32_t item_1 = 45;
     int32_t item_2 = 46;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
     test_queue_push(queue, 43);
 
@@ -933,14 +933,14 @@ TEST_FUNCTION(TQUEUE_POP_with_pop_cb_function_twice_succeeds)
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb_1((void*)0x4243, &item_1, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4243, &item_1, IGNORED_ARG)); // tail
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb_1((void*)0x4244, &item_2, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4244, &item_2, IGNORED_ARG)); // tail
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     // act
@@ -1048,7 +1048,7 @@ TEST_FUNCTION(when_switching_the_tail_does_not_succeed_TQUEUE_POP_retries)
 {
     // arrange
     int32_t item = 45;
-    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb_1, test_pop_cb_1, test_dispose_item, (void*)0x4242);
+    TQUEUE(int32_t) queue = test_queue_create(1024, test_push_cb, test_pop_cb, test_dispose_item, (void*)0x4242);
     test_queue_push(queue, 42);
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
@@ -1063,7 +1063,7 @@ TEST_FUNCTION(when_switching_the_tail_does_not_succeed_TQUEUE_POP_retries)
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED)); // entry_state
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // tail
-    STRICT_EXPECTED_CALL(test_pop_cb_1((void*)0x4243, &item, IGNORED_ARG)); // tail
+    STRICT_EXPECTED_CALL(test_pop_cb((void*)0x4243, &item, IGNORED_ARG)); // tail
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // entry_state
 
     // act

@@ -411,13 +411,29 @@ typedef struct TQUEUE_CHAOS_TEST_THANDLE_CONTEXT_TAG
     volatile_atomic int64_t succesful_pop_count;
 } TQUEUE_CHAOS_TEST_THANDLE_CONTEXT;
 
+static bool TEST_THANDLE_should_pop(void* context, THANDLE(TEST_THANDLE)* item)
+{
+    (void)context;
+    (void)item;
+    int should_pop = (rand() * 2 / (RAND_MAX + 1));
+    return (should_pop != 0);
+}
+
+#define TQUEUE_ACTION_TYPE_THANDLE_TEST_VALUES \
+    TQUEUE_ACTION_TYPE_THANDLE_TEST_PUSH, \
+    TQUEUE_ACTION_TYPE_THANDLE_TEST_POP, \
+    TQUEUE_ACTION_TYPE_THANDLE_TEST_POP_WITH_CONDITION_FUNCTION
+
+MU_DEFINE_ENUM_WITHOUT_INVALID(TQUEUE_ACTION_TYPE_THANDLE_TEST, TQUEUE_ACTION_TYPE_THANDLE_TEST_VALUES);
+MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(TQUEUE_ACTION_TYPE_THANDLE_TEST, TQUEUE_ACTION_TYPE_THANDLE_TEST_VALUES);
+
 static int tqueue_chaos_thread_THANDLE_func(void* arg)
 {
     TQUEUE_CHAOS_TEST_THANDLE_CONTEXT* test_context = arg;
 
     while (interlocked_add(&terminate_test, 0) == 0)
     {
-        TQUEUE_ACTION_TYPE action_type = (TQUEUE_ACTION_TYPE)(rand() * ((MU_COUNT_ARG(TQUEUE_ACTION_TYPE_VALUES))) / (RAND_MAX + 1));
+        TQUEUE_ACTION_TYPE_THANDLE_TEST action_type = (TQUEUE_ACTION_TYPE_THANDLE_TEST)(rand() * ((MU_COUNT_ARG(TQUEUE_ACTION_TYPE_THANDLE_TEST_VALUES))) / (RAND_MAX + 1));
 
         switch (action_type)
         {
@@ -425,7 +441,7 @@ static int tqueue_chaos_thread_THANDLE_func(void* arg)
             ASSERT_FAIL("Unexpected action type %" PRI_MU_ENUM "", MU_ENUM_VALUE(TQUEUE_ACTION_TYPE, action_type));
             break;
 
-        case TQUEUE_ACTION_TYPE_PUSH:
+        case TQUEUE_ACTION_TYPE_THANDLE_TEST_PUSH:
         {
             int64_t next_push_number = interlocked_increment_64(&test_context->next_push_number);
             TEST_THANDLE test_thandle = { .a_value = next_push_number };
@@ -439,11 +455,23 @@ static int tqueue_chaos_thread_THANDLE_func(void* arg)
             THANDLE_ASSIGN(TEST_THANDLE)(&item, NULL);
             break;
         }
-        case TQUEUE_ACTION_TYPE_POP:
+        case TQUEUE_ACTION_TYPE_THANDLE_TEST_POP:
         {
             THANDLE(TEST_THANDLE) item = NULL;
             TQUEUE_POP_RESULT pop_result = TQUEUE_POP(THANDLE(TEST_THANDLE))(test_context->queue, &item, NULL, NULL, NULL);
             ASSERT_IS_TRUE((pop_result == TQUEUE_POP_OK) || (pop_result == TQUEUE_POP_QUEUE_EMPTY), "TQUEUE_POP(THANDLE(TEST_THANDLE)) failed with %" PRI_MU_ENUM "", MU_ENUM_VALUE(TQUEUE_POP_RESULT, pop_result));
+            if (pop_result == TQUEUE_POP_OK)
+            {
+                (void)interlocked_increment_64(&test_context->succesful_pop_count);
+                THANDLE_ASSIGN(TEST_THANDLE)(&item, NULL);
+            }
+            break;
+        }
+        case TQUEUE_ACTION_TYPE_THANDLE_TEST_POP_WITH_CONDITION_FUNCTION:
+        {
+            THANDLE(TEST_THANDLE) item = NULL;
+            TQUEUE_POP_RESULT pop_result = TQUEUE_POP(THANDLE(TEST_THANDLE))(test_context->queue, &item, NULL, TEST_THANDLE_should_pop, NULL);
+            ASSERT_IS_TRUE((pop_result == TQUEUE_POP_OK) || (pop_result == TQUEUE_POP_QUEUE_EMPTY) || (pop_result == TQUEUE_POP_REJECTED), "TQUEUE_POP(THANDLE(TEST_THANDLE)) failed with %" PRI_MU_ENUM "", MU_ENUM_VALUE(TQUEUE_POP_RESULT, pop_result));
             if (pop_result == TQUEUE_POP_OK)
             {
                 (void)interlocked_increment_64(&test_context->succesful_pop_count);
@@ -482,6 +510,7 @@ static void TEST_THANDLE_dispose(void* context, THANDLE(TEST_THANDLE)* item)
 
 // This test is rather chaotic and has a number of threads performing random actions on the queue
 // But on top it is exercising a queue of THANDLE elements!
+// It also uses a condition function for popping which randomly rejects pops
 TEST_FUNCTION(TQUEUE_chaos_knight_test_with_THANDLE)
 {
     // arrange
