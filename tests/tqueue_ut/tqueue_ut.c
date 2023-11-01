@@ -11,7 +11,6 @@
 #include "umock_c/umock_c.h"
 #include "umock_c/umock_c_negative_tests.h"
 #include "umock_c/umocktypes_bool.h"
-#include "umock_c/umocktypes_charptr.h"
 #include "umock_c/umocktypes_stdint.h"
 
 #define ENABLE_MOCKS
@@ -72,7 +71,6 @@ TEST_SUITE_INITIALIZE(suite_init)
 
     ASSERT_ARE_EQUAL(int, 0, umock_c_init(on_umock_c_error));
     ASSERT_ARE_EQUAL(int, 0, umocktypes_bool_register_types(), "umocktypes_bool_register_types failed");
-    ASSERT_ARE_EQUAL(int, 0, umocktypes_charptr_register_types(), "umocktypes_charptr_register_types failed");
     ASSERT_ARE_EQUAL(int, 0, umocktypes_stdint_register_types(), "umocktypes_stdint_register_types failed");
 
     REGISTER_GBALLOC_HL_GLOBAL_MOCK_HOOK();
@@ -185,7 +183,7 @@ TEST_FUNCTION(TQUEUE_CREATE_with_all_functions_NULL_succeeds)
     }
 
     // act
-    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, NULL, (void*)0x4242);
+    TQUEUE(int32_t) queue = TQUEUE_CREATE(int32_t)(1024, NULL, NULL, NULL);
 
     // assert
     ASSERT_IS_NOT_NULL(queue);
@@ -731,7 +729,7 @@ TEST_FUNCTION(TQUEUE_POP_twice_with_NULL_copy_item_function_and_NULL_condition_f
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_035: [ If the queue is empty (current tail == current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/
+/* Tests_SRS_TQUEUE_01_035: [ If the queue is empty (current tail >= current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/
 TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_returns_QUEUE_EMPTY)
 {
     // arrange
@@ -753,7 +751,7 @@ TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_returns_QUEUE_EMPTY)
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_035: [ If the queue is empty (current tail == current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/
+/* Tests_SRS_TQUEUE_01_035: [ If the queue is empty (current tail >= current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/
 TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_and_queue_size_1_returns_QUEUE_EMPTY)
 {
     // arrange
@@ -775,7 +773,7 @@ TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_and_queue_size_1_returns_QUEUE_EMPT
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_035: [ If the queue is empty (current tail == current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/
+/* Tests_SRS_TQUEUE_01_035: [ If the queue is empty (current tail >= current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/
 TEST_FUNCTION(TQUEUE_POP_when_queue_is_empty_after_a_push_and_a_pop_and_queue_size_1_returns_QUEUE_EMPTY)
 {
     // arrange

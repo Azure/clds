@@ -197,7 +197,7 @@ void TQUEUE_DISPOSE_FUNC(T)(TQUEUE(T) tqueue);
 TQUEUE_PUSH_RESULT TQUEUE_PUSH(T)(TQUEUE(T) tqueue, T* item, void* copy_item_function_context)
 ```
 
-`TQUEUE_PUSH(T)` pushes an item in the queue.
+`TQUEUE_PUSH(T)` pushes an item in the queue at the head.
 
 **SRS_TQUEUE_01_012: [** If `tqueue` is `NULL` then `TQUEUE_PUSH(T)` shall fail and return `TQUEUE_PUSH_INVALID_ARG`. **]**
 
@@ -232,7 +232,7 @@ TQUEUE_PUSH_RESULT TQUEUE_PUSH(T)(TQUEUE(T) tqueue, T* item, void* copy_item_fun
 TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item, void* pop_function_context, TQUEUE_CONDITION_FUNC(T), condition_function, void*, condition_function_context);
 ```
 
-`TQUEUE_POP(T)` pops an item from the queue if available.
+`TQUEUE_POP(T)` pops an item from the queue (from the tail) if available.
 
 **SRS_TQUEUE_01_025: [** If `tqueue` is `NULL` then `TQUEUE_POP(T)` shall fail and return `TQUEUE_POP_INVALID_ARG`. **]**
 
@@ -244,7 +244,7 @@ TQUEUE_POP_RESULT TQUEUE_POP(T)(TQUEUE(T) tqueue, T* item, void* pop_function_co
 
 - **SRS_TQUEUE_01_029: [** `TQUEUE_POP(T)` shall obtain the current tail queue by calling `interlocked_add_64`. **]**
 
-- **SRS_TQUEUE_01_035: [** If the queue is empty (current tail == current head), `TQUEUE_POP(T)` shall return `TQUEUE_POP_QUEUE_EMPTY`. **]**
+- **SRS_TQUEUE_01_035: [** If the queue is empty (current tail >= current head), `TQUEUE_POP(T)` shall return `TQUEUE_POP_QUEUE_EMPTY`. **]**
 
 - **SRS_TQUEUE_01_030: [** Using `interlocked_compare_exchange`, `TQUEUE_PUSH(T)` shall set the tail array entry state to `POPPING` (from `USED`). **]**
 

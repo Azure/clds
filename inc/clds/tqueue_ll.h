@@ -5,7 +5,6 @@
 #define TQUEUE_LL_H
 
 #ifdef __cplusplus
-#include <cstdbool>
 #include <cinttypes>
 #else // __cplusplus
 #include <stdbool.h>
@@ -67,7 +66,11 @@ typedef void (*TQUEUE_DEFINE_DISPOSE_ITEM_FUNCTION_TYPE_NAME(T))(void* context, 
 typedef bool (*TQUEUE_DEFINE_CONDITION_FUNCTION_TYPE_NAME(T))(void* context, T* item);                          \
 typedef struct TQUEUE_ENTRY_STRUCT_TYPE_NAME_TAG(T)                                                             \
 {                                                                                                               \
-    volatile_atomic int32_t state;                                                                              \
+    union                                                                                                       \
+    {                                                                                                           \
+        volatile_atomic int32_t state;                                                                          \
+        volatile_atomic QUEUE_ENTRY_STATE state_as_enum;                                                        \
+    };                                                                                                          \
     T value;                                                                                                    \
 } TQUEUE_ENTRY_STRUCT_TYPE_NAME(T);                                                                             \
 typedef struct TQUEUE_STRUCT_TYPE_NAME_TAG(T)                                                                   \
@@ -243,7 +246,7 @@ TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_it
                     do                                                                                                                                              \
                     {                                                                                                                                               \
                         /* Codes_SRS_TQUEUE_01_017: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall change the head array entry state to PUSHING (from NOT_USED). ]*/ \
-                        if (interlocked_compare_exchange((volatile_atomic int32_t*) & tqueue->queue[index].state, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED) != QUEUE_ENTRY_STATE_NOT_USED) \
+                        if (interlocked_compare_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED) != QUEUE_ENTRY_STATE_NOT_USED) \
                         {                                                                                                                                           \
                             /* changed */                                                                                                                           \
                             /* Codes_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall try changing the state again. ]*/ \
@@ -257,7 +260,7 @@ TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_it
                     if (tqueue->copy_item_function == NULL)                                                                                                         \
                     {                                                                                                                                               \
                         /* Codes_SRS_TQUEUE_01_019: [ If no copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/ \
-                        (void)memcpy((void*)(T*)&tqueue->queue[index].value, (void*)item, sizeof(T));                                                               \
+                        (void)memcpy((void*)&tqueue->queue[index].value, (void*)item, sizeof(T));                                                               \
                     }                                                                                                                                               \
                     else                                                                                                                                            \
                     {                                                                                                                                               \
@@ -303,7 +306,7 @@ TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_item
             int64_t current_tail = interlocked_add_64((volatile_atomic int64_t*)&tqueue->tail, 0);                                                                  \
             if (current_tail >= current_head)                                                                                                                       \
             {                                                                                                                                                       \
-                /* Codes_SRS_TQUEUE_01_035: [ If the queue is empty (current tail == current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/          \
+                /* Codes_SRS_TQUEUE_01_035: [ If the queue is empty (current tail >= current head), TQUEUE_POP(T) shall return TQUEUE_POP_QUEUE_EMPTY. ]*/          \
                 result = TQUEUE_POP_QUEUE_EMPTY;                                                                                                                    \
                 break;                                                                                                                                              \
             }                                                                                                                                                       \
@@ -352,7 +355,7 @@ TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_item
                             {                                                                                                                                       \
                                 /* Codes_SRS_TQUEUE_01_032: [ If a copy_item_function was not specified in TQUEUE_CREATE(T): ]*/                                    \
                                 /* Codes_SRS_TQUEUE_01_033: [ TQUEUE_POP(T) shall copy array entry value whose state was changed to POPPING to item. ]*/            \
-                                (void)memcpy((void*)item, (void*)(T*)&tqueue->queue[index].value, sizeof(T));                                                       \
+                                (void)memcpy((void*)item, (void*)&tqueue->queue[index].value, sizeof(T));                                                       \
                             }                                                                                                                                       \
                             else                                                                                                                                    \
                             {                                                                                                                                       \
