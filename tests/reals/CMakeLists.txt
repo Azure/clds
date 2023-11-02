@@ -9,6 +9,7 @@ set(clds_reals_c_files
     real_clds_st_hash_set.c
     real_lock_free_set.c
     real_mpsc_lock_free_queue.c
+    real_inactive_hp_thread_queue.c
 )
 
 if (WIN32)
@@ -35,6 +36,8 @@ set(clds_reals_h_files
     real_lock_free_set_renames.h
     real_mpsc_lock_free_queue.h
     real_mpsc_lock_free_queue_renames.h
+    real_inactive_hp_thread_queue.h
+    real_inactive_hp_thread_queue_renames.h
 )
 
 if (WIN32)
