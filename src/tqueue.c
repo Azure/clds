@@ -7,7 +7,7 @@
 
 #include "c_logging/logger.h"
 
-#include "c_pal/gballoc_hl.h"
-#include "c_pal/gballoc_hl_redirect.h"
-
 #include "clds/tqueue.h"
+
+MU_DEFINE_ENUM_STRINGS(TQUEUE_PUSH_RESULT, TQUEUE_PUSH_RESULT_VALUES);
+MU_DEFINE_ENUM_STRINGS(TQUEUE_POP_RESULT, TQUEUE_POP_RESULT_VALUES);
