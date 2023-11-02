@@ -161,6 +161,7 @@ set(clds_h_files
     ./inc/clds/tcall_dispatcher_ll.h
     ./inc/clds/tqueue.h
     ./inc/clds/tqueue_ll.h
+    ./inc/clds/inactive_hp_thread_queue.h
 )
 
 if (WIN32)
@@ -182,6 +183,7 @@ set(clds_c_files
     ./src/mpsc_lock_free_queue.c
     ./src/tcall_dispatcher.c
     ./src/tqueue.c
+    ./src/inactive_hp_thread_queue.c
 )
 
 if (WIN32)
