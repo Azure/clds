@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include <stdbool.h>
 #include <inttypes.h>
 #include <stdlib.h>
 
@@ -217,10 +216,11 @@ static void set_lru_put_insert_expectations(void* key, CLDS_HASH_TABLE_ITEM** ha
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(hash_table_item);
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_insert(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
@@ -560,7 +560,7 @@ TEST_FUNCTION(lru_cache_put_with_null_value_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_026: [ If size is 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_026: [ If size is less than or equals to 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 TEST_FUNCTION(lru_cache_put_with_0_size_fails)
 {
     // arrange
@@ -726,15 +726,62 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     lru_cache_destroy(lru_cache);
 }
 
+/*Tests_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
+/*Tests_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
+/*Tests_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+TEST_FUNCTION(lru_cache_put_overflows_fails)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = INT64_MAX - 10;
+    uint32_t bucket_size = 1024;
+    int64_t key = 10, key2 = 11, value = 1000, size = INT64_MAX / 2;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    set_lru_put_insert_expectations(&key, &hash_table_item, size);
+    set_lru_put_nothing_to_evict_expectations();
+
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    umock_c_reset_all_calls();
+    setup_ignore_hazard_pointers_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key2));
+    STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+
+    // act
+    result = lru_cache_put(lru_cache, &key2, &value, size + 100, test_eviction_callback, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_INVALID_SIZE, result);
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
 /*Tests_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
 /*Tests_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
 /*Tests_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node which is Flink of head node. ]*/
 /*Tests_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
-/*Tests_SRS_LRU_CACHE_13_073: [ lru_cache_put shall acquire the lock in exclusive. ]*/
 /*Tests_SRS_LRU_CACHE_13_041: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
-/*Tests_SRS_LRU_CACHE_13_074: [ lru_cache_put shall release the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
 TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
@@ -786,9 +833,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
 /*Tests_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
-/*Tests_SRS_LRU_CACHE_13_073: [ lru_cache_put shall acquire the lock in exclusive. ]*/
 /*Tests_SRS_LRU_CACHE_13_041: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
-/*Tests_SRS_LRU_CACHE_13_074: [ lru_cache_put shall release the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
 TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
@@ -894,7 +939,6 @@ TEST_FUNCTION(lru_cache_put_set_value_does_not_call_remove_list_on_evicted_state
 
     set_lru_put_nothing_to_evict_expectations();
 
-
     // act
     result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
 
@@ -982,10 +1026,11 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&hash_table_item);
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_insert(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_INSERT_ERROR);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));

@@ -37,7 +37,7 @@ typedef struct LRU_CACHE_TAG
     CLDS_HASH_TABLE_HANDLE table;
 
     volatile_atomic int64_t current_size;
-    uint64_t capacity;
+    int64_t capacity;
 
     DLIST_ENTRY head;
 
@@ -54,7 +54,7 @@ typedef struct LRU_NODE_TAG
 } LRU_NODE;
 DECLARE_HASH_TABLE_NODE_TYPE(LRU_NODE);
 
-LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, uint32_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, uint64_t capacity)
+LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FUNC key_compare_func, uint32_t initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, int64_t capacity)
 {
     LRU_CACHE_HANDLE result;
 
@@ -70,7 +70,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         /*Codes_SRS_LRU_CACHE_13_010: [ If capacity is 0, then lru_cache_create shall fail and return NULL. ]*/
         (capacity == 0))
     {
-        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, uint32_t initial_bucket_size=%u, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t capacity=%" PRIu64 "",
+        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, uint32_t initial_bucket_size=%u, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t capacity=%" PRId64 "",
             compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, capacity);
         result = NULL;
     }
@@ -157,34 +157,45 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
 static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread, void* key, void* value, int64_t size)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;
-    /*Codes_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
-    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
-    LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
-    new_node->key = key;
-    new_node->size = size;
-    new_node->value = value;
-    (void)interlocked_exchange(&new_node->state, LRU_NODE_STATE_READY);
 
     /*Codes_SRS_LRU_CACHE_13_046: [ lru_cache_put shall acquire the lock in exclusive mode. ]*/
     srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
 
-    /*Codes_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
-    CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, NULL);
-
-    if (hash_table_insert != CLDS_HASH_TABLE_INSERT_OK)
+    int64_t current_size = interlocked_add_64(&lru_cache->current_size, 0);
+    if (INT64_MAX - size < current_size)
     {
         /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-        LogError("Key=%p with size=%" PRIu64 " cannot insert into hash table.", key, size);
-        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
-        result = LRU_CACHE_PUT_ERROR;
+        LogError("Invalid sizes: Key=%p, size=%" PRId64 ", current_size = %" PRId64 ". Failing the call due to integer overflow", key, size, current_size);
+        result = LRU_CACHE_PUT_VALUE_INVALID_SIZE;
     }
     else
     {
-        /*Codes_SRS_LRU_CACHE_13_047: [ lru_cache_put shall append the node to the tail ]*/
-        DList_InsertTailList(&(lru_cache->head), &(new_node->node));
+        /*Codes_SRS_LRU_CACHE_13_044: [ lru_cache_put shall create LRU Node item to be inserted in the hash table. ]*/
+        CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
+        LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
+        new_node->key = key;
+        new_node->size = size;
+        new_node->value = value;
+        (void)interlocked_exchange(&new_node->state, LRU_NODE_STATE_READY);
 
-        /*Codes_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
-        (void)interlocked_add_64(&lru_cache->current_size, size);
+        /*Codes_SRS_LRU_CACHE_13_045: [ lru_cache_put shall insert the LRU Node item in the hash table by calling clds_hash_table_insert. ]*/
+        CLDS_HASH_TABLE_INSERT_RESULT hash_table_insert = clds_hash_table_insert(lru_cache->table, hazard_pointers_thread, key, item, NULL);
+
+        if (hash_table_insert != CLDS_HASH_TABLE_INSERT_OK)
+        {
+            /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+            LogError("Key=%p with size=%" PRId64 " cannot insert into hash table.", key, size);
+            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
+            result = LRU_CACHE_PUT_ERROR;
+        }
+        else
+        {
+            /*Codes_SRS_LRU_CACHE_13_047: [ lru_cache_put shall append the node to the tail ]*/
+            DList_InsertTailList(&(lru_cache->head), &(new_node->node));
+
+            /*Codes_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
+            (void)interlocked_add_64(&lru_cache->current_size, size);
+        }
     }
     /*Codes_SRS_LRU_CACHE_13_048: [ lru_cache_put shall release the lock in exclusive mode. ]*/
     srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
@@ -202,7 +213,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
         srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
 
         int64_t current_size = interlocked_add_64(&lru_cache->current_size, 0);
-        if (result != LRU_CACHE_EVICT_OK || (uint64_t)current_size <= lru_cache->capacity)
+        if (result != LRU_CACHE_EVICT_OK || current_size <= lru_cache->capacity)
         {
             srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
             break;
@@ -225,59 +236,71 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
             DLIST_ENTRY* least_used_node = lru_cache->head.Flink;
             LRU_NODE* least_used_node_value = CONTAINING_RECORD(least_used_node, LRU_NODE, node);
 
-            /*Codes_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
-            if (interlocked_compare_exchange_64(&lru_cache->current_size, current_size - least_used_node_value->size, current_size) != current_size)
+            if (current_size - least_used_node_value->size < 0)
             {
-                // something changed
+                /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+                LogError("current_size is less 0. Failing eviction.");
                 srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
-                continue;
+                evict_callback(context, LRU_CACHE_EVICT_ERROR, NULL);
+                result = LRU_CACHE_EVICT_ERROR;
+                break;
             }
             else
             {
-                CLDS_HASH_TABLE_ITEM* entry;
-                /*Codes_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
-                CLDS_HASH_TABLE_REMOVE_RESULT remove_result = clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, least_used_node_value->key, &entry, NULL);
-
-                switch (remove_result)
+                /*Codes_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
+                if (interlocked_compare_exchange_64(&lru_cache->current_size, current_size - least_used_node_value->size, current_size) != current_size)
                 {
-                    case CLDS_HASH_TABLE_REMOVE_OK:
+                    // something changed
+                    srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
+                    continue;
+                }
+                else
+                {
+                    CLDS_HASH_TABLE_ITEM* entry;
+                    /*Codes_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
+                    CLDS_HASH_TABLE_REMOVE_RESULT remove_result = clds_hash_table_remove(lru_cache->table, hazard_pointers_thread, least_used_node_value->key, &entry, NULL);
+
+                    switch (remove_result)
                     {
-                        
-                        int32_t state = interlocked_add(&least_used_node_value->state, 0);
-                        if (state != LRU_NODE_STATE_READY)
+                        case CLDS_HASH_TABLE_REMOVE_OK:
                         {
-                            LogWarning("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
+
+                            int32_t state = interlocked_add(&least_used_node_value->state, 0);
+                            if (state != LRU_NODE_STATE_READY)
+                            {
+                                LogWarning("invalid state(%" PRI_MU_ENUM ") for lru node. Node has already been evicted.", MU_ENUM_VALUE(LRU_NODE_STATE, state));
+                            }
+                            else
+                            {
+                                /*Codes_SRS_LRU_CACHE_13_041: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
+                                (void)DList_RemoveEntryList(least_used_node);
+                                LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to evict the lru node.", least_used_node_value->key, least_used_node_value->size);
+                                (void)interlocked_exchange(&least_used_node_value->state, LRU_NODE_STATE_EVICTED);
+                            }
+
+                            /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
+                            evict_callback(context, LRU_CACHE_EVICT_OK, least_used_node_value->value);
+
+                            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
+                            break;
                         }
-                        else
+
+                        case CLDS_HASH_TABLE_REMOVE_NOT_FOUND:
                         {
-                            /*Codes_SRS_LRU_CACHE_13_041: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
-                            (void)DList_RemoveEntryList(least_used_node);
-                            LogVerbose("Removed DList entry with key=%p and size=%" PRIu64 " in order to evict the lru node.", least_used_node_value->key, least_used_node_value->size);
-                            (void)interlocked_exchange(&least_used_node_value->state, LRU_NODE_STATE_EVICTED);
+                            /*Codes_SRS_LRU_CACHE_13_078: [ If clds_hash_table_remove returns CLDS_HASH_TABLE_REMOVE_NOT_FOUND, then lru_cache_put shall retry eviction. ]*/
+                            LogError("item with key =%p has already been evicted.", least_used_node_value->key);
+                            (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
+                            break;
                         }
-
-                        /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
-                        evict_callback(context, LRU_CACHE_EVICT_OK, least_used_node_value->value);
-
-                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
-                        break;
-                    }
-
-                    case CLDS_HASH_TABLE_REMOVE_NOT_FOUND:
-                    {
-                        /*Codes_SRS_LRU_CACHE_13_078: [ If clds_hash_table_remove returns CLDS_HASH_TABLE_REMOVE_NOT_FOUND, then lru_cache_put shall retry eviction. ]*/
-                        LogError("item with key =%p has already been evicted.", least_used_node_value->key);
-                        (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
-                        break;
-                    }
-                    case CLDS_HASH_TABLE_REMOVE_ERROR:
-                    {
-                        /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-                        LogError("Error removing item from hash table");
-                        result = LRU_CACHE_EVICT_ERROR;
-                        evict_callback(context, LRU_CACHE_EVICT_ERROR, NULL);
-                        (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
-                        break;
+                        case CLDS_HASH_TABLE_REMOVE_ERROR:
+                        {
+                            /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+                            LogError("Error removing item with key =%p from hash table", least_used_node_value->key);
+                            result = LRU_CACHE_EVICT_ERROR;
+                            evict_callback(context, LRU_CACHE_EVICT_ERROR, NULL);
+                            (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
+                            break;
+                        }
                     }
                 }
             }
@@ -289,7 +312,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
     return result;
 }
 
-LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, uint64_t size, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
+LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, int64_t size, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;
 
@@ -299,12 +322,12 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
         key == NULL ||
         /*Codes_SRS_LRU_CACHE_13_025: [ If value is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         value == NULL ||
-        /*Codes_SRS_LRU_CACHE_13_026: [ If size is 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
-        size == 0 ||
+        /*Codes_SRS_LRU_CACHE_13_026: [ If size is less than or equals to 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+        size <= 0 ||
         /*Codes_SRS_LRU_CACHE_13_075: [ If evict_callback is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         evict_callback == NULL)
     {
-        LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRIu64 "", lru_cache, key, value, size);
+        LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRId64 "", lru_cache, key, value, size);
         result = LRU_CACHE_PUT_ERROR;
     }
     else
@@ -350,10 +373,11 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
 
                     CLDS_HASH_TABLE_ITEM* old_item;
                     /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
-                    if (clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, NULL) != CLDS_HASH_TABLE_SET_VALUE_OK)
+                    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, NULL);
+                    if (set_value_result != CLDS_HASH_TABLE_SET_VALUE_OK)
                     {
                         /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-                        LogError("Cannot set old key=%p to the clds_hash_table", key);
+                        LogError("Cannot set old key=%p to the clds_hash_table failed with error (%" PRI_MU_ENUM ")", key, MU_ENUM_VALUE(CLDS_HASH_TABLE_SET_VALUE_RESULT, set_value_result));
                         CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
 
                         (void)interlocked_add_64(&lru_cache->current_size, current_item->size - size);
@@ -371,7 +395,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                         {
                             /*Codes_SRS_LRU_CACHE_13_077: [ If LRU Node state is LRU_NODE_STATE_READY only then the old Node is removed from list by calling DList_RemoveEntryList. ]*/
                             DList_RemoveEntryList(node);
-                            LogVerbose("Removed DList entry with key=%p and size=%" PRIu64 " in order to reposition the node.", current_item->key, current_item->size);
+                            LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to reposition the node.", current_item->key, current_item->size);
                         }
 
                         /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
@@ -393,7 +417,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                 }
                 else
                 {
-                    LogVerbose("Key=%p with size=%" PRIu64 " not found. Attempting to add it to the cache", key, size);
+                    LogVerbose("Key=%p with size=%" PRId64 " not found. Attempting to add it to the cache", key, size);
                     /*Codes_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
                     result = add_to_cache_internal(lru_cache, hazard_pointers_thread, key, value, size);
                 }
@@ -463,7 +487,7 @@ void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
                     {
                         /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
                         DList_RemoveEntryList(node);
-                        LogVerbose("Removed DList entry with key=%p and size=%" PRIu64 " in order to reposition the node", current_item->key, current_item->size);
+                        LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to reposition the node", current_item->key, current_item->size);
                         /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
                         DList_InsertTailList(&lru_cache->head, node);
                     }

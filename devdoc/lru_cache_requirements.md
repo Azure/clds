@@ -99,7 +99,7 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_025: [** If `value` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
-**SRS_LRU_CACHE_13_026: [** If `size` is `0`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+**SRS_LRU_CACHE_13_026: [** If `size` is less than or equals to `0`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
 **SRS_LRU_CACHE_13_075: [** If `evict_callback` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
@@ -133,9 +133,9 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_071: [** Otherwise, if the `key` is not found: **]**
 
-- **SRS_LRU_CACHE_13_044: [** `lru_cache_put` shall create LRU Node item to be inserted in the hash table. **]**
-
 - **SRS_LRU_CACHE_13_046: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
+
+- **SRS_LRU_CACHE_13_044: [** `lru_cache_put` shall create LRU Node item to be inserted in the hash table. **]**
 
 - **SRS_LRU_CACHE_13_045: [** `lru_cache_put` shall insert the LRU Node item in the hash table by calling `clds_hash_table_insert`. **]**
 
