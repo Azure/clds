@@ -26,6 +26,7 @@
 
 MU_DEFINE_ENUM(LRU_NODE_STATE, LRU_NODE_STATE_VALUES)
 MU_DEFINE_ENUM_STRINGS(LRU_NODE_STATE, LRU_NODE_STATE_VALUES)
+MU_DEFINE_ENUM_STRINGS(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 
 typedef struct LRU_CACHE_TAG
@@ -173,6 +174,7 @@ static LRU_CACHE_PUT_RESULT add_to_cache_internal(LRU_CACHE_HANDLE lru_cache, CL
     if (hash_table_insert != CLDS_HASH_TABLE_INSERT_OK)
     {
         /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+        LogError("Key=%p with size=%" PRIu64 " cannot insert into hash table.", key, size);
         CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
         result = LRU_CACHE_PUT_ERROR;
     }
@@ -264,7 +266,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                     case CLDS_HASH_TABLE_REMOVE_NOT_FOUND:
                     {
                         /*Codes_SRS_LRU_CACHE_13_078: [ If clds_hash_table_remove returns CLDS_HASH_TABLE_REMOVE_NOT_FOUND, then lru_cache_put shall retry eviction. ]*/
-                        LogError("item has already been evicted.");
+                        LogError("item with key =%p has already been evicted.", least_used_node_value->key);
                         (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
                         break;
                     }
@@ -396,8 +398,12 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     result = add_to_cache_internal(lru_cache, hazard_pointers_thread, key, value, size);
                 }
 
+                if (result != LRU_CACHE_PUT_OK)
+                {
+                    LogError("Put failed with an error = %" PRI_MU_ENUM ").", MU_ENUM_VALUE(LRU_CACHE_PUT_RESULT, result));
+                }
                 // Evict if the current size overflows capacity of the cache. 
-                if (evict_internal(lru_cache, hazard_pointers_thread, evict_callback, context) != LRU_CACHE_EVICT_OK)
+                else if (evict_internal(lru_cache, hazard_pointers_thread, evict_callback, context) != LRU_CACHE_EVICT_OK)
                 {
                     LogError("Eviction failed.");
                     result = LRU_CACHE_PUT_EVICT_ERROR;
@@ -452,16 +458,14 @@ void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
                 else
                 {
                     PDLIST_ENTRY node = &(current_item->node);
+                    /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
+                    if (lru_cache->head.Blink != node)
                     {
-                        /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
-                        if (lru_cache->head.Blink != node)
-                        {
-                            /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
-                            DList_RemoveEntryList(node);
-                            LogVerbose("Removed DList entry with key=%p and size=%" PRIu64 " in order to reposition the node", current_item->key, current_item->size);
-                            /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
-                            DList_InsertTailList(&lru_cache->head, node);
-                        }
+                        /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+                        DList_RemoveEntryList(node);
+                        LogVerbose("Removed DList entry with key=%p and size=%" PRIu64 " in order to reposition the node", current_item->key, current_item->size);
+                        /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
+                        DList_InsertTailList(&lru_cache->head, node);
                     }
                     result = current_item->value;
                 }

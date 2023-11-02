@@ -118,7 +118,6 @@ TEST_SUITE_INITIALIZE(suite_init)
     ASSERT_ARE_EQUAL(int, 0, umock_c_init(on_umock_c_error), "umock_c_init failed");
 
     ASSERT_ARE_EQUAL(int, 0, umocktypes_stdint_register_types(), "umocktypes_stdint_register_types failed");
-    ASSERT_ARE_EQUAL(int, 0, umocktypes_bool_register_types(), "umocktypes_bool_register_types failed");
 
     REGISTER_GBALLOC_HL_GLOBAL_MOCK_HOOK();
     REGISTER_CLDS_HASH_TABLE_GLOBAL_MOCK_HOOKS();
@@ -198,16 +197,13 @@ static void setup_ignore_hazard_pointers_calls(void)
 
 static void setup_lock_and_inserttail(int64_t size)
 {
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, size));
 }
 
-static void set_lru_create_expectations(size_t bucket_size, CLDS_HAZARD_POINTERS_HANDLE hazard_pointers)
+static void set_lru_create_expectations(uint32_t bucket_size, CLDS_HAZARD_POINTERS_HANDLE hazard_pointers)
 {
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_create(IGNORED_ARG));
@@ -224,13 +220,12 @@ static void set_lru_put_insert_expectations(void* key, CLDS_HASH_TABLE_ITEM** ha
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(hash_table_item);
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_insert(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, size));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 }
 
 static void set_lru_put_set_value_expectations(void* key, int64_t old_size, int64_t new_size)
@@ -238,6 +233,7 @@ static void set_lru_put_set_value_expectations(void* key, int64_t old_size, int6
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
@@ -245,38 +241,43 @@ static void set_lru_put_set_value_expectations(void* key, int64_t old_size, int6
     setup_lock_and_inserttail(-old_size + new_size);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 }
 
 static void set_lru_put_evict_expectations(void* key, int64_t current_size, int64_t old_node_size)
 {
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, current_size - old_node_size, current_size));
     STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 2));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_eviction_callback(IGNORED_ARG, LRU_CACHE_EVICT_OK, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+}
+
+static void set_lru_put_nothing_to_evict_expectations()
+{
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 }
 
 static void set_lru_get_value_expectations(void* key)
 {
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add(IGNORED_ARG, 0));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 }
 
 /* lru_cache_create */
@@ -294,7 +295,7 @@ TEST_FUNCTION(lru_cache_create_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -304,8 +305,8 @@ TEST_FUNCTION(lru_cache_create_succeeds)
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity);
 
     // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     lru_cache_destroy(lru_cache);
@@ -317,7 +318,7 @@ TEST_FUNCTION(lru_cache_create_with_null_compute_hash_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -337,7 +338,7 @@ TEST_FUNCTION(lru_cache_create_with_null_key_compare_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -376,7 +377,7 @@ TEST_FUNCTION(lru_cache_create_with_null_hazard_pointers_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -395,7 +396,7 @@ TEST_FUNCTION(lru_cache_create_with_capacity_0_fails)
 {
     // arrange
     LRU_CACHE_HANDLE lru_cache;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -415,7 +416,7 @@ TEST_FUNCTION(when_underlying_calls_fail_lru_cache_create_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -453,7 +454,7 @@ TEST_FUNCTION(lru_cache_destroy_frees_the_resources)
     CLDS_HASH_TABLE_HANDLE hash_table;
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
 
     umock_c_reset_all_calls();
 
@@ -517,7 +518,7 @@ TEST_FUNCTION(lru_cache_put_with_null_key_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int value = 1000, size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -541,7 +542,7 @@ TEST_FUNCTION(lru_cache_put_with_null_value_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 1000, size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -565,7 +566,7 @@ TEST_FUNCTION(lru_cache_put_with_0_size_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 1, value = 1000;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -589,7 +590,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_callback_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 1, value = 1000, size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -614,7 +615,7 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     int64_t size1 = capacity + 1;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 1, value = 1000;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -648,7 +649,7 @@ TEST_FUNCTION(lru_cache_put_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -660,7 +661,7 @@ TEST_FUNCTION(lru_cache_put_succeeds)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     // act
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
@@ -690,7 +691,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -702,7 +703,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -712,7 +713,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     setup_ignore_hazard_pointers_calls();
 
     set_lru_put_set_value_expectations(&key, size, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     // act
     result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
@@ -741,7 +742,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
@@ -754,7 +755,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item_1, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -766,7 +767,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key2, &hash_table_item_2, size2);
 
     set_lru_put_evict_expectations(&key, capacity+size2, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     // act
     result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
@@ -795,7 +796,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 10, value = 1000, key2 = 11, key3 = 12, size1 = 1, size2 = 1, size3 = 2;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
@@ -809,7 +810,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key1, &hash_table_item_1, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -819,7 +820,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     setup_ignore_hazard_pointers_calls();
 
     set_lru_put_insert_expectations(&key2, &hash_table_item_2, size2);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -834,7 +835,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_evict_expectations(&key1, capacity+size3, size1);
     //evicting least used key2 next
     set_lru_put_evict_expectations(&key2, capacity+size3-size1, size2);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     // act
     result = lru_cache_put(lru_cache, &key3, &value, size3, test_eviction_callback, NULL);
@@ -855,7 +856,7 @@ TEST_FUNCTION(lru_cache_put_set_value_does_not_call_remove_list_on_evicted_state
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -867,7 +868,7 @@ TEST_FUNCTION(lru_cache_put_set_value_does_not_call_remove_list_on_evicted_state
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -879,19 +880,20 @@ TEST_FUNCTION(lru_cache_put_set_value_does_not_call_remove_list_on_evicted_state
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add(IGNORED_ARG, 0)).SetReturn(2);
-    STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));    
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    set_lru_put_nothing_to_evict_expectations();
+
 
     // act
     result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
@@ -913,7 +915,7 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -925,7 +927,7 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -937,13 +939,15 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_SET_VALUE_ERROR);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
 
     // act
     result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
@@ -964,7 +968,7 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -981,9 +985,10 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&hash_table_item);
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, 1));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_insert(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_INSERT_ERROR);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
@@ -1004,7 +1009,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
@@ -1017,7 +1022,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item_1, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1028,9 +1033,8 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
 
     set_lru_put_insert_expectations(&key2, &hash_table_item_2, size2);
 
-    //set_lru_put_evict_expectations(&key, capacity + size2, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG)).SetReturn(1);
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_eviction_callback(IGNORED_ARG, LRU_CACHE_EVICT_ERROR, IGNORED_ARG));
@@ -1039,7 +1043,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
 
     // assert
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
@@ -1052,7 +1056,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_size_changed)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
@@ -1065,7 +1069,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_size_changed)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item_1, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1076,14 +1080,15 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_size_changed)
 
     set_lru_put_insert_expectations(&key2, &hash_table_item_2, size2);
 
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, capacity - size2, capacity + size2)).SetReturn(100);
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
     // retry the loop here
     set_lru_put_evict_expectations(&key, capacity + size2, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     // act
     result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
@@ -1103,7 +1108,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
@@ -1116,7 +1121,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item_1, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1127,29 +1132,32 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
 
     set_lru_put_insert_expectations(&key2, &hash_table_item_2, size2);
 
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, capacity - size2, capacity + size2));
     STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_REMOVE_NOT_FOUND);
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, size1));
-    // Retry the loop here
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    // Retry the loop here
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, capacity - size2, capacity + size2));
     STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_REMOVE_ERROR);
     STRICT_EXPECTED_CALL(test_eviction_callback(IGNORED_ARG, LRU_CACHE_EVICT_ERROR, IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, size1));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
     result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
 
     // assert
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
@@ -1162,7 +1170,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
@@ -1175,7 +1183,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item_1, size1);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1187,21 +1195,23 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     set_lru_put_insert_expectations(&key2, &hash_table_item_2, size2);
 
     // Retry the loop here
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
     STRICT_EXPECTED_CALL(DList_IsListEmpty(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, capacity - size2, capacity + size2));
     STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_REMOVE_ERROR);
     STRICT_EXPECTED_CALL(test_eviction_callback(IGNORED_ARG, LRU_CACHE_EVICT_ERROR, IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, size1));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
     result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
 
     // assert
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
@@ -1232,7 +1242,7 @@ TEST_FUNCTION(lru_cache_get_with_null_key_fails)
 {
     // arrange
     LRU_CACHE_HANDLE lru_cache;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int64_t capacity = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1266,7 +1276,7 @@ TEST_FUNCTION(lru_cache_get_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 10, key2 = 11, value1 = 1000, value2 = 1001, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -1278,13 +1288,13 @@ TEST_FUNCTION(lru_cache_get_succeeds)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key1, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     set_lru_put_insert_expectations(&key2, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1318,7 +1328,7 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 10, value1 = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -1330,7 +1340,7 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key1, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1339,12 +1349,12 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     umock_c_reset_all_calls();
     setup_ignore_hazard_pointers_calls();
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key1));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add(IGNORED_ARG, 0));
-    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
     void* get_value_ptr = lru_cache_get(lru_cache, &key1);
@@ -1373,7 +1383,7 @@ TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10, value = 1000, size = 1, times = 10;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -1385,7 +1395,7 @@ TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1413,7 +1423,7 @@ TEST_FUNCTION(lru_cache_get_return_NULL_hazard_pointers_return_NULL)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1444,7 +1454,7 @@ TEST_FUNCTION(lru_cache_get_return_NULL_when_not_found)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key = 10;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1455,8 +1465,11 @@ TEST_FUNCTION(lru_cache_get_return_NULL_when_not_found)
     umock_c_reset_all_calls();
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
 
     // act
     void* get_value_ptr = lru_cache_get(lru_cache, &key);
@@ -1479,7 +1492,7 @@ TEST_FUNCTION(lru_cache_get_returns_without_changing_order_when_evicted)
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
-    size_t bucket_size = 1024;
+    uint32_t bucket_size = 1024;
     int key1 = 10, value1 = 1000, size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
@@ -1491,7 +1504,7 @@ TEST_FUNCTION(lru_cache_get_returns_without_changing_order_when_evicted)
     umock_c_reset_all_calls();
 
     set_lru_put_insert_expectations(&key1, &hash_table_item, size);
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0));
+    set_lru_put_nothing_to_evict_expectations();
 
     LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1500,18 +1513,18 @@ TEST_FUNCTION(lru_cache_get_returns_without_changing_order_when_evicted)
     umock_c_reset_all_calls();
     setup_ignore_hazard_pointers_calls();
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key1));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(interlocked_add(IGNORED_ARG, 0)).SetReturn(2);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
     void* get_value_ptr = lru_cache_get(lru_cache, &key1);
-    ASSERT_IS_NOT_NULL(get_value_ptr);
 
-    int get_value = *((int*)get_value_ptr);
     // assert
-    ASSERT_ARE_EQUAL(int, get_value, value1);
+    ASSERT_IS_NULL(get_value_ptr);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
