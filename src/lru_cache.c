@@ -67,8 +67,8 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         (initial_bucket_size == 0) ||
         /*Codes_SRS_LRU_CACHE_13_004: [ If clds_hazard_pointers is NULL, lru_cache_create shall fail and return NULL. ]*/
         (clds_hazard_pointers == NULL) ||
-        /*Codes_SRS_LRU_CACHE_13_010: [ If capacity is 0, then lru_cache_create shall fail and return NULL. ]*/
-        (capacity == 0))
+        /*Codes_SRS_LRU_CACHE_13_010: [ If capacity is less than or equals to 0, then lru_cache_create shall fail and return NULL. ]*/
+        (capacity <= 0))
     {
         LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, uint32_t initial_bucket_size=%u, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t capacity=%" PRId64 "",
             compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, capacity);

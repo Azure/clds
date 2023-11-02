@@ -38,7 +38,7 @@ typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESU
 
 LRU Cache uses a `clds_hash_table`, a `srw_lock`, and a `doubly_linked_list`.
 
-1. The table contains `LRU_NODE` instances as the value corresponding to the supplied keys. The `LRU_NODE` contains a `DLIST_ENTRY` which points to a node in the `doubly_linked_list`. A pointer to the `LRU_NODE` is stored in the `doubly_linked_list` as well.
+1. The table contains `LRU_NODE` instances as the value corresponding to the supplied keys. Each `LRU_NODE` includes a `DLIST_ENTRY` which serves as an anchor for tracking the node within the `doubly_linked_list`.
 
 2. All operations to `clds_hash_table` and `doubly_linked_list` are performed under an exclusive lock, ensuring that changes are made together. 
 This is to ensure, both `clds_hash_table` and `doubly_linked_list` are in sync with each other and also, to keep the design simple and to avoid unseen memory errors. 

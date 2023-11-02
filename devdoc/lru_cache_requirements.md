@@ -24,11 +24,11 @@ MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
 typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, uint64_t, capacity);
+MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, uint64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
 
 MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 ```
@@ -36,7 +36,7 @@ MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, ke
 ### clds_hash_table_create
 
 ```c
-MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, size_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, uint64_t, capacity);
+MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity);
 ```
 
 Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and `SRW_LOCK_HANDLE`.
@@ -49,7 +49,7 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 
 **SRS_LRU_CACHE_13_004: [** If `clds_hazard_pointers` is `NULL`, `lru_cache_create` shall fail and return `NULL`. **]**
 
-**SRS_LRU_CACHE_13_010: [** If `capacity` is `0`, then `lru_cache_create` shall fail and return `NULL`. **]**
+**SRS_LRU_CACHE_13_010: [** If `capacity` is less than or equal to `0`, then `lru_cache_create` shall fail and return `NULL`. **]**
 
 **SRS_LRU_CACHE_13_011: [** `lru_cache_create` shall allocate memory for `LRU_CACHE_HANDLE`. **]**
 
@@ -63,7 +63,7 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 
 **SRS_LRU_CACHE_13_017: [** `lru_cache_create` shall initialize the doubly linked list by calling `DList_InitializeListHead`. **]**
 
-**SRS_LRU_CACHE_13_018: [** `lru_cache_create` shall assign default value of `0` to `current_size` and the capacity to `capacity`. **]**
+**SRS_LRU_CACHE_13_018: [** `lru_cache_create` shall assign value of `0` to `current_size` and the capacity to `capacity`. **]**
 
 **SRS_LRU_CACHE_13_019: [** On success, `lru_cache_create` shall return `LRU_CACHE_HANDLE`. **]**
 
@@ -86,7 +86,7 @@ Frees up `LRU_CACHE_HANDLE`.
 ### lru_cache_put
 
 ```c
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, uint64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
 ```
 
 The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache and performs eviction if necessary. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.

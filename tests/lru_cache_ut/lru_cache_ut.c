@@ -39,8 +39,6 @@
 
 #include "clds/lru_cache.h"
 
-#define XTEST_FUNCTION(A) void A(void)
-
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_RESULT_VALUES);
@@ -391,7 +389,7 @@ TEST_FUNCTION(lru_cache_create_with_null_hazard_pointers_fails)
     // cleanup
 }
 
-/*Tests_SRS_LRU_CACHE_13_010: [ If capacity is 0, then lru_cache_create shall fail and return NULL. ]*/
+/*Tests_SRS_LRU_CACHE_13_010: [ If capacity is less than or equals 0, then lru_cache_create shall fail and return NULL. ]*/
 TEST_FUNCTION(lru_cache_create_with_capacity_0_fails)
 {
     // arrange
