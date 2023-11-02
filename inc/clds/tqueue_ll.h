@@ -234,44 +234,41 @@ TQUEUE_PUSH_RESULT TQUEUE_LL_PUSH(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_it
             }                                                                                                                                                       \
             else                                                                                                                                                    \
             {                                                                                                                                                       \
-                /* Codes_SRS_TQUEUE_01_018: [ Using interlocked_compare_exchange_64, TQUEUE_PUSH(T) shall replace the head value with the head value obtained earlier + 1. ]*/ \
-                if (interlocked_compare_exchange_64((volatile_atomic int64_t*)&tqueue->head, current_head + 1, current_head) != current_head)                       \
+                uint32_t index = (uint32_t)(current_head % tqueue->queue_size);                                                                                     \
+                /* Codes_SRS_TQUEUE_01_017: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall change the head array entry state to PUSHING (from NOT_USED). ]*/ \
+                if (interlocked_compare_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED) != QUEUE_ENTRY_STATE_NOT_USED) \
                 {                                                                                                                                                   \
-                    /* Codes_SRS_TQUEUE_01_043: [ If the queue head has changed, TQUEUE_PUSH(T) shall try again. ]*/                                                \
+                    /* Codes_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall retry the whole push. ]*/ \
+                    /* likely queue full */                                                                                                                         \
                     continue;                                                                                                                                       \
                 }                                                                                                                                                   \
                 else                                                                                                                                                \
                 {                                                                                                                                                   \
-                    uint32_t index = (uint32_t)current_head  % tqueue->queue_size;                                                                                  \
-                    do                                                                                                                                              \
+                    /* Codes_SRS_TQUEUE_01_018: [ Using interlocked_compare_exchange_64, TQUEUE_PUSH(T) shall replace the head value with the head value obtained earlier + 1. ]*/ \
+                    if (interlocked_compare_exchange_64((volatile_atomic int64_t*)&tqueue->head, current_head + 1, current_head) != current_head)                   \
                     {                                                                                                                                               \
-                        /* Codes_SRS_TQUEUE_01_017: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall change the head array entry state to PUSHING (from NOT_USED). ]*/ \
-                        if (interlocked_compare_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED) != QUEUE_ENTRY_STATE_NOT_USED) \
-                        {                                                                                                                                           \
-                            /* changed */                                                                                                                           \
-                            /* Codes_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall try changing the state again. ]*/ \
-                        }                                                                                                                                           \
-                        else                                                                                                                                        \
-                        {                                                                                                                                           \
-                            break;                                                                                                                                  \
-                        }                                                                                                                                           \
-                    } while (1);                                                                                                                                    \
-                                                                                                                                                                    \
-                    if (tqueue->copy_item_function == NULL)                                                                                                         \
-                    {                                                                                                                                               \
-                        /* Codes_SRS_TQUEUE_01_019: [ If no copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/ \
-                        (void)memcpy((void*)&tqueue->queue[index].value, (void*)item, sizeof(T));                                                               \
+                        /* Codes_SRS_TQUEUE_01_043: [ If the queue head has changed, TQUEUE_PUSH(T) shall set the state back to NOT_USED and retry the push. ]*/    \
+                        (void)interlocked_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_NOT_USED);                              \
+                        continue;                                                                                                                                   \
                     }                                                                                                                                               \
                     else                                                                                                                                            \
                     {                                                                                                                                               \
-                        /* Codes_SRS_TQUEUE_01_024: [ If a copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the copy_item_function with copy_item_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */ \
-                        tqueue->copy_item_function(copy_item_function_context, (T*)&tqueue->queue[index].value, item);                                              \
+                        if (tqueue->copy_item_function == NULL)                                                                                                     \
+                        {                                                                                                                                           \
+                            /* Codes_SRS_TQUEUE_01_019: [ If no copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall copy the value of item into the array entry value whose state was changed to PUSHING. ]*/ \
+                            (void)memcpy((void*)&tqueue->queue[index].value, (void*)item, sizeof(T));                                                               \
+                        }                                                                                                                                           \
+                        else                                                                                                                                        \
+                        {                                                                                                                                           \
+                            /* Codes_SRS_TQUEUE_01_024: [ If a copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the copy_item_function with copy_item_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */ \
+                            tqueue->copy_item_function(copy_item_function_context, (T*)&tqueue->queue[index].value, item);                                          \
+                        }                                                                                                                                           \
+                        /* Codes_SRS_TQUEUE_01_020: [ TQUEUE_PUSH(T) shall set the state to USED by using interlocked_exchange. ]*/                                 \
+                        (void)interlocked_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_USED);                                  \
+                        /* Codes_SRS_TQUEUE_01_021: [ TQUEUE_PUSH(T) shall succeed and return TQUEUE_PUSH_OK. ]*/                                                   \
+                        result = TQUEUE_PUSH_OK;                                                                                                                    \
+                        break;                                                                                                                                      \
                     }                                                                                                                                               \
-                    /* Codes_SRS_TQUEUE_01_020: [ TQUEUE_PUSH(T) shall set the state to USED by using interlocked_exchange. ]*/                                     \
-                    (void)interlocked_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_USED);                                      \
-                    /* Codes_SRS_TQUEUE_01_021: [ TQUEUE_PUSH(T) shall succeed and return TQUEUE_PUSH_OK. ]*/                                                       \
-                    result = TQUEUE_PUSH_OK;                                                                                                                        \
-                    break;                                                                                                                                          \
                 }                                                                                                                                                   \
             }                                                                                                                                                       \
         } while (1);                                                                                                                                                \
@@ -314,7 +311,7 @@ TQUEUE_POP_RESULT TQUEUE_LL_POP(C)(TQUEUE_LL(T) tqueue, T* item, void* copy_item
             {                                                                                                                                                       \
                 /* LogInfo("Popping from %" PRId64 "", current_tail); */ \
                 /* Codes_SRS_TQUEUE_01_030: [ Using interlocked_compare_exchange, TQUEUE_PUSH(T) shall set the tail array entry state to POPPING (from USED). ]*/   \
-                uint32_t index = (uint32_t)current_tail % tqueue->queue_size;                                                                                       \
+                uint32_t index = (uint32_t)(current_tail % tqueue->queue_size);                                                                                     \
                 if (interlocked_compare_exchange((volatile_atomic int32_t*)&tqueue->queue[index].state, QUEUE_ENTRY_STATE_POPPING, QUEUE_ENTRY_STATE_USED) != QUEUE_ENTRY_STATE_USED) \
                 {                                                                                                                                                   \
                     /* Codes_SRS_TQUEUE_01_036: [ If the state of the array entry corresponding to the tail is not USED, TQUEUE_POP(T) shall try again. ]*/         \

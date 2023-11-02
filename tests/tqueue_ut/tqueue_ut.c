@@ -408,8 +408,8 @@ TEST_FUNCTION(TQUEUE_PUSH_with_valid_args_without_push_cb_func_copies_the_data_i
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -440,14 +440,14 @@ TEST_FUNCTION(TQUEUE_PUSH_twice_copies_the_data_in)
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // head change
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -485,35 +485,6 @@ TEST_FUNCTION(TQUEUE_PUSH_twice_for_queue_size_1_returns_QUEUE_FULL)
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_043: [ If the queue head has changed, TQUEUE_PUSH(T) shall try again. ]*/
-TEST_FUNCTION(when_head_changes_TQUEUE_PUSH_tries_again)
-{
-    // arrange
-    int32_t item = 42;
-    TQUEUE(int32_t) queue = test_queue_create(2, NULL, NULL, NULL);
-
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0))
-        .SetReturn(1); // head changed!
-
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
-    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
-    STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
-
-    // act
-    TQUEUE_PUSH_RESULT result = TQUEUE_PUSH(int32_t)(queue, &item, NULL);
-
-    // assert
-    ASSERT_ARE_EQUAL(TQUEUE_PUSH_RESULT, TQUEUE_PUSH_OK, result);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-
-    // clean
-    TQUEUE_ASSIGN(int32_t)(&queue, NULL);
-}
-
 static void test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_again(QUEUE_ENTRY_STATE queue_entry_state)
 {
     // arrange
@@ -522,12 +493,20 @@ static void test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_a
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED))
         .SetReturn(queue_entry_state); // fail change one time
+
+    // retry
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED))
         .SetReturn(queue_entry_state); // fail change 2 times, just for fun
+
+    // 2nd retry
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED));
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     // act
@@ -541,22 +520,53 @@ static void test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_a
     TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
-/* Tests_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall try changing the state again. ]*/
+/* Tests_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall retry the whole push. ]*/
 TEST_FUNCTION(TQUEUE_PUSH_when_entry_state_is_PUSHING_tries_again)
 {
     test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_again(QUEUE_ENTRY_STATE_PUSHING);
 }
 
-/* Tests_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall try changing the state again. ]*/
+/* Tests_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall retry the whole push. ]*/
 TEST_FUNCTION(TQUEUE_PUSH_when_entry_state_is_POPPING_tries_again)
 {
     test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_again(QUEUE_ENTRY_STATE_POPPING);
 }
 
-/* Tests_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall try changing the state again. ]*/
+/* Tests_SRS_TQUEUE_01_023: [ If the state of the array entry corresponding to the head is not NOT_USED, TQUEUE_PUSH(T) shall retry the whole push. ]*/
 TEST_FUNCTION(TQUEUE_PUSH_when_entry_state_is_USED_tries_again)
 {
     test_TQUEUE_PUSH_when_entry_state_is_different_than_NOT_USED_tries_again(QUEUE_ENTRY_STATE_USED);
+}
+
+/* Tests_SRS_TQUEUE_01_043: [ If the queue head has changed, TQUEUE_PUSH(T) shall set the state back to NOT_USED and retry the push. ]*/
+TEST_FUNCTION(when_head_changes_TQUEUE_PUSH_tries_again)
+{
+    // arrange
+    int32_t item = 42;
+    TQUEUE(int32_t) queue = test_queue_create(2, NULL, NULL, NULL);
+
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0))
+        .SetReturn(1); // head changed!
+    STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_NOT_USED)); // reset entry state
+
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
+    STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
+    STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
+
+    // act
+    TQUEUE_PUSH_RESULT result = TQUEUE_PUSH(int32_t)(queue, &item, NULL);
+
+    // assert
+    ASSERT_ARE_EQUAL(TQUEUE_PUSH_RESULT, TQUEUE_PUSH_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // clean
+    TQUEUE_ASSIGN(int32_t)(&queue, NULL);
 }
 
 /* Tests_SRS_TQUEUE_01_024: [ If a copy_item_function was specified in TQUEUE_CREATE(T), TQUEUE_PUSH(T) shall call the copy_item_function with copy_item_function_context as context, a pointer to the array entry value whose state was changed to PUSHING as push_dst and item as push_src. ] */
@@ -568,8 +578,8 @@ TEST_FUNCTION(TQUEUE_PUSH_with_copy_item_function_calls_the_cb_function)
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, IGNORED_ARG, &item)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
@@ -594,15 +604,15 @@ TEST_FUNCTION(TQUEUE_PUSH_with_copy_item_function_calls_the_cb_function_2_items)
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 1, 0)); // head change
     STRICT_EXPECTED_CALL(test_copy_item((void*)0x4243, IGNORED_ARG, &item_1)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // head
     STRICT_EXPECTED_CALL(interlocked_add_64(IGNORED_ARG, 0)); // tail
-    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // head change
     STRICT_EXPECTED_CALL(interlocked_compare_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_PUSHING, QUEUE_ENTRY_STATE_NOT_USED)); // entry state
+    STRICT_EXPECTED_CALL(interlocked_compare_exchange_64(IGNORED_ARG, 2, 1)); // head change
     STRICT_EXPECTED_CALL(test_copy_item((void*)0x4244, IGNORED_ARG, &item_2)); // entry state
     STRICT_EXPECTED_CALL(interlocked_exchange(IGNORED_ARG, QUEUE_ENTRY_STATE_USED)); // entry state
 

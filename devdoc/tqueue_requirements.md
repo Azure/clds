@@ -211,13 +211,13 @@ TQUEUE_PUSH_RESULT TQUEUE_PUSH(T)(TQUEUE(T) tqueue, T* item, void* copy_item_fun
 
 - **SRS_TQUEUE_01_022: [** If the queue is full (current head >= current tail + queue size), `TQUEUE_PUSH(T)` shall return `TQUEUE_PUSH_QUEUE_FULL`. **]**
 
-- **SRS_TQUEUE_01_018: [** Using `interlocked_compare_exchange_64`, `TQUEUE_PUSH(T)` shall replace the head value with the head value obtained earlier + 1. **]**
-
-- **SRS_TQUEUE_01_043: [** If the queue head has changed, `TQUEUE_PUSH(T)` shall try again. **]**
-
 - **SRS_TQUEUE_01_017: [** Using `interlocked_compare_exchange`, `TQUEUE_PUSH(T)` shall change the head array entry state to `PUSHING` (from `NOT_USED`). **]**
 
-  - **SRS_TQUEUE_01_023: [** If the state of the array entry corresponding to the head is not `NOT_USED`, `TQUEUE_PUSH(T)` shall try changing the state again. **]**
+  - **SRS_TQUEUE_01_023: [** If the state of the array entry corresponding to the head is not `NOT_USED`, `TQUEUE_PUSH(T)` shall retry the whole push. **]**
+
+- **SRS_TQUEUE_01_018: [** Using `interlocked_compare_exchange_64`, `TQUEUE_PUSH(T)` shall replace the head value with the head value obtained earlier + 1. **]**
+
+- **SRS_TQUEUE_01_043: [** If the queue head has changed, `TQUEUE_PUSH(T)` shall set the state back to `NOT_USED` and retry the push. **]**
 
 - **SRS_TQUEUE_01_019: [** If no `copy_item_function` was specified in `TQUEUE_CREATE(T)`, `TQUEUE_PUSH(T)` shall copy the value of `item` into the array entry value whose state was changed to `PUSHING`. **]**
 
