@@ -1,4 +1,5 @@
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 // This UT suite only exists because we want to test thread_notifications_lackey_dll_deinit_callback without initializing it
 

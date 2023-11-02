@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #define lock_free_set_create real_lock_free_set_create
 #define lock_free_set_destroy real_lock_free_set_destroy

@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #define clds_hash_table_create real_clds_hash_table_create
 #define clds_hash_table_destroy real_clds_hash_table_destroy
