@@ -26,6 +26,8 @@
 #include "clds/clds_hazard_pointers_thread_helper.h"
 #include "clds/clds_hazard_pointers.h"
 
+#include "clds/thread_notifications_dispatcher.h"
+
 #include "clds/clds_hash_table.h"
 
 TEST_DEFINE_ENUM_TYPE(THREADAPI_RESULT, THREADAPI_RESULT_VALUES);
@@ -38,10 +40,12 @@ BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 TEST_SUITE_INITIALIZE(suite_init)
 {
     gballoc_hl_init(NULL, NULL);
+    ASSERT_ARE_EQUAL(int, 0, thread_notifications_dispatcher_init());
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
+    thread_notifications_dispatcher_deinit();
     gballoc_hl_deinit();
 }
 
@@ -228,7 +232,6 @@ static void test_skipped_seq_chaos(void* context, int64_t skipped_sequence_no)
 }
 
 // Test does not pass until we fix the scalability issue with no. of threads used
-#if 0
 TEST_FUNCTION(clds_hash_table_perf_does_not_degrade_over_time_with_more_and_more_threads_being_used)
 {
     // The test wants to constantly have new threads do the work, while old threads
@@ -318,6 +321,5 @@ TEST_FUNCTION(clds_hash_table_perf_does_not_degrade_over_time_with_more_and_more
     clds_hash_table_destroy(perf_test_context.hash_table);
     clds_hazard_pointers_destroy(perf_test_context.hazard_pointers);
 }
-#endif
 
 END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
