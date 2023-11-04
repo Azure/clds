@@ -150,7 +150,7 @@ static void free_inactive_threads_until_epoch(CLDS_HAZARD_POINTERS_HANDLE clds_h
     do
     {
         CLDS_HP_INACTIVE_THREAD inactive_thread;
-        if (TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(clds_hazard_pointers->inactive_threads, &inactive_thread, NULL, is_epoch_lower_or_equal, &epoch) != 0)
+        if (TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(clds_hazard_pointers->inactive_threads, &inactive_thread, NULL, is_epoch_lower_or_equal, &epoch) != TQUEUE_POP_OK)
         {
             break;
         }
