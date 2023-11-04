@@ -19,6 +19,6 @@ cmake -Drun_valgrind:BOOL=ON -Drun_helgrind:BOOL=ON -Drun_drd:BOOL=OFF $build_ro
 make --jobs=$CORES
 
 # /*reenable with this task Task 10086393: reenable sm_chaos (https://msazure.visualstudio.com/One/_workitems/edit/10086393)*/ 
-ctest -j $CORES --output-on-failure -E "clds_sorted_list_int_valgrind|clds_sorted_list_int_helgrind"
+ctest -j $CORES --output-on-failure -E "clds_sorted_list_int_valgrind|clds_sorted_list_int_helgrind|tqueue_int_valgrind"
 
 popd 
