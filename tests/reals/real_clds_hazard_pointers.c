@@ -4,6 +4,8 @@
 #include "real_gballoc_hl_renames.h"
 #include "real_clds_st_hash_set_renames.h"
 #include "real_interlocked_renames.h"
+#include "real_ps_util_renames.h"
+#include "real_worker_thread_renames.h"
 
 #include "real_clds_hazard_pointers_renames.h"
 

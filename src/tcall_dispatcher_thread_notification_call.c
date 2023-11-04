@@ -4,6 +4,10 @@
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 
+#include "c_pal/thandle.h"
+
+#include "clds/tcall_dispatcher.h"
+
 #include "thread_notifications_lackey_dll/thread_notifications_lackey_dll.h"
 #include "clds/tcall_dispatcher_thread_notification_call.h"
 

@@ -18,18 +18,27 @@ void real_free(void* ptr)
 }
 
 #include "umock_c/umock_c.h"
+#include "umock_c/umocktypes_stdint.h"
+
+#include "c_pal/interlocked.h" /*included for mocking reasons - it will prohibit creation of mocks belonging to interlocked.h - at the moment verified through int tests - this is porting legacy code, temporary solution*/
+
+#include "clds/clds_hazard_pointers.h"
 
 #define ENABLE_MOCKS
 
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 
+#include "c_util/worker_thread.h"
+
+#include "clds/inactive_hp_thread_queue.h"
+
 #undef ENABLE_MOCKS
 
 #include "real_gballoc_hl.h"
+#include "real_inactive_hp_thread_queue.h"
 
-#include "clds/clds_hazard_pointers.h"
-
+MU_DEFINE_ENUM_STRINGS(WORKER_THREAD_SCHEDULE_PROCESS_RESULT, WORKER_THREAD_SCHEDULE_PROCESS_RESULT_VALUES)
 MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 
 static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
@@ -40,16 +49,28 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 MOCK_FUNCTION_WITH_CODE(, void, test_reclaim_func, void*, node)
 MOCK_FUNCTION_END()
 
+static WORKER_THREAD_HANDLE test_worker_thread = (WORKER_THREAD_HANDLE)0x4242;
+
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
 {
-
     ASSERT_ARE_EQUAL(int, 0, real_gballoc_hl_init(NULL, NULL));
 
-    umock_c_init(on_umock_c_error);
+    ASSERT_ARE_EQUAL(int, 0, umock_c_init(on_umock_c_error));
+    ASSERT_ARE_EQUAL(int, 0, umocktypes_stdint_register_types());
 
     REGISTER_GBALLOC_HL_GLOBAL_MOCK_HOOK();
+    REGISTER_INACTIVE_HP_THREAD_QUEUE_GLOBAL_MOCK_HOOK();
+
+    REGISTER_GLOBAL_MOCK_RETURNS(worker_thread_create, test_worker_thread, NULL);
+
+    REGISTER_UMOCK_ALIAS_TYPE(TQUEUE_COPY_ITEM_FUNC(CLDS_HP_INACTIVE_THREAD), void*);
+    REGISTER_UMOCK_ALIAS_TYPE(TQUEUE_DISPOSE_ITEM_FUNC(CLDS_HP_INACTIVE_THREAD), void*);
+    REGISTER_UMOCK_ALIAS_TYPE(TQUEUE_CONDITION_FUNC(CLDS_HP_INACTIVE_THREAD), void*);
+    REGISTER_UMOCK_ALIAS_TYPE(TQUEUE(CLDS_HP_INACTIVE_THREAD), void*);
+    REGISTER_UMOCK_ALIAS_TYPE(WORKER_FUNC, void*);
+    REGISTER_UMOCK_ALIAS_TYPE(WORKER_THREAD_HANDLE, void*);
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
@@ -190,6 +211,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(IGNORED_ARG, IGNORED_ARG, NULL, IGNORED_ARG, IGNORED_ARG)); // pop from queue
 
     // act
     clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1, test_reclaim_func);
@@ -218,6 +240,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_r
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(IGNORED_ARG, IGNORED_ARG, NULL, IGNORED_ARG, IGNORED_ARG)); // pop from queue
 
     // act
     clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, pointer_1, test_reclaim_func);

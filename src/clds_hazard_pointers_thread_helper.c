@@ -9,8 +9,10 @@
 
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
+#include "c_pal/log_critical_and_terminate.h"
 
 #include "clds/clds_hazard_pointers.h"
+#include "clds/thread_notifications_dispatcher.h"
 
 #include "clds/clds_hazard_pointers_thread_helper.h"
 
@@ -18,7 +20,63 @@ typedef struct CLDS_HAZARD_POINTERS_THREAD_HELPER_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers;
     DWORD tls_slot;
+    TCALL_DISPATCHER_TARGET_HANDLE(THREAD_NOTIFICATION_CALL) thread_notification_target_handle;
+    TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL) call_dispatcher;
 } CLDS_HAZARD_POINTERS_THREAD_HELPER;
+
+MU_DEFINE_ENUM_STRINGS(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_VALUES);
+
+static void clds_hazard_pointers_thread_helper_thread_notification(void* context, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason)
+{
+    if (context == NULL)
+    {
+        /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_005: [ If context is NULL, clds_hazard_pointers_thread_helper_thread_notification shall terminate the process. ]*/
+        LogCriticalAndTerminate("Unexpected reason: void* context=%p, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason=%" PRI_MU_ENUM "",
+            context, MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, reason));
+    }
+    else
+    {
+        switch (reason)
+        {
+        default:
+            /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_012: [ If reason is any other value, clds_hazard_pointers_thread_helper_thread_notification shall return. ]*/
+            LogError("Unexpected reason: void* context=%p, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason=%" PRI_MU_ENUM "",
+                context, MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, reason));
+            break;
+
+        case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH:
+            /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_006: [ If reason is THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH, clds_hazard_pointers_thread_helper_thread_notification shall return. ]*/
+            LogInfo("Got notification: %" PRI_MU_ENUM "", MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, reason));
+            break;
+
+        case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH:
+        {
+            CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE hazard_pointers_helper = context;
+            LogInfo("Got notification: %" PRI_MU_ENUM "", MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, reason));
+
+            /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_007: [ If reason is THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH, clds_hazard_pointers_thread_helper_thread_notification shall call TlsGetValue obtain the thread local value for the slot created in the clds_hazard_pointers_thread_create. ]*/
+            CLDS_HAZARD_POINTERS_THREAD_HANDLE hp_thread_handle = TlsGetValue(hazard_pointers_helper->tls_slot);
+
+            /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_009: [ If the thread local stored value is not NULL: ]*/
+            if (hp_thread_handle != NULL)
+            {
+                /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_010: [ clds_hazard_pointers_thread_helper_thread_notification shall set the value in the slot to NULL by calling TlsSetValue. ]*/
+                if (!TlsSetValue(hazard_pointers_helper->tls_slot, NULL))
+                {
+                    LogError("TlsSetValue(hazard_pointers_helper->tls_slot=%" PRIu32 ", NULL) failed", hazard_pointers_helper->tls_slot);
+                }
+                /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_011: [ clds_hazard_pointers_thread_helper_thread_notification shall call clds_hazard_pointers_unregister_thread with the argument being the obtained thread local value. ]*/
+                clds_hazard_pointers_unregister_thread(hp_thread_handle);
+            }
+            else
+            {
+                /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_008: [ If the thread local stored value is NULL, clds_hazard_pointers_thread_helper_thread_notification shall return. ]*/
+            }
+            break;
+        }
+        }
+    }
+}
 
 IMPLEMENT_MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, clds_hazard_pointers_thread_helper_create, CLDS_HAZARD_POINTERS_HANDLE, hazard_pointers)
 {
@@ -44,18 +102,43 @@ IMPLEMENT_MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, clds_ha
         {
             /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_003: [ clds_hazard_pointers_thread_helper_create shall allocate the thread local storage slot for the hazard pointers by calling TlsAlloc. ]*/
             result->tls_slot = TlsAlloc();
-
             if (result->tls_slot == TLS_OUT_OF_INDEXES)
             {
+                /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_005: [ If there are any errors then clds_hazard_pointers_thread_helper_create shall fail and return NULL. ]*/
                 LogError("TlsAlloc failed");
             }
             else
             {
-                /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_004: [ clds_hazard_pointers_thread_helper_create shall succeed and return the helper. ]*/
-                result->hazard_pointers = hazard_pointers;
+                /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_001: [ clds_hazard_pointers_thread_helper_create shall obtain a TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL) by calling thread_notifications_dispatcher_get_call_dispatcher. ]*/
+                TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL) call_dispatcher = thread_notifications_dispatcher_get_call_dispatcher();
+                if (call_dispatcher == NULL)
+                {
+                    /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_005: [ If there are any errors then clds_hazard_pointers_thread_helper_create shall fail and return NULL. ]*/
+                    LogError("thread_notifications_dispatcher_get_call_dispatcher failed");
+                }
+                else
+                {
+                    TCALL_DISPATCHER_INITIALIZE_MOVE(THREAD_NOTIFICATION_CALL)(&result->call_dispatcher, &call_dispatcher);
 
-                goto all_ok;
-                //(void)TlsFree(result->tls_slot);
+                    /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_002: [ clds_hazard_pointers_thread_helper_create shall register clds_hazard_pointers_thread_helper_thread_notification call target with the TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL). ]*/
+                    result->thread_notification_target_handle = TCALL_DISPATCHER_REGISTER_TARGET(THREAD_NOTIFICATION_CALL)(result->call_dispatcher, clds_hazard_pointers_thread_helper_thread_notification, result);
+                    if (result->thread_notification_target_handle == NULL)
+                    {
+                        LogError("thread_notifications_register_notification failed");
+                    }
+                    else
+                    {
+                        /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_004: [ clds_hazard_pointers_thread_helper_create shall succeed and return the helper. ]*/
+                        result->hazard_pointers = hazard_pointers;
+
+                        goto all_ok;
+                        //TCALL_DISPATCHER_UNREGISTER_TARGET(THREAD_NOTIFICATION_CALL)(result->call_dispatcher, result->thread_notification_target_handle);;
+                    }
+
+                    TCALL_DISPATCHER_ASSIGN(THREAD_NOTIFICATION_CALL)(&result->call_dispatcher, NULL);
+                }
+
+                (void)TlsFree(result->tls_slot);
             }
 
             free(result);
@@ -75,6 +158,12 @@ IMPLEMENT_MOCKABLE_FUNCTION(, void, clds_hazard_pointers_thread_helper_destroy, 
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_004: [ clds_hazard_pointers_thread_helper_destroy shall unregister the call target by calling TCALL_DISPATCHER_UNREGISTER_TARGET(THREAD_NOTIFICATION_CALL). ]*/
+        TCALL_DISPATCHER_UNREGISTER_TARGET(THREAD_NOTIFICATION_CALL)(hazard_pointers_helper->call_dispatcher, hazard_pointers_helper->thread_notification_target_handle);
+
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_003: [ clds_hazard_pointers_thread_helper_destroy shall release its reference to the TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL). ]*/
+        TCALL_DISPATCHER_ASSIGN(THREAD_NOTIFICATION_CALL)(&hazard_pointers_helper->call_dispatcher, NULL);
+
         /*Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_007: [ clds_hazard_pointers_thread_helper_destroy shall free the thread local storage slot by calling TlsFree. ]*/
         (void)TlsFree(hazard_pointers_helper->tls_slot);
 
