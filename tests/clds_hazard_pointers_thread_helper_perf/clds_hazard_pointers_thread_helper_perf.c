@@ -231,7 +231,6 @@ static void test_skipped_seq_chaos(void* context, int64_t skipped_sequence_no)
     (void)skipped_sequence_no;
 }
 
-// Test does not pass until we fix the scalability issue with no. of threads used
 TEST_FUNCTION(clds_hash_table_perf_does_not_degrade_over_time_with_more_and_more_threads_being_used)
 {
     // The test wants to constantly have new threads do the work, while old threads

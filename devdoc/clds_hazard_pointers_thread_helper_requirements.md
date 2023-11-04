@@ -33,11 +33,11 @@ MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, clds_hazard_point
 
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_002: [** `clds_hazard_pointers_thread_helper_create` shall allocate memory for the helper. **]**
 
+**SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_003: [** `clds_hazard_pointers_thread_helper_create` shall allocate the thread local storage slot for the hazard pointers by calling `TlsAlloc`. **]**
+
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_001: [** `clds_hazard_pointers_thread_helper_create` shall obtain a `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)` by calling `thread_notifications_dispatcher_get_call_dispatcher`. **]**
 
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_002: [** `clds_hazard_pointers_thread_helper_create` shall register `clds_hazard_pointers_thread_helper_thread_notification` call target with the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`. **]**
-
-**SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_003: [** `clds_hazard_pointers_thread_helper_create` shall allocate the thread local storage slot for the hazard pointers by calling `TlsAlloc`. **]**
 
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_004: [** `clds_hazard_pointers_thread_helper_create` shall succeed and return the helper. **]**
 
@@ -53,11 +53,11 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_thread_helper_destroy, CLDS_HAZAR
 
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_006: [** If `hazard_pointers_helper` is `NULL` then `clds_hazard_pointers_thread_helper_destroy` shall return. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_007: [** `clds_hazard_pointers_thread_helper_destroy` shall free the thread local storage slot by calling `TlsFree`. **]**
-
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_004: [** `clds_hazard_pointers_thread_helper_destroy` shall unregister the call target by calling `TCALL_DISPATCHER_UNREGISTER_TARGET(THREAD_NOTIFICATION_CALL)`. **]**
 
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_003: [** `clds_hazard_pointers_thread_helper_destroy` shall release its reference to the `TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL)`. **]**
+
+**SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_007: [** `clds_hazard_pointers_thread_helper_destroy` shall free the thread local storage slot by calling `TlsFree`. **]**
 
 **SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_008: [** `clds_hazard_pointers_thread_helper_destroy` shall free the helper. **]**
 

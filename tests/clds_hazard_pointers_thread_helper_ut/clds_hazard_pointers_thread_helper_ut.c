@@ -55,10 +55,10 @@ struct
 static CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE test_create(void)
 {
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
     STRICT_EXPECTED_CALL(thread_notifications_dispatcher_get_call_dispatcher());
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_INITIALIZE_MOVE(THREAD_NOTIFICATION_CALL)(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_REGISTER_TARGET(THREAD_NOTIFICATION_CALL)(g.thread_notification_call_dispatcher, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
 
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE helper = clds_hazard_pointers_thread_helper_create(test_hazard_pointers);
 
@@ -73,12 +73,12 @@ static CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE test_create(void)
 static CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE test_create_ex(TCALL_DISPATCHER_TARGET_FUNC(THREAD_NOTIFICATION_CALL)* thread_notification_callback, void** thread_notification_callback_context)
 {
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
     STRICT_EXPECTED_CALL(thread_notifications_dispatcher_get_call_dispatcher());
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_INITIALIZE_MOVE(THREAD_NOTIFICATION_CALL)(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_REGISTER_TARGET(THREAD_NOTIFICATION_CALL)(g.thread_notification_call_dispatcher, IGNORED_ARG, IGNORED_ARG))
         .CaptureArgumentValue_function_to_call(thread_notification_callback)
         .CaptureArgumentValue_call_context(thread_notification_callback_context);
-    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
 
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE helper = clds_hazard_pointers_thread_helper_create(test_hazard_pointers);
 
@@ -192,18 +192,18 @@ TEST_FUNCTION(clds_hazard_pointers_thread_helper_create_with_NULL_hazard_pointer
 }
 
 /*Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_002: [ clds_hazard_pointers_thread_helper_create shall allocate memory for the helper. ]*/
+/*Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_003: [ clds_hazard_pointers_thread_helper_create shall allocate the thread local storage slot for the hazard pointers by calling TlsAlloc. ]*/
 /*Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_001: [ clds_hazard_pointers_thread_helper_create shall obtain a TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL) by calling thread_notifications_dispatcher_get_call_dispatcher. ]*/
 /*Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_002: [ clds_hazard_pointers_thread_helper_create shall register clds_hazard_pointers_thread_helper_thread_notification call target with the TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL). ]*/
-/*Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_003: [ clds_hazard_pointers_thread_helper_create shall allocate the thread local storage slot for the hazard pointers by calling TlsAlloc. ]*/
 /*Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_42_004: [ clds_hazard_pointers_thread_helper_create shall succeed and return the helper. ]*/
 TEST_FUNCTION(clds_hazard_pointers_thread_helper_create_succeeds)
 {
     // arrange
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
     STRICT_EXPECTED_CALL(thread_notifications_dispatcher_get_call_dispatcher());
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_INITIALIZE_MOVE(THREAD_NOTIFICATION_CALL)(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_REGISTER_TARGET(THREAD_NOTIFICATION_CALL)(g.thread_notification_call_dispatcher, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
 
     // act
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE helper = clds_hazard_pointers_thread_helper_create(test_hazard_pointers);
@@ -221,10 +221,10 @@ TEST_FUNCTION(clds_hazard_pointers_thread_helper_create_fails_when_underlying_fu
 {
     // arrange
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
     STRICT_EXPECTED_CALL(thread_notifications_dispatcher_get_call_dispatcher());
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_INITIALIZE_MOVE(THREAD_NOTIFICATION_CALL)(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_REGISTER_TARGET(THREAD_NOTIFICATION_CALL)(g.thread_notification_call_dispatcher, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(mocked_TlsAlloc());
 
     umock_c_negative_tests_snapshot();
 
@@ -270,9 +270,9 @@ TEST_FUNCTION(clds_hazard_pointers_thread_helper_destroy_frees_resources)
     // arrange
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE helper = test_create();
 
-    STRICT_EXPECTED_CALL(mocked_TlsFree(default_tls_slot));
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_UNREGISTER_TARGET(THREAD_NOTIFICATION_CALL)(g.thread_notification_call_dispatcher, IGNORED_ARG));
     STRICT_EXPECTED_CALL(TCALL_DISPATCHER_ASSIGN(THREAD_NOTIFICATION_CALL)(IGNORED_ARG, NULL));
+    STRICT_EXPECTED_CALL(mocked_TlsFree(default_tls_slot));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
@@ -457,7 +457,7 @@ TEST_FUNCTION(clds_hazard_pointers_thread_helper_thread_notification_with_ATTACH
 /* Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_009: [ If the thread local stored value is not NULL: ]*/
 /* Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_010: [ clds_hazard_pointers_thread_helper_thread_notification shall set the value in the slot to NULL by calling TlsSetValue. ]*/
 /* Tests_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_011: [ clds_hazard_pointers_thread_helper_thread_notification shall call clds_hazard_pointers_unregister_thread with the argument being the obtained thread local value. ]*/
-TEST_FUNCTION(clds_hazard_pointers_thread_helper_thread_notification_with_DETACH_returns)
+TEST_FUNCTION(clds_hazard_pointers_thread_helper_thread_notification_with_DETACH_unregisters_thread)
 {
     // arrange
     TCALL_DISPATCHER_TARGET_FUNC(THREAD_NOTIFICATION_CALL) thread_notification_callback;

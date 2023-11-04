@@ -63,7 +63,7 @@ typedef struct CLDS_HAZARD_POINTERS_TAG
     CLDS_HAZARD_POINTERS_THREAD* volatile_atomic head;
     // This epoch exists in order to make sure that no HP thread information that is still being accessed
     // is actually freed
-    // HP Thread data is only freed when it was placed in theinactive queue and its epoch is lower than the current epoch
+    // HP Thread data is only freed when it was placed in the inactive queue and its epoch is lower than the current epoch
     // The epoch is being incremented whenever there are no more reclaims being executed (this means noone would be involving the inactive threads in the scan)
     volatile_atomic int64_t epoch; // epoch for inactive threads
     // This is a counter maintaining how many pending reclaim calls we have
@@ -139,18 +139,18 @@ static void free_thread_data(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
     free(clds_hazard_pointers_thread);
 }
 
-static bool is_epoch_lower_or_equal(void* context, CLDS_HP_INACTIVE_THREAD* inactive_thread)
+static bool is_epoch_lower(void* context, CLDS_HP_INACTIVE_THREAD* inactive_thread)
 {
     int64_t* epoch = context;
-    return inactive_thread->current_epoch_value <= *epoch;
+    return inactive_thread->current_epoch_value < *epoch;
 }
 
-static void free_inactive_threads_until_epoch(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, int64_t epoch)
+static void free_inactive_threads_in_previous_epochs(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers, int64_t epoch)
 {
     do
     {
         CLDS_HP_INACTIVE_THREAD inactive_thread;
-        if (TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(clds_hazard_pointers->inactive_threads, &inactive_thread, NULL, is_epoch_lower_or_equal, &epoch) != TQUEUE_POP_OK)
+        if (TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(clds_hazard_pointers->inactive_threads, &inactive_thread, NULL, is_epoch_lower, &epoch) != TQUEUE_POP_OK)
         {
             break;
         }
@@ -278,7 +278,7 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
         }
         else
         {
-            free_inactive_threads_until_epoch(clds_hazard_pointers, current_epoch);
+            free_inactive_threads_in_previous_epochs(clds_hazard_pointers, current_epoch + 1);
         }
     }
 }
@@ -414,7 +414,7 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
         }
 
         // free all inactive threads
-        free_inactive_threads_until_epoch(clds_hazard_pointers, INT64_MAX);
+        free_inactive_threads_in_previous_epochs(clds_hazard_pointers, INT64_MAX);
         TQUEUE_ASSIGN(CLDS_HP_INACTIVE_THREAD)(&clds_hazard_pointers->inactive_threads, NULL);
         free(clds_hazard_pointers);
     }
