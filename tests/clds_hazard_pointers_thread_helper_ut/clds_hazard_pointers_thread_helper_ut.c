@@ -24,7 +24,7 @@
 
 #include "c_pal/ps_util.h"
 
-#include "clds/thread_notifications_dispatcher.h"
+#include "c_util/thread_notifications_dispatcher.h"
 #include "clds/clds_hazard_pointers.h"
 #undef ENABLE_MOCKS
 

@@ -11,8 +11,9 @@
 #include "c_pal/gballoc_hl_redirect.h"
 #include "c_pal/log_critical_and_terminate.h"
 
+#include "c_util/thread_notifications_dispatcher.h"
+
 #include "clds/clds_hazard_pointers.h"
-#include "clds/thread_notifications_dispatcher.h"
 
 #include "clds/clds_hazard_pointers_thread_helper.h"
 
