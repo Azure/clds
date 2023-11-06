@@ -16,20 +16,29 @@ typedef struct LRU_CACHE_TAG
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers;
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE clds_hazard_pointers_thread_helper;
+
     CLDS_HASH_TABLE_HANDLE table;
+
     volatile_atomic int64_t current_size;
-    uint64_t capacity;
+    int64_t capacity;
+
     DLIST_ENTRY head;
+
     SRW_LOCK_LL srw_lock;
+
+    LRU_CACHE_ON_ERROR_CALLBACK_FUNC on_error_callback;
+    void* on_error_context;
 } LRU_CACHE;
 
 typedef struct LRU_NODE_TAG
 {
     void* key;
     int64_t size;
-    CLDS_HASH_TABLE_ITEM* value;
+    void* value;
     DLIST_ENTRY node;
-    volatile_atomic int32_t state; /* LRU_NODE_STATE */
+
+    LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback;
+    void* evict_callback_context;
 } LRU_NODE;
 
 typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
@@ -51,38 +60,28 @@ If the cache is full, it performs eviction by removing the least recently used i
 ```mermaid
 graph TD
     A[Input: lru_cache, key, value, size]
-    B[Find item in cache]
-    C[If item exists]
-    E[Acquire Lock]
-    F[Add item to cache]
-    G[Update DList Entry Position]
-    H[Release Lock]
-    I[Update cache current size]
-    J[Acquire Lock]
-    K[Update item to cache]
-    L[Remove DList Entry]
-    M[Update DList Entry Position]
-    P[Update cache current size]
-    N[Release Lock]
-    O[Eviction logic]
-    Z[Output: Result]
+    B[Acquire Lock]
+    C[Set item to cache]
+    D[If item exists]
+    E[Update cache current size]
+    F[Remove DList Entry]
+    H[Add to cache current size]
+    I[Add DList to tail Position]
+    J[Release Lock]
+    K[Eviction logic]
+    L[Output: Result]
 
     A --> B
     B --> C
-    C -->|Yes| J
-    C -->|No| E
+    C --> D
+    D -->|Yes| E
+    D -->|No| H
     E --> F
-    F --> G
-    G --> I
-    I --> H
+    F --> I
+    H --> I
+    I --> J
     J --> K
     K --> L
-    L --> M
-    M --> P
-    P --> N
-    N --> O
-    H --> O
-    O --> Z
 
 ```
 
