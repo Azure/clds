@@ -13,7 +13,8 @@
 
 #include "c_pal/thandle.h"
 
-#include "clds/tqueue.h"
+#include "c_util/tqueue.h"
+
 #include "clds/clds_hazard_pointers.h"
 
 #include "umock_c/umock_c_prod.h"

@@ -16,8 +16,6 @@ if (WIN32)
     set(clds_reals_c_files
         ${clds_reals_c_files}
         real_clds_hazard_pointers_thread_helper.c # Windows only until there is a PAL for thread local storage
-        real_tcall_dispatcher_thread_notification_call.c
-        real_thread_notifications_dispatcher.c
     )
 endif()
 
@@ -45,17 +43,10 @@ if (WIN32)
         ${clds_reals_h_files}
         real_clds_hazard_pointers_thread_helper.h
         real_clds_hazard_pointers_thread_helper_renames.h # Windows only until there is a PAL for thread local storage
-        real_tcall_dispatcher_thread_notification_call.h
-        real_tcall_dispatcher_thread_notification_call_renames.h
-        real_thread_notifications_dispatcher.h
-        real_thread_notifications_dispatcher_renames.h
     )
 endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../src)
 add_library(clds_reals ${clds_reals_c_files} ${clds_reals_h_files})
 target_link_libraries(clds_reals c_pal_reals c_util_reals)
-if (WIN32)
-    target_link_libraries(clds_reals thread_notifications_lackey_dll)
-endif()
 target_include_directories(clds_reals PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/reals>)
