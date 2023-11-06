@@ -3,6 +3,7 @@
 
 #include "real_gballoc_hl_renames.h"
 #include "real_clds_hazard_pointers_renames.h"
+#include "real_thread_notifications_dispatcher_renames.h"
 
 #include "real_clds_hazard_pointers_thread_helper_renames.h"
 

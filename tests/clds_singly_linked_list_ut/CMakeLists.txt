@@ -8,16 +8,10 @@ ${theseTestsName}.c
 
 set(${theseTestsName}_c_files
 ../../src/clds_singly_linked_list.c
-../reals/real_clds_st_hash_set.c
-../reals/real_clds_hazard_pointers.c
 )
 
 set(${theseTestsName}_h_files
 ../../inc/clds/clds_singly_linked_list.h
-../reals/real_clds_st_hash_set.h
-../reals/real_clds_st_hash_set_renames.h
-../reals/real_clds_hazard_pointers.h
-../reals/real_clds_hazard_pointers_renames.h
 )
 
-build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal c_pal_reals)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal c_pal_reals clds_reals)
