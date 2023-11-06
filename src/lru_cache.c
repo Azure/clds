@@ -352,6 +352,8 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                         }
                         else
                         {
+                            /*Codes_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
+
                             /*Codes_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
                             (void)interlocked_add_64(&lru_cache->current_size, size);
                         }

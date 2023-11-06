@@ -403,6 +403,26 @@ TEST_FUNCTION(lru_cache_create_with_capacity_0_fails)
     // cleanup
 }
 
+/*Tests_SRS_LRU_CACHE_13_079: [ If on_error_callback is NULL then lru_cache_create shall fail and return NULL. ]*/
+TEST_FUNCTION(lru_cache_create_with_on_error_callback_NULL_fails)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+
+    umock_c_reset_all_calls();
+
+    // act
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, NULL, test_error_context);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_IS_NULL(lru_cache);
+
+    // cleanup
+}
+
 /*Tests_SRS_LRU_CACHE_13_020: [ If there are any failures then lru_cache_create shall fail and return NULL. ]*/
 TEST_FUNCTION(when_underlying_calls_fail_lru_cache_create_fails)
 {
@@ -628,7 +648,6 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
-/*Tests_SRS_LRU_CACHE_13_048: [ lru_cache_put shall release the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
 TEST_FUNCTION(lru_cache_put_succeeds)
