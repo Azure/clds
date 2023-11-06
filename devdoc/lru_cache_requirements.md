@@ -24,7 +24,9 @@ MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
 typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity);
+typedef void(*LRU_CACHE_ON_ERROR_CALLBACK_FUNC)(void* context);
+
+MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity, LRU_CACHE_ON_ERROR_CALLBACK_FUNC, on_error_callback, void*, on_error_context);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
@@ -50,6 +52,8 @@ Creates `LRU_CACHE_HANDLE` which holds `clds_hash_table`, `doublylinkedlist` and
 **SRS_LRU_CACHE_13_004: [** If `clds_hazard_pointers` is `NULL`, `lru_cache_create` shall fail and return `NULL`. **]**
 
 **SRS_LRU_CACHE_13_010: [** If `capacity` is less than or equal to `0`, then `lru_cache_create` shall fail and return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_079: [** If `on_error_callback` is `NULL` then `lru_cache_create` shall fail and return `NULL`. **]**
 
 **SRS_LRU_CACHE_13_011: [** `lru_cache_create` shall allocate memory for `LRU_CACHE_HANDLE`. **]**
 
@@ -109,41 +113,31 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_028: [** `lru_cache_put` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
 
-**SRS_LRU_CACHE_13_029: [** `lru_cache_put` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**
+**SRS_LRU_CACHE_13_080: [** If `current_size` with `size` exceeds `INT64_MAX`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_VALUE_INVALID_SIZE`. **]**
+
+**SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
+
+**SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
 
 **SRS_LRU_CACHE_13_030: [**  If the `key` is found: **]**
 
-- **SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
-
-- **SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
-
-- **SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
-
-- **SRS_LRU_CACHE_13_077: [** If LRU Node state is `LRU_NODE_STATE_READY` only then the old Node is removed from list by calling `DList_RemoveEntryList`. **]**
-
-- **SRS_LRU_CACHE_13_066: [** `lru_cache_put` shall append the updated node to the tail to maintain the order. **]**
-
 - **SRS_LRU_CACHE_13_070: [** `lru_cache_put` shall update the `current_size` with the new `size` and removes the old value size. **]**
+
+- **SRS_LRU_CACHE_13_077: [** `lru_cache_put` shall remove the old node from the list by calling `DList_RemoveEntryList`. **]**
 
 - **SRS_LRU_CACHE_13_067: [** `lru_cache_put` shall free the old value. **]**
 
-- **SRS_LRU_CACHE_13_036: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
-
-- **SRS_LRU_CACHE_13_068: [** `lru_cache_put` shall return with `LRU_CACHE_PUT_OK`. **]**
-
 **SRS_LRU_CACHE_13_071: [** Otherwise, if the `key` is not found: **]**
-
-- **SRS_LRU_CACHE_13_046: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
-
-- **SRS_LRU_CACHE_13_044: [** `lru_cache_put` shall create LRU Node item to be inserted in the hash table. **]**
-
-- **SRS_LRU_CACHE_13_045: [** `lru_cache_put` shall insert the LRU Node item in the hash table by calling `clds_hash_table_insert`. **]**
-
-- **SRS_LRU_CACHE_13_047: [** `lru_cache_put` shall append the node to the tail. **]**
 
 - **SRS_LRU_CACHE_13_062: [** `lru_cache_put` shall add the item `size` to the `current_size`. **]**
 
-- **SRS_LRU_CACHE_13_048: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
+**SRS_LRU_CACHE_13_066: [** `lru_cache_put` shall append the updated node to the tail to maintain the order. **]**
+
+**SRS_LRU_CACHE_13_036: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_068: [** `lru_cache_put` shall return with `LRU_CACHE_PUT_OK`. **]**
 
 **SRS_LRU_CACHE_13_037: [** While the `current_size` of the cache exceeds `capacity`: **]**
 
@@ -157,7 +151,7 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_078: [** If `clds_hash_table_remove` returns `CLDS_HASH_TABLE_REMOVE_NOT_FOUND`, then `lru_cache_put` shall retry eviction. **]**
 
-- **SRS_LRU_CACHE_13_041: [** If LRU Node state is `LRU_NODE_STATE_READY` only then the old Node is removed from list by calling `DList_RemoveEntryList`. **]**
+- **SRS_LRU_CACHE_13_041: [** `lru_cache_put` shall remove the old node from the list by calling `DList_RemoveEntryList`. **]**
 
 - **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the status `LRU_CACHE_EVICT_OK` and the evicted item. **]**
 
@@ -183,8 +177,6 @@ Gets the `value` of the `key` from the cache. If the `key` is found, the node is
 **SRS_LRU_CACHE_13_053: [** `lru_cache_get` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
 
 **SRS_LRU_CACHE_13_054: [** `lru_cache_get` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**
-
-**SRS_LRU_CACHE_13_079: [** If the LRU Node is already evicted with the state `LRU_NODE_STATE_EVICTED`, then `lru_cache_get` shall return `CLDS_HASH_TABLE_ITEM` value of the `key`. **]**
 
 **SRS_LRU_CACHE_13_056: [** `lru_cache_get` shall acquire the lock in exclusive mode. **]**
 

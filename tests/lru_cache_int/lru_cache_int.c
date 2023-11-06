@@ -15,6 +15,7 @@
 #include "c_pal/timer.h"
 #include "c_pal/thandle.h"
 #include "c_pal/threadapi.h"
+#include "c_pal/sync.h"
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 
@@ -63,9 +64,9 @@ typedef struct CHAOS_THREAD_DATA_TAG
     CHAOS_TEST_CONTEXT* chaos_test_context;
 } CHAOS_THREAD_DATA;
 
-#define CHAOS_THREAD_COUNT  32
+#define CHAOS_THREAD_COUNT  16
 #define CHAOS_ITEM_COUNT    5000
-#define CHAOS_MAX_CAPACITY   3000
+#define CHAOS_MAX_CAPACITY   30000
 
 #ifdef USE_VALGRIND
 // when using Valgrind/Helgrind setting this way lower as that is ... slow
@@ -96,6 +97,8 @@ MU_DEFINE_ENUM_STRINGS(TEST_HASH_TABLE_ITEM_STATE, TEST_HASH_TABLE_ITEM_STATE_VA
 
 MU_DEFINE_ENUM_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES);
 MU_DEFINE_ENUM_STRINGS(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALUES)
+
+TEST_DEFINE_ENUM_TYPE(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
 
 static uint64_t test_compute_hash(void* key)
@@ -177,6 +180,36 @@ static void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_
     }
 }
 
+
+static void on_lru_cache_error_callback(void* context)
+{
+    (void)context;
+    ASSERT_FAIL("LRU_CACHE error");
+}
+
+typedef struct EVICTION_TEST_CONTEXT_TAG
+{
+    uint32_t key;
+    volatile_atomic int32_t was_called;
+} EVICTION_TEST_CONTEXT;
+
+
+static void test_success_eviction(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value)
+{
+    EVICTION_TEST_CONTEXT* evict_context = context;
+    ASSERT_IS_NOT_NULL(evict_context);
+    ASSERT_IS_NOT_NULL(evicted_value);
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, cache_evict_status);
+
+    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, evicted_value);
+    ASSERT_IS_NOT_NULL(test_item);
+
+    ASSERT_ARE_EQUAL(uint32_t, evict_context->key, test_item->key);
+
+    (void)interlocked_increment(&evict_context->was_called);
+    wake_by_address_single(&evict_context->was_called);
+}
+
 TEST_FUNCTION(test_put_and_get)
 {
     // arrange
@@ -184,7 +217,7 @@ TEST_FUNCTION(test_put_and_get)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -237,7 +270,7 @@ TEST_FUNCTION(test_put_calls_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 2);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 2, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -299,6 +332,81 @@ TEST_FUNCTION(test_put_calls_evict)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+
+// Cyrus
+TEST_FUNCTION(test_put_calls_evict_with_correct_context)
+{
+    // arrange
+    uint32_t key1 = 1, key2 = 2, key3 = 3;
+    int64_t capacity = 2;
+    EVICTION_TEST_CONTEXT key1_context, key2_context, key3_context;
+    key1_context.key = key1, key2_context.key = key2, key3_context.key = key3;
+    (void)interlocked_exchange(&key1_context.was_called, 0);
+    (void)interlocked_exchange(&key2_context.was_called, 0);
+    (void)interlocked_exchange(&key3_context.was_called, 0);
+
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, capacity, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+
+    LRU_CACHE_PUT_RESULT result;
+    CLDS_HASH_TABLE_ITEM* item1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    ASSERT_IS_NOT_NULL(item1);
+    TEST_ITEM* test_item1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item1);
+    test_item1->key = key1;
+    test_item1->appendix = 13;
+
+    CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    ASSERT_IS_NOT_NULL(item1);
+    TEST_ITEM* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item2);
+    test_item2->key = key2;
+    test_item2->appendix = 14;
+
+    CLDS_HASH_TABLE_ITEM* item3 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    ASSERT_IS_NOT_NULL(item3);
+    TEST_ITEM* test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item3);
+    test_item3->key = key3;
+    test_item3->appendix = 15;
+
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, test_success_eviction, &key1_context);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, test_success_eviction, &key2_context);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    // act
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 2, test_success_eviction, &key3_context);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+
+    // assert
+    ASSERT_ARE_EQUAL(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_OK, InterlockedHL_WaitForValue(&key1_context.was_called, 1, UINT32_MAX));
+    CLDS_HASH_TABLE_ITEM* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    ASSERT_IS_NULL(return_val1);
+
+    ASSERT_ARE_EQUAL(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_OK, InterlockedHL_WaitForValue(&key2_context.was_called, 1, UINT32_MAX));
+    CLDS_HASH_TABLE_ITEM* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(2));
+    ASSERT_IS_NULL(return_val2);
+
+    CLDS_HASH_TABLE_ITEM* return_val3 = lru_cache_get(lru_cache, (void*)(uintptr_t)(3));
+    ASSERT_IS_NOT_NULL(return_val3);
+    TEST_ITEM* return_test_item3 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val3);
+    ASSERT_IS_NOT_NULL(return_test_item3);
+    ASSERT_ARE_EQUAL(int, 3, return_test_item3->key);
+    ASSERT_ARE_EQUAL(int, 15, return_test_item3->appendix);
+
+    // cleanup
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item1);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item2);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item3);
+
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 TEST_FUNCTION(test_put_same_item_multiple_times_triggers_evict)
 {
     // arrange
@@ -307,7 +415,7 @@ TEST_FUNCTION(test_put_same_item_multiple_times_triggers_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 2);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 2, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -386,7 +494,7 @@ TEST_FUNCTION(test_put_multiple_times_on_same_item_does_not_trigger_evict)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
 
@@ -450,7 +558,7 @@ TEST_FUNCTION(test_put_different_value_same_key_works)
 
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
     ASSERT_IS_NOT_NULL(hazard_pointers);
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
     LRU_CACHE_PUT_RESULT result;
@@ -511,7 +619,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     int n = 10;
     CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
 
-    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, capacity);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, capacity, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
     LRU_CACHE_PUT_RESULT result;
@@ -624,7 +732,7 @@ static int chaos_thread(void* arg)
         // perform one of the several actions
         CHAOS_TEST_ACTION action = (CHAOS_TEST_ACTION)(rand() * ((MU_COUNT_ARG(CHAOS_TEST_ACTION_VALUES)) - 1) / RAND_MAX);
         int item_index = (rand() * (CHAOS_ITEM_COUNT - 1)) / RAND_MAX;
-        int item_size = ((rand() * (CHAOS_MAX_CAPACITY/10)) / RAND_MAX) + 1;
+        int item_size = ((rand() * (CHAOS_MAX_CAPACITY/100)) / RAND_MAX) + 1;
         //int item_size = 10;
 
         switch (action)
@@ -734,7 +842,7 @@ TEST_FUNCTION(lru_cache_chaos_knight_test)
         (void)interlocked_exchange(&chaos_test_context->items[i].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
     }
 
-    chaos_test_context->lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, CHAOS_MAX_CAPACITY);
+    chaos_test_context->lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, CHAOS_MAX_CAPACITY, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(chaos_test_context->lru_cache);
 
     (void)interlocked_exchange(&chaos_test_context->done, 0);
