@@ -6,8 +6,8 @@
 
 #include "macro_utils/macro_utils.h"
 
-#include "clds/tqueue_ll.h"
-#include "clds/tqueue.h"
+#include "c_util/tqueue_ll.h"
+#include "c_util/tqueue.h"
 
 #include "../../inc/clds/inactive_hp_thread_queue.h"
 
