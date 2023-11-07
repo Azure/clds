@@ -71,8 +71,8 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         on_error_callback == NULL
         )
     {
-        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, uint32_t initial_bucket_size=%u, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t capacity=%" PRId64 "",
-            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, capacity);
+        LogError("Invalid arguments: COMPUTE_HASH_FUNC compute_hash=%p, KEY_COMPARE_FUNC key_compare_func=%p, uint32_t initial_bucket_size=%u, CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p, int64_t capacity=%" PRId64 ", LRU_CACHE_ON_ERROR_CALLBACK_FUNC on_error_callback=%p, void* on_error_context=%p",
+            compute_hash, key_compare_func, initial_bucket_size, clds_hazard_pointers, capacity, on_error_callback, on_error_context);
         result = NULL;
     }
     else
@@ -161,13 +161,14 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
 static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread)
 {
     LRU_CACHE_EVICT_RESULT result = LRU_CACHE_EVICT_OK;
-    do
+
+    while(result == LRU_CACHE_EVICT_OK)
     {
         /*Codes_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
         srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
 
         int64_t current_size = interlocked_add_64(&lru_cache->current_size, 0);
-        if (result != LRU_CACHE_EVICT_OK || current_size <= lru_cache->capacity)
+        if (current_size <= lru_cache->capacity)
         {
             srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
             break;
@@ -216,43 +217,43 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
 
                     switch (remove_result)
                     {
-                        case CLDS_HASH_TABLE_REMOVE_OK:
-                        {
+                    case CLDS_HASH_TABLE_REMOVE_OK:
+                    {
 
-                            /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall remove the old node from the list by calling DList_RemoveEntryList. ]*/
-                            (void)DList_RemoveEntryList(least_used_node);
-                            LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to evict the lru node.", least_used_node_value->key, least_used_node_value->size);
+                        /*Codes_SRS_LRU_CACHE_13_041: [ lru_cache_put shall remove the old node from the list by calling DList_RemoveEntryList. ]*/
+                        (void)DList_RemoveEntryList(least_used_node);
+                        LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to evict the lru node.", least_used_node_value->key, least_used_node_value->size);
 
-                            /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
-                            least_used_node_value->evict_callback(least_used_node_value->evict_callback_context, LRU_CACHE_EVICT_OK, least_used_node_value->value);
+                        /*Codes_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the evicted item. ]*/
+                        least_used_node_value->evict_callback(least_used_node_value->evict_callback_context, least_used_node_value->value);
 
-                            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
-                            break;
-                        }
+                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, entry);
+                        break;
+                    }
 
-                        case CLDS_HASH_TABLE_REMOVE_NOT_FOUND:
-                        {
-                            /*Codes_SRS_LRU_CACHE_13_078: [ If clds_hash_table_remove returns CLDS_HASH_TABLE_REMOVE_NOT_FOUND, then lru_cache_put shall retry eviction. ]*/
-                            LogError("item with key =%p has already been evicted.", least_used_node_value->key);
-                            (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
-                            break;
-                        }
-                        case CLDS_HASH_TABLE_REMOVE_ERROR:
-                        {
-                            /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-                            LogError("Error removing item with key =%p from hash table", least_used_node_value->key);
-                            result = LRU_CACHE_EVICT_ERROR;
-                            lru_cache->on_error_callback(lru_cache->on_error_context);
-                            (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
-                            break;
-                        }
+                    case CLDS_HASH_TABLE_REMOVE_NOT_FOUND:
+                    {
+                        /*Codes_SRS_LRU_CACHE_13_078: [ If clds_hash_table_remove returns CLDS_HASH_TABLE_REMOVE_NOT_FOUND, then lru_cache_put shall retry eviction. ]*/
+                        LogError("item with key =%p has already been evicted.", least_used_node_value->key);
+                        (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
+                        break;
+                    }
+                    case CLDS_HASH_TABLE_REMOVE_ERROR:
+                    {
+                        /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+                        LogError("Error removing item with key =%p from hash table", least_used_node_value->key);
+                        result = LRU_CACHE_EVICT_ERROR;
+                        lru_cache->on_error_callback(lru_cache->on_error_context);
+                        (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
+                        break;
+                    }
                     }
                 }
             }
         }
         /*Codes_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
         srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
-    } while (1);
+    }
 
     return result;
 }

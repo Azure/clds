@@ -41,7 +41,7 @@ typedef struct LRU_NODE_TAG
     void* evict_callback_context;
 } LRU_NODE;
 
-typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
+typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value);
 
 ```
 

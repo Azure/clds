@@ -22,7 +22,7 @@ MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
 
-typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value);
+typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value);
 
 typedef void(*LRU_CACHE_ON_ERROR_CALLBACK_FUNC)(void* context);
 
@@ -153,7 +153,7 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 - **SRS_LRU_CACHE_13_041: [** `lru_cache_put` shall remove the old node from the list by calling `DList_RemoveEntryList`. **]**
 
-- **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the status `LRU_CACHE_EVICT_OK` and the evicted item. **]**
+- **SRS_LRU_CACHE_13_043: [** On success, `evict_callback` is called with the evicted item. **]**
 
 - **SRS_LRU_CACHE_13_042: [** `lru_cache_put` shall release the lock in exclusive mode. **]**
 

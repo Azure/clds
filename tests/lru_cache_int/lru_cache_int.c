@@ -21,6 +21,7 @@
 
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
+#include "clds/thread_notifications_dispatcher.h"
 
 #include "clds/lru_cache.h"
 
@@ -149,10 +150,12 @@ BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 TEST_SUITE_INITIALIZE(suite_init)
 {
     ASSERT_ARE_EQUAL(int, 0, gballoc_hl_init(NULL, NULL));
+    ASSERT_ARE_EQUAL(int, 0, thread_notifications_dispatcher_init());
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
+    thread_notifications_dispatcher_deinit();
     gballoc_hl_deinit();
 }
 
@@ -169,15 +172,12 @@ typedef struct EVICT_CONTEXT_TAG
     uint32_t count;
 } EVICT_CONTEXT;
 
-static void on_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* item)
+static void on_evict_callback(void* context, void* item)
 {
     EVICT_CONTEXT* count_context = context;
     count_context->count++;
-    if (cache_evict_status == LRU_CACHE_EVICT_OK)
-    {
-        TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
-        ASSERT_IS_NOT_NULL(test_item);
-    }
+    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
+    ASSERT_IS_NOT_NULL(test_item);
 }
 
 
@@ -194,12 +194,11 @@ typedef struct EVICTION_TEST_CONTEXT_TAG
 } EVICTION_TEST_CONTEXT;
 
 
-static void test_success_eviction(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* evicted_value)
+static void test_success_eviction(void* context, void* evicted_value)
 {
     EVICTION_TEST_CONTEXT* evict_context = context;
     ASSERT_IS_NOT_NULL(evict_context);
     ASSERT_IS_NOT_NULL(evicted_value);
-    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, cache_evict_status);
 
     TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, evicted_value);
     ASSERT_IS_NOT_NULL(test_item);
@@ -333,7 +332,6 @@ TEST_FUNCTION(test_put_calls_evict)
 }
 
 
-// Cyrus
 TEST_FUNCTION(test_put_calls_evict_with_correct_context)
 {
     // arrange
@@ -666,24 +664,17 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-static void on_chaos_evict_callback(void* context, LRU_CACHE_EVICT_RESULT cache_evict_status, void* item)
+static void on_chaos_evict_callback(void* context, void* item)
 {
-    if (cache_evict_status == LRU_CACHE_EVICT_OK)
-    {
-        TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
-        ASSERT_IS_NOT_NULL(test_item);
-        CHAOS_TEST_CONTEXT* evict_context = context;
-        CHAOS_TEST_ITEM_DATA* data = &evict_context->items[test_item->key - 1];
-        (void)interlocked_exchange(&data->item_state, TEST_HASH_TABLE_ITEM_EVICTING);
-        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, data->item);
-        data->item = NULL;
-        (void)interlocked_exchange(&data->item_state, TEST_HASH_TABLE_ITEM_EVICTED);
-        (void)interlocked_increment(&evict_context->eviction_call_count);
-    }
-    else
-    {
-        ASSERT_FAIL("Eviction failed.");
-    }
+    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
+    ASSERT_IS_NOT_NULL(test_item);
+    CHAOS_TEST_CONTEXT* evict_context = context;
+    CHAOS_TEST_ITEM_DATA* data = &evict_context->items[test_item->key - 1];
+    (void)interlocked_exchange(&data->item_state, TEST_HASH_TABLE_ITEM_EVICTING);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, data->item);
+    data->item = NULL;
+    (void)interlocked_exchange(&data->item_state, TEST_HASH_TABLE_ITEM_EVICTED);
+    (void)interlocked_increment(&evict_context->eviction_call_count);
 }
 
 static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_count, int32_t new_item_state, int32_t old_item_state, int* selected_item_index)

@@ -783,7 +783,7 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
 /*Tests_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
 /*Tests_SRS_LRU_CACHE_13_041: [ lru_cache_put shall remove the old node from the list by calling DList_RemoveEntryList. ]*/
-/*Tests_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
+/*Tests_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the evicted item. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
 TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
 {
