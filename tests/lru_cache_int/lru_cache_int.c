@@ -21,7 +21,7 @@
 
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
-#include "clds/thread_notifications_dispatcher.h"
+#include "c_util/thread_notifications_dispatcher.h"
 
 #include "clds/lru_cache.h"
 

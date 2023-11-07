@@ -37,6 +37,9 @@
 #include "../reals/real_clds_hazard_pointers.h"
 #include "../reals/real_clds_hazard_pointers_thread_helper.h"
 
+#include "real_thread_notifications_dispatcher.h"
+
+
 #include "clds/lru_cache.h"
 
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
@@ -79,7 +82,7 @@ MOCK_FUNCTION_WITH_CODE(, uint64_t, test_compute_hash, void*, key)
     (void)key;
 MOCK_FUNCTION_END((uint64_t)key)
 
-MOCK_FUNCTION_WITH_CODE(, void, test_eviction_callback, void*, context, LRU_CACHE_EVICT_RESULT, cache_evict_status, void*, evicted_value)
+MOCK_FUNCTION_WITH_CODE(, void, test_eviction_callback, void*, context, void*, evicted_value)
 MOCK_FUNCTION_END()
 
 static CLDS_CONDITION_CHECK_RESULT g_condition_check_result = CLDS_CONDITION_CHECK_OK;
@@ -156,6 +159,8 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT);
     REGISTER_TYPE(CLDS_HASH_TABLE_REMOVE_RESULT, CLDS_HASH_TABLE_REMOVE_RESULT);
 
+    ASSERT_ARE_EQUAL(int, 0, real_thread_notifications_dispatcher_init());
+
     ASSERT_ARE_EQUAL(int, 0, umock_c_negative_tests_init());
 }
 
@@ -164,6 +169,7 @@ TEST_SUITE_CLEANUP(suite_cleanup)
     umock_c_negative_tests_deinit();
     umock_c_deinit();
 
+    real_thread_notifications_dispatcher_deinit();
     real_gballoc_hl_deinit();
 }
 
@@ -209,6 +215,7 @@ static void set_lru_create_expectations(uint32_t bucket_size, CLDS_HAZARD_POINTE
 {
     STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_create(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(interlocked_increment(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_create(IGNORED_ARG, IGNORED_ARG, bucket_size, hazard_pointers, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_init(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InitializeListHead(IGNORED_ARG));
@@ -249,7 +256,7 @@ static void set_lru_put_evict_expectations(void* key, int64_t current_size, int6
     STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(test_eviction_callback(IGNORED_ARG, LRU_CACHE_EVICT_OK, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_eviction_callback(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 }
