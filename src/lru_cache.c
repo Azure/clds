@@ -6,6 +6,7 @@
 
 #include "c_logging/logger.h"
 
+#include "c_pal/containing_record.h"
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 #include "c_pal/sync.h"
@@ -238,6 +239,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
                         (void)interlocked_add_64(&lru_cache->current_size, least_used_node_value->size);
                         break;
                     }
+                    default:
                     case CLDS_HASH_TABLE_REMOVE_ERROR:
                     {
                         /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
