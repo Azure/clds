@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include "testrunnerswitcher.h"
 
@@ -150,21 +151,21 @@ BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 TEST_SUITE_INITIALIZE(suite_init)
 {
     ASSERT_ARE_EQUAL(int, 0, gballoc_hl_init(NULL, NULL));
-    ASSERT_ARE_EQUAL(int, 0, thread_notifications_dispatcher_init());
 }
 
 TEST_SUITE_CLEANUP(suite_cleanup)
 {
-    thread_notifications_dispatcher_deinit();
     gballoc_hl_deinit();
 }
 
 TEST_FUNCTION_INITIALIZE(method_init)
 {
+    ASSERT_ARE_EQUAL(int, 0, thread_notifications_dispatcher_init());
 }
 
 TEST_FUNCTION_CLEANUP(method_cleanup)
 {
+    thread_notifications_dispatcher_deinit();
 }
 
 typedef struct EVICT_CONTEXT_TAG
@@ -875,7 +876,7 @@ TEST_FUNCTION(lru_cache_chaos_knight_test)
     {
         if (chaos_test_context->items[i].item != NULL)
         {
-            LogInfo("The state(%" PRI_MU_ENUM ") KEY = %zu", MU_ENUM_VALUE(TEST_HASH_TABLE_ITEM_STATE, chaos_test_context->items[i].item_state), i + 1);           
+            //LogInfo("The state(%" PRI_MU_ENUM ") KEY = %zu", MU_ENUM_VALUE(TEST_HASH_TABLE_ITEM_STATE, chaos_test_context->items[i].item_state), i + 1);           
             count++;
             CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, chaos_test_context->items[i].item);
         }
