@@ -6,6 +6,7 @@
 #include "c_pal/gballoc_hl_redirect.h"
 
 #include "real_inactive_hp_thread_queue_renames.h"
+#include "real_interlocked_renames.h"
 
 #include "c_pal/thandle_ll.h"
 #include "c_util/tqueue_ll.h"
