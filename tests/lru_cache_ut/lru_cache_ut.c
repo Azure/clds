@@ -13,6 +13,8 @@
 #include "umock_c/umocktypes_stdint.h"
 #include "umock_c/umock_c_negative_tests.h"
 
+// TODO: This should go back to mocks: 
+// Task 25774695: Fix mocking for interlocked when using reals hazard pointers
 #include "c_pal/interlocked.h"
 
 #define ENABLE_MOCKS
@@ -165,7 +167,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     ASSERT_IS_NOT_NULL(test_clds_hazard_pointers, "Cannot create hazard pointers");
 
     test_clds_hazard_pointers_thread_helper = real_clds_hazard_pointers_thread_helper_create(test_clds_hazard_pointers);
-    ASSERT_IS_NOT_NULL(test_clds_hazard_pointers, "Cannot create hazard pointers");
+    ASSERT_IS_NOT_NULL(test_clds_hazard_pointers_thread_helper, "Cannot create hazard pointers thread helper");
 
 }
 
