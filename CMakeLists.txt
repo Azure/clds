@@ -158,6 +158,7 @@ set(clds_h_files
     ./inc/clds/clds_singly_linked_list.h
     ./inc/clds/mpsc_lock_free_queue.h
     ./inc/clds/inactive_hp_thread_queue.h
+    ./inc/clds/lru_cache.h
 )
 
 if (WIN32)
@@ -176,6 +177,7 @@ set(clds_c_files
     ./src/clds_singly_linked_list.c
     ./src/mpsc_lock_free_queue.c
     ./src/inactive_hp_thread_queue.c
+    ./src/lru_cache.c
 )
 
 if (WIN32)
