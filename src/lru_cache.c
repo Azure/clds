@@ -50,6 +50,9 @@ typedef struct LRU_NODE_TAG
 
     LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback;
     void* evict_callback_context;
+
+    LRU_CACHE_VALUE_COPY copy_func;
+    LRU_CACHE_VALUE_FREE free_func;
 } LRU_NODE;
 DECLARE_HASH_TABLE_NODE_TYPE(LRU_NODE);
 
@@ -260,7 +263,17 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
     return result;
 }
 
-LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, int64_t size, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context)
+static void lru_node_cleanup(void* context, struct CLDS_HASH_TABLE_ITEM_TAG* hash_table_item)
+{
+    (void)context;
+    LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
+    if(new_node->free_func != NULL)
+    {
+        new_node->free_func(new_node->value);
+    }
+}
+
+LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, int64_t size, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context, LRU_CACHE_VALUE_COPY copy_value_function, LRU_CACHE_VALUE_FREE free_value_function)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;
 
@@ -313,13 +326,29 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                 else
                 {
                     /*Codes_SRS_LRU_CACHE_13_064: [ lru_cache_put shall create LRU Node item to be updated in the hash table. ]*/
-                    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, NULL, NULL);
+                    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(LRU_NODE, lru_node_cleanup, NULL);
                     LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, item);
                     new_node->key = key;
                     new_node->size = size;
-                    new_node->value = value;
                     new_node->evict_callback = evict_callback;
                     new_node->evict_callback_context = context;
+
+                    new_node->copy_func = copy_value_function;
+                    new_node->free_func = free_value_function;
+                    if(new_node->copy_func != NULL)
+                    {
+                        if(new_node->copy_func(&(new_node->value), value) != 0)
+                        {
+                            LogError("Failed to copy value. Returning with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED");
+                            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
+                            srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
+                            return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED;
+                        }
+                    }
+                    else
+                    {
+                        new_node->value = value;
+                    }
 
                     CLDS_HASH_TABLE_ITEM* old_item;
                     /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/

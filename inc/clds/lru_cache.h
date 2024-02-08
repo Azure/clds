@@ -27,7 +27,8 @@ typedef struct LRU_CACHE_TAG* LRU_CACHE_HANDLE;
     LRU_CACHE_PUT_OK, \
     LRU_CACHE_PUT_ERROR, \
     LRU_CACHE_PUT_EVICT_ERROR, \
-    LRU_CACHE_PUT_VALUE_INVALID_SIZE
+    LRU_CACHE_PUT_VALUE_INVALID_SIZE, \
+    LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED
 MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 #define LRU_CACHE_EVICT_RESULT_VALUES \
@@ -40,11 +41,19 @@ typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value)
 
 typedef void(*LRU_CACHE_ON_ERROR_CALLBACK_FUNC)(void* context);
 
+typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value);
+
+typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value);
+
+typedef int(*LRU_CACHE_VALUE_COPY)(void* destination, void* source);
+
+typedef void(*LRU_CACHE_VALUE_FREE)(void* value);
+
 MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity, LRU_CACHE_ON_ERROR_CALLBACK_FUNC, on_error_callback, void*, on_error_context);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_VALUE_COPY, copy_value_function, LRU_CACHE_VALUE_FREE, free_value_function);
 
 MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 

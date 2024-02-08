@@ -518,7 +518,7 @@ TEST_FUNCTION(lru_cache_put_with_null_handle_fails)
     // arrange
     int key1 = 10, value = 1000, size1 = 2;
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(NULL, &key1, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(NULL, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -541,7 +541,7 @@ TEST_FUNCTION(lru_cache_put_with_null_key_fails)
     umock_c_reset_all_calls();
 
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, NULL, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, NULL, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -565,7 +565,7 @@ TEST_FUNCTION(lru_cache_put_with_null_value_fails)
     umock_c_reset_all_calls();
 
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, NULL, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, NULL, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -589,7 +589,7 @@ TEST_FUNCTION(lru_cache_put_with_0_size_fails)
     umock_c_reset_all_calls();
 
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, 0, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, 0, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -613,7 +613,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_callback_fails)
     umock_c_reset_all_calls();
 
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -637,7 +637,7 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     umock_c_reset_all_calls();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_INVALID_SIZE, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -670,7 +670,7 @@ TEST_FUNCTION(lru_cache_put_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -710,7 +710,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -721,7 +721,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -751,7 +751,7 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -764,7 +764,7 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
 
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size + 100, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size + 100, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -804,7 +804,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -817,7 +817,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -857,7 +857,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key1, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -867,7 +867,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key2, &hash_table_item_2);
     set_lru_put_nothing_to_evict_expectations();
 
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -883,7 +883,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key3, &value, size3, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key3, &value, size3, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -916,7 +916,7 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -932,7 +932,7 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
 
 
     // act
-    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -968,7 +968,7 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -1001,7 +1001,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1016,7 +1016,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     STRICT_EXPECTED_CALL(test_on_error(test_error_context));
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
@@ -1048,7 +1048,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1070,7 +1070,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
@@ -1101,7 +1101,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1118,7 +1118,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
@@ -1200,13 +1200,13 @@ TEST_FUNCTION(lru_cache_get_succeeds)
     set_lru_put_insert_expectations(&key1, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     set_lru_put_insert_expectations(&key2, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1252,7 +1252,7 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     set_lru_put_insert_expectations(&key1, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1306,7 +1306,7 @@ TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
