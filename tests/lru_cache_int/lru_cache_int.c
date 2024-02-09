@@ -711,6 +711,18 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
     return result;
 }
 
+int CLDS_HASH_TABLE_ITEM_copy_func(void** destination, void* source)
+{
+    ASSERT_IS_NOT_NULL(source);
+    int res = CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, source);
+    *destination = source;
+    return res;
+}
+
+void CLDS_HASH_TABLE_ITEM_dec_ref_func(void* value)
+{
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, value);
+}
 static int chaos_thread(void* arg)
 {
     int result;
@@ -788,7 +800,7 @@ static int chaos_thread(void* arg)
                     item_payload->appendix = item_index + 100;
                     item_payload->item_size = item_size;
 
-                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, NULL, NULL));
+                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, CLDS_HASH_TABLE_ITEM_copy_func, CLDS_HASH_TABLE_ITEM_dec_ref_func));
                     (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
                     (void)interlocked_increment(&chaos_test_context->put_call_count);
                 }
@@ -805,7 +817,7 @@ static int chaos_thread(void* arg)
                     item_payload->appendix = item_index + 100;
                     item_payload->item_size = item_size;
 
-                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, NULL, NULL));
+                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, CLDS_HASH_TABLE_ITEM_copy_func, CLDS_HASH_TABLE_ITEM_dec_ref_func));
                     (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
                     (void)interlocked_increment(&chaos_test_context->put_call_count);
                 }
@@ -896,8 +908,10 @@ TEST_FUNCTION(lru_cache_chaos_knight_test)
 
 int string_copy_func(void** destination, void* source)
 {
+    ASSERT_IS_NOT_NULL(source);
     size_t source_length = strlen(source);
     *destination = (char*)malloc(source_length + 1);
+    ASSERT_IS_NOT_NULL(*destination);
 
     strcpy(*destination, source);
     return 0;
@@ -907,7 +921,8 @@ void string_destroy_func(void* value)
 {
     free(value);
 }
-
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(test_function_copy_works)
 {
     // arrange
@@ -942,7 +957,8 @@ TEST_FUNCTION(test_function_copy_works)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(test_function_copy_multiple_times_works)
 {
     // arrange
@@ -964,8 +980,6 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_IS_NOT_NULL(value_second_time);
     (void)strcpy(value_second_time, "wxyz");
 
-
-    // act
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_copy_func, string_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
@@ -973,6 +987,7 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_IS_NOT_NULL(return_val1);
     ASSERT_ARE_EQUAL(char_ptr, "abc", return_val1);
 
+    // act
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_second_time, 1, on_evict_callback, &count_context, string_copy_func, string_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
@@ -998,6 +1013,7 @@ void dummy_free_error(void* value)
 {
     (void)value;
 }
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
 TEST_FUNCTION(test_function_copy_fails)
 {
     // arrange

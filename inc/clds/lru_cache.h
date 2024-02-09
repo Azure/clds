@@ -41,10 +41,6 @@ typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value)
 
 typedef void(*LRU_CACHE_ON_ERROR_CALLBACK_FUNC)(void* context);
 
-typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value);
-
-typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value);
-
 typedef int(*LRU_CACHE_VALUE_COPY)(void* destination, void* source);
 
 typedef void(*LRU_CACHE_VALUE_FREE)(void* value);

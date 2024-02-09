@@ -265,6 +265,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
 
 static void lru_node_cleanup(void* context, struct CLDS_HASH_TABLE_ITEM_TAG* hash_table_item)
 {
+    /*Codes_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
     (void)context;
     LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
     if(new_node->free_func != NULL)
@@ -286,7 +287,9 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
         /*Codes_SRS_LRU_CACHE_13_026: [ If size is less than or equals to 0, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         size <= 0 ||
         /*Codes_SRS_LRU_CACHE_13_075: [ If evict_callback is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
-        evict_callback == NULL)
+        evict_callback == NULL ||
+        /*Codes_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+        ((copy_value_function == NULL) ^ (free_value_function == NULL)))
     {
         LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRId64 "", lru_cache, key, value, size);
         result = LRU_CACHE_PUT_ERROR;
@@ -335,12 +338,15 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
 
                     new_node->copy_func = copy_value_function;
                     new_node->free_func = free_value_function;
+
+                    /*Codes_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
                     if(new_node->copy_func != NULL)
                     {
                         if(new_node->copy_func(&(new_node->value), value) != 0)
                         {
                             LogError("Failed to copy value. Returning with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED");
                             CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
+                            /*Codes_SRS_LRU_CACHE_13_084: [ If copy_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
                             srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
                             return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED;
                         }
