@@ -95,7 +95,7 @@ Frees up `LRU_CACHE_HANDLE`.
 ### lru_cache_put
 
 ```c
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_VALUE_COPY, copy_value_function, LRU_CACHE_VALUE_FREE, free_value_function);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_VALUE_COPY, copy_key_value_function, LRU_CACHE_VALUE_FREE, free_key_value_function);
 ```
 
 The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache and performs eviction if necessary. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
@@ -126,11 +126,11 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
 
-**SRS_LRU_CACHE_13_082: [** `lru_cache_put` shall call `copy_value_function` if not `NULL` to copy the value, otherwise assigns `value` to LRU Node item. **]**
+**SRS_LRU_CACHE_13_082: [** `lru_cache_put` shall call `copy_key_value_function` if not `NULL` to copy the value, otherwise assigns `value` to LRU Node item. **]**
 
-**SRS_LRU_CACHE_13_084: [** If `copy_value_function` returns non zero value, then `lru_cache_put` shall release the exclusive lock and return `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
+**SRS_LRU_CACHE_13_084: [** If `copy_key_value_function` returns non zero value, then `lru_cache_put` shall release the exclusive lock and return `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
 
-**SRS_LRU_CACHE_13_083: [** `lru_cache_put` shall call `free_value_function` on LRU Node item cleanup. **]**
+**SRS_LRU_CACHE_13_083: [** `lru_cache_put` shall call `free_key_value_function` on LRU Node item cleanup. **]**
 
 **SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
 

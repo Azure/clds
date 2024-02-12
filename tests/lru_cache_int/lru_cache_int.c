@@ -16,6 +16,7 @@
 #include "c_pal/timer.h"
 #include "c_pal/thandle.h"
 #include "c_pal/threadapi.h"
+#include "c_pal/string_utils.h"
 #include "c_pal/sync.h"
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
@@ -711,16 +712,20 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
     return result;
 }
 
-int CLDS_HASH_TABLE_ITEM_copy_func(void** destination, void* source)
+int CLDS_HASH_TABLE_ITEM_copy_func(void** key_destination, void* key_source, void** value_destination, void* value_source)
 {
-    ASSERT_IS_NOT_NULL(source);
-    int res = CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, source);
-    *destination = source;
+    ASSERT_IS_NOT_NULL(value_source);
+    int res = CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, value_source);
+    *value_destination = value_source;
+
+    // assigns key value as is
+    *key_destination = key_source;
     return res;
 }
 
-void CLDS_HASH_TABLE_ITEM_dec_ref_func(void* value)
+void CLDS_HASH_TABLE_ITEM_dec_ref_func(void* key, void* value)
 {
+    (void)key;
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, value);
 }
 static int chaos_thread(void* arg)
@@ -906,23 +911,42 @@ TEST_FUNCTION(lru_cache_chaos_knight_test)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-int string_copy_func(void** destination, void* source)
+static int string_key_and_value_int_copy(void** key_destination, void* key_source, void** value_destination, void* value_source)
 {
-    ASSERT_IS_NOT_NULL(source);
-    size_t source_length = strlen(source);
-    *destination = (char*)malloc(source_length + 1);
-    ASSERT_IS_NOT_NULL(*destination);
-
-    strcpy(*destination, source);
+    ASSERT_IS_NOT_NULL(key_source);
+    ASSERT_IS_NOT_NULL(value_source);
+    *key_destination = sprintf_char("%s", (char*)key_source);
+    ASSERT_IS_NOT_NULL(key_destination);
+    *value_destination = value_source;
     return 0;
 }
 
-void string_destroy_func(void* value)
+static void string_key_free(void* key, void* value)
 {
+    (void)value;
+    free(key);
+}
+
+int string_value_copy_func(void** key_destination, void* key_source, void** value_destination, void* value_source)
+{
+    ASSERT_IS_NOT_NULL(value_source);
+    size_t source_length = strlen(value_source);
+    *value_destination = (char*)malloc(source_length + 1);
+    ASSERT_IS_NOT_NULL(*value_destination);
+
+    strcpy(*value_destination, value_source);
+    *key_destination = key_source;
+
+    return 0;
+}
+
+void string_value_destroy_func(void* key, void* value)
+{
+    (void)key;
     free(value);
 }
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(test_function_copy_works)
 {
     // arrange
@@ -942,7 +966,7 @@ TEST_FUNCTION(test_function_copy_works)
 
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_copy_func, string_destroy_func);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_value_copy_func, string_value_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     free(value);
@@ -957,8 +981,8 @@ TEST_FUNCTION(test_function_copy_works)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(test_function_copy_multiple_times_works)
 {
     // arrange
@@ -980,7 +1004,7 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_IS_NOT_NULL(value_second_time);
     (void)strcpy(value_second_time, "wxyz");
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_copy_func, string_destroy_func);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_value_copy_func, string_value_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     char* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
@@ -988,7 +1012,7 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_ARE_EQUAL(char_ptr, "abc", return_val1);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_second_time, 1, on_evict_callback, &count_context, string_copy_func, string_destroy_func);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_second_time, 1, on_evict_callback, &count_context, string_value_copy_func, string_value_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     char* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
@@ -1003,17 +1027,20 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-int dummy_copy_error(void** destination, void* source)
+int dummy_copy_error(void** key_destination, void* key_source, void** value_destination, void* value_source)
 {
-    (void)destination;
-    (void)source;
+    (void)key_destination;
+    (void)key_source;
+    (void)value_destination;
+    (void)value_source;
     return 1;
 }
-void dummy_free_error(void* value)
+void dummy_free_error(void* key, void* value)
 {
+    (void)key;
     (void)value;
 }
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
 TEST_FUNCTION(test_function_copy_fails)
 {
     // arrange
