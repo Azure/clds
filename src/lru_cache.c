@@ -267,10 +267,10 @@ static void lru_node_cleanup(void* context, struct CLDS_HASH_TABLE_ITEM_TAG* has
 {
     /*Codes_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
     (void)context;
-    LRU_NODE* new_node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
-    if(new_node->free_func != NULL)
+    LRU_NODE* node = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
+    if(node->free_func != NULL)
     {
-        new_node->free_func(new_node->key, new_node->value);
+        node->free_func(node->key, node->value);
     }
 }
 
@@ -345,9 +345,8 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                         {
                             LogError("copy function failed. Returning with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED");
                             CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
-                            /*Codes_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
-                            srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
-                            return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED;
+                            /*Codes_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+                            result = LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED;
                         }
                     }
                     else
@@ -356,44 +355,47 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                         new_node->value = value;
                     }
 
-                    CLDS_HASH_TABLE_ITEM* old_item;
-                    /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
-                    CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, NULL);
-                    if (set_value_result != CLDS_HASH_TABLE_SET_VALUE_OK)
+                    if (result == LRU_CACHE_PUT_OK)
                     {
-                        /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-                        LogError("Cannot set old key=%p to the clds_hash_table failed with error (%" PRI_MU_ENUM ")", key, MU_ENUM_VALUE(CLDS_HASH_TABLE_SET_VALUE_RESULT, set_value_result));
-                        CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
-                        result = LRU_CACHE_PUT_ERROR;
-                    }
-                    else
-                    {
-                        if (old_item != NULL)
+                        CLDS_HASH_TABLE_ITEM* old_item;
+                        /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
+                        CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, NULL);
+                        if (set_value_result != CLDS_HASH_TABLE_SET_VALUE_OK)
                         {
-                            /*Codes_SRS_LRU_CACHE_13_030: [ If the key is found: ]*/
-                            LRU_NODE* current_item = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, old_item);
-                            PDLIST_ENTRY node = &(current_item->node);
-                            /*Codes_SRS_LRU_CACHE_13_070: [ lru_cache_put shall update the current_size with the new size and removes the old value size. ]*/
-                            (void)interlocked_add_64(&lru_cache->current_size, -current_item->size + size);
-                            /*Codes_SRS_LRU_CACHE_13_077: [ lru_cache_put shall remove the old node from the list by calling DList_RemoveEntryList. ]*/
-                            DList_RemoveEntryList(node);
-                            LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to reposition the node.", current_item->key, current_item->size);
-                            /*Codes_SRS_LRU_CACHE_13_067: [ lru_cache_put shall free the old value. ]*/
-                            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
+                            /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
+                            LogError("Cannot set old key=%p to the clds_hash_table failed with error (%" PRI_MU_ENUM ")", key, MU_ENUM_VALUE(CLDS_HASH_TABLE_SET_VALUE_RESULT, set_value_result));
+                            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
+                            result = LRU_CACHE_PUT_ERROR;
                         }
                         else
                         {
-                            /*Codes_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
+                            if (old_item != NULL)
+                            {
+                                /*Codes_SRS_LRU_CACHE_13_030: [ If the key is found: ]*/
+                                LRU_NODE* current_item = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, old_item);
+                                PDLIST_ENTRY node = &(current_item->node);
+                                /*Codes_SRS_LRU_CACHE_13_070: [ lru_cache_put shall update the current_size with the new size and removes the old value size. ]*/
+                                (void)interlocked_add_64(&lru_cache->current_size, -current_item->size + size);
+                                /*Codes_SRS_LRU_CACHE_13_077: [ lru_cache_put shall remove the old node from the list by calling DList_RemoveEntryList. ]*/
+                                DList_RemoveEntryList(node);
+                                LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to reposition the node.", current_item->key, current_item->size);
+                                /*Codes_SRS_LRU_CACHE_13_067: [ lru_cache_put shall free the old value. ]*/
+                                CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
+                            }
+                            else
+                            {
+                                /*Codes_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
 
-                            /*Codes_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
-                            (void)interlocked_add_64(&lru_cache->current_size, size);
+                                /*Codes_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
+                                (void)interlocked_add_64(&lru_cache->current_size, size);
+                            }
+
+                            /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
+                            DList_InsertTailList(&(lru_cache->head), &(new_node->node));
+
+                            /*Codes_SRS_LRU_CACHE_13_068: [ lru_cache_put shall return with LRU_CACHE_PUT_OK. ]*/
+                            result = LRU_CACHE_PUT_OK;
                         }
-
-                        /*Codes_SRS_LRU_CACHE_13_066: [ lru_cache_put shall append the updated node to the tail to maintain the order. ]*/
-                        DList_InsertTailList(&(lru_cache->head), &(new_node->node));
-
-                        /*Codes_SRS_LRU_CACHE_13_068: [ lru_cache_put shall return with LRU_CACHE_PUT_OK. ]*/
-                        result = LRU_CACHE_PUT_OK;
                     }
                 }
                 /*Codes_SRS_LRU_CACHE_13_036: [ lru_cache_put shall release the lock in exclusive mode. ]*/

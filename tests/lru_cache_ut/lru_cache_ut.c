@@ -855,7 +855,7 @@ TEST_FUNCTION(lru_cache_put_succeeds_with_copy_function_works)
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
 /*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
 TEST_FUNCTION(lru_cache_put_fails_with_copy_function_fail)
 {
     // arrange

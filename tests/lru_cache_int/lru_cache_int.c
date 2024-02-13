@@ -1040,7 +1040,7 @@ void dummy_free_error(void* key, void* value)
     (void)key;
     (void)value;
 }
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and return LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
 TEST_FUNCTION(test_function_copy_fails)
 {
     // arrange
