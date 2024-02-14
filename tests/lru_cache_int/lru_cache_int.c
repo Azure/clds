@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <time.h>
 
@@ -23,6 +24,8 @@
 
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
+
+#include "c_util/hash.h"
 #include "c_util/thread_notifications_dispatcher.h"
 
 #include "clds/lru_cache.h"
@@ -146,6 +149,25 @@ static int test_key_compare(void* key1, void* key2)
     return result;
 }
 
+
+static uint64_t key_hash(void* key)
+{
+    size_t block_length = strlen((const char*)key);
+    uint32_t hash;
+
+    if (hash_compute_hash(key, block_length, &hash) != 0)
+    {
+        LogError("Hashing key failed for key %s", (const char*)key);
+        hash = 0;
+    }
+
+    return hash;
+}
+
+static int key_compare(void* key_1, void* key_2)
+{
+    return strcmp(key_1, key_2);
+}
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
@@ -915,8 +937,10 @@ static int string_key_and_value_int_copy(void** key_destination, void* key_sourc
 {
     ASSERT_IS_NOT_NULL(key_source);
     ASSERT_IS_NOT_NULL(value_source);
+
     *key_destination = sprintf_char("%s", (char*)key_source);
     ASSERT_IS_NOT_NULL(key_destination);
+
     *value_destination = value_source;
     return 0;
 }
@@ -924,7 +948,49 @@ static int string_key_and_value_int_copy(void** key_destination, void* key_sourc
 static void string_key_free(void* key, void* value)
 {
     (void)value;
+    ASSERT_IS_NOT_NULL(key);
     free(key);
+}
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
+TEST_FUNCTION(test_function_key_copy_works)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(key_hash, key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+
+    LRU_CACHE_PUT_RESULT result;
+
+    char* key = (char*)malloc((strlen("abc") + 1) * sizeof(char));
+    ASSERT_IS_NOT_NULL(key);
+    (void)strcpy(key, "abc");
+
+    char* key2 = (char*)malloc((strlen("abc") + 1) * sizeof(char));
+    ASSERT_IS_NOT_NULL(key2);
+    (void)strcpy(key2, "abc");
+
+
+    // act
+    result = lru_cache_put(lru_cache, key, (void*)(uintptr_t)(100), 1, on_evict_callback, &count_context, string_key_and_value_int_copy, string_key_free);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    free(key);
+
+    void* return_val1 = lru_cache_get(lru_cache, key2);
+    ASSERT_IS_NOT_NULL(return_val1);
+    uintptr_t ptr_value = (uintptr_t)return_val1;
+    ASSERT_ARE_EQUAL(uint32_t, 100, *(uint32_t*)&ptr_value);
+
+
+    // cleanup
+    free(key2);
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
 }
 
 int string_value_copy_func(void** key_destination, void* key_source, void** value_destination, void* value_source)

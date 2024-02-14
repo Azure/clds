@@ -359,11 +359,11 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     {
                         CLDS_HASH_TABLE_ITEM* old_item;
                         /*Codes_SRS_LRU_CACHE_13_065: [ lru_cache_put shall update the LRU Node item in the hash table by calling clds_hash_table_set_value. ]*/
-                        CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, key, item, NULL, NULL, &old_item, NULL);
+                        CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(lru_cache->table, hazard_pointers_thread, new_node->key, item, NULL, NULL, &old_item, NULL);
                         if (set_value_result != CLDS_HASH_TABLE_SET_VALUE_OK)
                         {
                             /*Codes_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
-                            LogError("Cannot set old key=%p to the clds_hash_table failed with error (%" PRI_MU_ENUM ")", key, MU_ENUM_VALUE(CLDS_HASH_TABLE_SET_VALUE_RESULT, set_value_result));
+                            LogError("Cannot set old key=%p to the clds_hash_table failed with error (%" PRI_MU_ENUM ")", new_node->key, MU_ENUM_VALUE(CLDS_HASH_TABLE_SET_VALUE_RESULT, set_value_result));
                             CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, item);
                             result = LRU_CACHE_PUT_ERROR;
                         }
