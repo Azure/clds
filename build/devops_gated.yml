@@ -1,6 +1,13 @@
 name: $(BuildID)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 resources:
-- repo: self
+  repositories:
+  - repository: self
+    clean: true
+  - repository: c_build_tools
+    type: github
+    name: azure/c-build-tools
+    endpoint: github.com_azure
+    ref: refs/heads/master
 jobs:
 - job: windowsx64debug
   displayName: 'Build Windows x64 Debug'
@@ -176,63 +183,6 @@ jobs:
       arguments: '-C "Debug" -V --output-on-failure'
       workingFolder: 'build_x86'
 
-- job: Traceability
-  pool:
-    name: Azure-MessagingStore-WinBuildPoolVS2022
-    demands:
-    - Cmd
-    - msbuild
-    - visualstudio
-
-  steps:
-  - task: BatchScript@1
-    displayName: 'Git submodule update'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule update --init --force deps/c-build-tools'
-
-  - task: BatchScript@1
-    displayName: 'Git submodule clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule foreach --recursive "git clean -xdff"'
-
-  - task: BatchScript@1
-    displayName: 'Git clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'clean -xdff'
-
-  - task: BatchScript@1
-    displayName: 'Setup VS Vars'
-    inputs:
-      filename: '"c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"'
-      modifyEnvironment: true
-
-  - task: CMake@1
-    displayName: CMake
-    inputs:
-      workingDirectory: 'build'
-      cmakeArgs: '.. -Ax64'
-
-  - task: VSBuild@1
-    displayName: 'Build traceabilitytool only'
-    inputs:
-      solution: 'build\clds.sln'
-      platform: x64
-      configuration: RelWithDebInfo
-      msbuildArgs: '/t:restore /t:traceabilitytool'
-      clean: true
-      maximumCpuCount: true
-
-  - task: BatchScript@1
-    displayName: 'Run traceability tool'
-    inputs:
-      filename: 'build/deps/c-build-tools/traceabilitytool/RelWithDebInfo/traceabilitytool.exe'
-      arguments: '-i $(Build.SourcesDirectory) -buildcheck -e $(Build.SourcesDirectory)\deps'
-      modifyEnvironment: false
-      workingFolder: '$(Build.SourcesDirectory)'
-
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64)'
   pool:
@@ -317,6 +267,8 @@ jobs:
       filename: ctest
       arguments: '-C "RelWithDebInfo" -V --output-on-failure -R perf'
       workingFolder: 'build_x64'
+
+- template: /pipeline_templates/codeql3000_default.yml@c_build_tools
 
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu'
