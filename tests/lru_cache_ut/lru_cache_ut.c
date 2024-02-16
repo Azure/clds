@@ -117,6 +117,8 @@ MOCK_FUNCTION_END()
 static void* test_error_context = (void*)13;
 
 MOCK_FUNCTION_WITH_CODE(, int, test_copy_function, void**, key_destination, void*, key_source, void**, value_destination, void*, value_source)
+    *key_destination = key_source;
+    *value_destination = value_source;
 MOCK_FUNCTION_END(0)
 
 MOCK_FUNCTION_WITH_CODE(, void, test_free_function, void*, key, void*, value)
