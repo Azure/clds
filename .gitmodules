@@ -28,3 +28,6 @@
 [submodule "deps/c-util"]
 	path = deps/c-util
 	url = https://github.com/Azure/c-util
+[submodule "deps/vcpkg"]
+	path = deps/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
