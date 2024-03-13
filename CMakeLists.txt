@@ -48,6 +48,11 @@ if ((NOT TARGET c_build_tools) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-buil
     set_default_build_options()
 endif() 
 
+if ((WIN32) AND ("${GBALLOC_LL_TYPE}" STREQUAL "JEMALLOC"))
+    # Bring in vcpkg
+    use_vcpkg(${CMAKE_CURRENT_LIST_DIR}/deps/vcpkg)
+endif()
+
 if ((NOT TARGET macro_utils_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/macro-utils-c/CMakeLists.txt))
     add_subdirectory(deps/macro-utils-c)
     include_directories(${MACRO_UTILS_INC_FOLDER})

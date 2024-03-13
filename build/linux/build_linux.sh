@@ -15,7 +15,7 @@ CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 rm -r -f $build_folder
 mkdir -p $build_folder
 pushd $build_folder
-cmake -Drun_valgrind:BOOL=ON -Drun_helgrind:BOOL=ON -Drun_drd:BOOL=OFF $build_root -Drun_unittests:BOOL=ON -Drun_int_tests:BOOL=ON
+cmake -Drun_valgrind:BOOL=ON -Drun_helgrind:BOOL=ON -Drun_drd:BOOL=OFF $build_root -Drun_unittests:BOOL=ON -Drun_int_tests:BOOL=ON -DCMAKE_BUILD_TYPE=Debug
 make --jobs=$CORES
 
 # /*reenable with this task Task 10086393: reenable sm_chaos (https://msazure.visualstudio.com/One/_workitems/edit/10086393)*/ 
