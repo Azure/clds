@@ -9,182 +9,12 @@ resources:
     endpoint: github.com_azure
     ref: refs/heads/master
 jobs:
-- job: windowsx64debug
-  displayName: 'Build Windows x64 Debug'
-  pool:
-    name: Azure-MessagingStore-WinBuildPoolVS2022
-    demands:
-    - Cmd
-    - msbuild
-    - visualstudio
+- template: /pipeline_templates/build_all_flavors.yml@c_build_tools
 
-  steps:
-  - checkout: self
-    clean: false
-
-  - task: BatchScript@1
-    displayName: 'Git submodule update'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule update --init --force'
-
-  - task: BatchScript@1
-    displayName: 'Git submodule clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule foreach --recursive "git clean -xdf"'
-
-  - task: BatchScript@1
-    displayName: 'Git clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'clean -xdf'
-
-  - task: BatchScript@1
-    displayName: 'Setup VS Vars'
-    inputs:
-      filename: '"c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"'
-      modifyEnvironment: true
-
-  - task: CMake@1
-    displayName: 'CMake .. -Drun_reals_check:bool=ON -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Duse_cppunittest:bool=OFF -Drun_e2e_tests:bool=OFF -Duse_vld:bool=ON -G "Visual Studio 17 2022" -A x64'
-    inputs:
-      workingDirectory: 'build_x64'
-      cmakeArgs: '.. -Drun_reals_check:bool=ON -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Duse_cppunittest:bool=OFF -Drun_e2e_tests:bool=OFF -Duse_vld:bool=ON -G "Visual Studio 17 2022" -A x64'
-
-  - task: VSBuild@1
-    displayName: 'Build solution build_x64\*.sln'
-    inputs:
-      solution: 'build_x64\*.sln'
-      msbuildArgs: '/t:restore /t:build'
-      platform: x64
-      configuration: Debug
-      maximumCpuCount: true
-
-  - task: CmdLine@1
-    displayName: 'Run ctest'
-    inputs:
-      filename: ctest
-      arguments: '-C "Debug" -V --output-on-failure'
-      workingFolder: 'build_x64'
-
-- job: windowsx86relwithdebinfo
-  displayName: 'Build Windows x86 RelWithDebInfo'
-  pool:
-    name: Azure-MessagingStore-WinBuildPoolVS2022
-    demands:
-    - Cmd
-    - msbuild
-    - visualstudio
-    - vstest
-
-  steps:
-  - task: BatchScript@1
-    displayName: 'Git submodule update'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule update --init --force'
-
-  - task: BatchScript@1
-    displayName: 'Git submodule clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule foreach --recursive "git clean -xdf"'
-
-  - task: BatchScript@1
-    displayName: 'Git clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'clean -xdf'
-
-  - task: BatchScript@1
-    displayName: 'Setup VS Vars'
-    inputs:
-      filename: '"c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"'
-      modifyEnvironment: true
-
-  - task: CMake@1
-    displayName: 'CMake .. -Drun_reals_check:bool=ON -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Drun_e2e_tests:bool=ON -Duse_cppunittest:bool=ON -G "Visual Studio 17 2022" -A Win32'
-    inputs:
-      workingDirectory: 'build_x86'
-      cmakeArgs: '.. -Drun_reals_check:bool=ON -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Drun_e2e_tests:bool=ON -Duse_cppunittest:bool=ON -G "Visual Studio 17 2022" -A Win32'
-
-  - task: VSBuild@1
-    displayName: 'Build solution build_x86\*.sln'
-    inputs:
-      solution: 'build_x86\*.sln'
-      platform: Win32
-      msbuildArgs: '/t:restore /t:build'
-      configuration: RelWithDebInfo
-      maximumCpuCount: true
-
-  - task: VSTest@2
-    displayName: 'VsTest - testAssemblies'
-    inputs:
-      testAssemblyVer2: |
-          build_x86\**\*_ut_*.dll
-          build_x86\**\*_int_*.dll
-          !**\obj\**
-      runTestsInIsolation: true
-
-- job: windowsx86debug
-  displayName: 'Build Windows x86 Debug'
-  pool:
-    name: Azure-MessagingStore-WinBuildPoolVS2022
-    demands:
-    - Cmd
-    - msbuild
-    - visualstudio
-
-  steps:
-  - task: BatchScript@1
-    displayName: 'Git submodule update'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule update --init --force'
-
-  - task: BatchScript@1
-    displayName: 'Git submodule clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'submodule foreach --recursive "git clean -xdf"'
-
-  - task: BatchScript@1
-    displayName: 'Git clean'
-    inputs:
-      filename: 'C:\Program Files\Git\bin\git.exe'
-      arguments: 'clean -xdf'
-
-  - task: BatchScript@1
-    displayName: 'Setup VS Vars'
-    inputs:
-      filename: '"c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"'
-      modifyEnvironment: true
-
-  - task: CMake@1
-    displayName: 'CMake .. -Drun_reals_check:bool=ON -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Drun_e2e_tests:bool=ON -Duse_vld:bool=ON -G "Visual Studio 17 2022" -A Win32'
-    inputs:
-      workingDirectory: 'build_x86'
-      cmakeArgs: '.. -Drun_reals_check:bool=ON -Drun_unittests:bool=ON -Drun_int_tests:bool=ON -Drun_e2e_tests:bool=ON -Duse_vld:bool=ON -G "Visual Studio 17 2022" -A Win32'
-
-  - task: VSBuild@1
-    displayName: 'Build solution build_x86\*.sln'
-    inputs:
-      solution: 'build_x86\*.sln'
-      platform: Win32
-      msbuildArgs: '/t:restore /t:build'
-      configuration: Debug
-      maximumCpuCount: true
-
-  - task: CmdLine@1
-    displayName: 'Run ctest'
-    inputs:
-      filename: ctest
-      arguments: '-C "Debug" -V --output-on-failure'
-      workingFolder: 'build_x86'
+- template: /pipeline_templates/codeql3000_default.yml@c_build_tools
 
 - job: windowsperf
-  displayName: 'Build Windows Perf tests (RelWithDebInfo x64)'
+  displayName: 'Build Windows Perf tests (RelWithDebInfo x64, custom script)'
   pool:
     name: Azure-MessagingStore-WinBuildPoolVS2022
     demands:
@@ -222,7 +52,7 @@ jobs:
     displayName: CMake
     inputs:
       workingDirectory: 'build_x64'
-      cmakeArgs: '.. -Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 17 2022" -A x64'
+      cmakeArgs: '.. -Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=RelWithDebInfo -Ax64'
 
   - task: VSBuild@1
     displayName: 'Build solution build_x64\*.sln'
@@ -267,8 +97,6 @@ jobs:
       filename: ctest
       arguments: '-C "RelWithDebInfo" -V --output-on-failure -R perf'
       workingFolder: 'build_x64'
-
-- template: /pipeline_templates/codeql3000_default.yml@c_build_tools
 
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu'
