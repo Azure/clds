@@ -493,7 +493,7 @@ LRU_CACHE_EVICT_RESULT lru_cache_evict(LRU_CACHE_HANDLE lru_cache, void* key)
         CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
         if (hazard_pointers_thread == NULL)
         {
-            /*Codes_SRS_LRU_CACHE_13_094: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+            /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
             LogError("clds_hazard_pointers_thread_helper_get_thread failed");
             result = LRU_CACHE_EVICT_ERROR;
         }
@@ -516,34 +516,37 @@ LRU_CACHE_EVICT_RESULT lru_cache_evict(LRU_CACHE_HANDLE lru_cache, void* key)
             else if (remove_result != CLDS_HASH_TABLE_REMOVE_OK)
             {
                 result = LRU_CACHE_EVICT_ERROR;
-                /*Codes_SRS_LRU_CACHE_13_094: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+                /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
                 LogError("clds_hash_table_delete_key_value returned (%" PRI_MU_ENUM ").", MU_ENUM_VALUE(CLDS_HASH_TABLE_REMOVE_RESULT, remove_result));
             }
             else
             {
-                /*Codes_SRS_LRU_CACHE_13_090: [ If the key is removed: ]*/
-
                 if (old_item != NULL)
                 {
+                    /*Codes_SRS_LRU_CACHE_13_090: [ If the key is removed: ]*/
+
                     LRU_NODE* current_item = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, old_item);
                     PDLIST_ENTRY node = &(current_item->node);
+
+                    /*Codes_SRS_LRU_CACHE_13_096: [ lru_cache_evict shall update the current_size by subtracting the removed old value size. ]*/
+                    (void)interlocked_add_64(&lru_cache->current_size, -current_item->size);
 
                     /*Codes_SRS_LRU_CACHE_13_091: [ lru_cache_evict shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
                     DList_RemoveEntryList(node);
 
                     CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, old_item);
 
-                    /*Codes_SRS_LRU_CACHE_13_092: [ lru_cache_evict shall return LRU_CACHE_EVICT_OK. ]*/
+                    /*Codes_SRS_LRU_CACHE_13_092: [ On success, lru_cache_evict shall return LRU_CACHE_EVICT_OK. ]*/
                     result = LRU_CACHE_EVICT_OK;
                 }
                 else
                 {
                     LogError("something went wrong. clds_hash_table_remove returned (%" PRI_MU_ENUM ") but old_item is NULL.", MU_ENUM_VALUE(CLDS_HASH_TABLE_REMOVE_RESULT, remove_result));
-                    /*Codes_SRS_LRU_CACHE_13_094: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+                    /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
                     result = LRU_CACHE_EVICT_ERROR;
                 }
             }
-            /*Codes_SRS_LRU_CACHE_13_095: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
+            /*Codes_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
             srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
         }
     }

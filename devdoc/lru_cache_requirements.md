@@ -229,12 +229,14 @@ Evicts the `key` from the cache if exists.
 
 **SRS_LRU_CACHE_13_090: [**  If the `key` is removed: **]**
 
+- **SRS_LRU_CACHE_13_096: [** `lru_cache_evict` shall update the `current_size` by subtracting the removed old value size. **]**
+
 - **SRS_LRU_CACHE_13_091: [** `lru_cache_evict` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
 
-- **SRS_LRU_CACHE_13_092: [** `lru_cache_evict` shall return `LRU_CACHE_EVICT_OK`. **]**
+- **SRS_LRU_CACHE_13_092: [** On success, `lru_cache_evict` shall return `LRU_CACHE_EVICT_OK`. **]**
 
 **SRS_LRU_CACHE_13_093: [** If `key` is not found, `lru_cache_evict` shall return `LRU_CACHE_EVICT_NOT_FOUND`. **]**
 
-**SRS_LRU_CACHE_13_094: [** If there are any failures, `lru_cache_evict` shall return `LRU_CACHE_EVICT_ERROR`. **]**
+**SRS_LRU_CACHE_13_094: [** `lru_cache_evict` shall release the lock in exclusive mode. **]**
 
-**SRS_LRU_CACHE_13_095: [** `lru_cache_evict` shall release the lock in exclusive mode. **]**
+**SRS_LRU_CACHE_13_095: [** If there are any failures, `lru_cache_evict` shall return `LRU_CACHE_EVICT_ERROR`. **]**

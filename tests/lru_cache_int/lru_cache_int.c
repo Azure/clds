@@ -1282,4 +1282,159 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_remove_evicted_key)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+TEST_FUNCTION(test_lru_cache_evict_does_not_change_order)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+    int capacity = 5, n = 7;
+
+    CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
+    LRU_CACHE_PUT_RESULT result;
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, capacity, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    for (int i = 1; i <= n; i++)
+    {
+        items[i-1] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+        ASSERT_IS_NOT_NULL(items[i-1]);
+        TEST_ITEM* test_item1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, items[i-1]);
+        test_item1->key = i;
+        test_item1->appendix = i + 10;
+
+    }
+
+    // Lets fill the cache till the capacity of 5
+    for(int i = 0; i < n-2; i++)
+    {
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, NULL, NULL);
+        ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    }
+
+    // act
+    // LRU keys order : 5,4,3,2,1 (5 being recently used)
+    // Lets evict key - 3
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, (void*)(uintptr_t)(3));
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, evict_result);
+
+    // LRU keys order now : 5,4,2,1
+    // Lets introduce new element with key: 6
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(6), items[5], 1, on_evict_callback, &count_context, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    // LRU keys order now : 6,5,4,2,1 (6 being recently used)
+    // Lets trigger lru eviction to kick out 1
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(7), items[6], 1, on_evict_callback, &count_context, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    // LRU keys order now : 7,6,5,4,2
+    //assert
+    for (int i = 1; i <= n; i++)
+    {
+        CLDS_HASH_TABLE_ITEM* return_val = lru_cache_get(lru_cache, (void*)(uintptr_t)(i));
+        if (i == 1 || i == 3)
+        {
+            // Evicted keys
+            ASSERT_IS_NULL(return_val);
+        }
+        else
+        {
+            ASSERT_IS_NOT_NULL(return_val);
+            TEST_ITEM* return_test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val);
+            ASSERT_IS_NOT_NULL(return_test_item);
+            ASSERT_ARE_EQUAL(int, i, return_test_item->key);
+            ASSERT_ARE_EQUAL(int, i+10, return_test_item->appendix);
+        }
+    }
+
+    // cleanup
+    for (int i = 0; i < n; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+TEST_FUNCTION(test_lru_cache_evict_does_not_change_order_when_head_key_is_removed)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+    int capacity = 5, n = 7;
+
+    CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
+    LRU_CACHE_PUT_RESULT result;
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, capacity, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    for (int i = 1; i <= n; i++)
+    {
+        items[i - 1] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+        ASSERT_IS_NOT_NULL(items[i - 1]);
+        TEST_ITEM* test_item1 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, items[i - 1]);
+        test_item1->key = i;
+        test_item1->appendix = i + 10;
+    }
+
+    // Lets fill the cache till the capacity of 5
+    for (int i = 0; i < n - 2; i++)
+    {
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, NULL, NULL);
+        ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    }
+
+    // act
+    // LRU keys order : 5,4,3,2,1 (5 being recently used)
+    // Lets evict key - 5
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, (void*)(uintptr_t)(5));
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, evict_result);
+
+    // LRU keys order now :4,3,2,1
+    // Lets introduce new element with key: 6
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(6), items[5], 1, on_evict_callback, &count_context, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    // LRU keys order now : 6,4,3,2,1 (6 being recently used)
+    // Lets trigger lru eviction to kick out 1
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(7), items[6], 1, on_evict_callback, &count_context, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+
+    // LRU keys order now : 7,6,4,3,2
+    //assert
+    for (int i = 1; i <= n; i++)
+    {
+        CLDS_HASH_TABLE_ITEM* return_val = lru_cache_get(lru_cache, (void*)(uintptr_t)(i));
+        if (i == 1 || i == 5)
+        {
+            // Evicted keys
+            ASSERT_IS_NULL(return_val);
+        }
+        else
+        {
+            ASSERT_IS_NOT_NULL(return_val);
+            TEST_ITEM* return_test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val);
+            ASSERT_IS_NOT_NULL(return_test_item);
+            ASSERT_ARE_EQUAL(int, i, return_test_item->key);
+            ASSERT_ARE_EQUAL(int, i + 10, return_test_item->appendix);
+        }
+    }
+
+    // cleanup
+    for (int i = 0; i < n; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
