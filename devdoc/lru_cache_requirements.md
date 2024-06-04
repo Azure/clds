@@ -19,7 +19,8 @@ MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 #define LRU_CACHE_EVICT_RESULT_VALUES \
     LRU_CACHE_EVICT_OK, \
-    LRU_CACHE_EVICT_ERROR
+    LRU_CACHE_EVICT_ERROR, \
+    LRU_CACHE_EVICT_DOES_NOT_EXISTS
 MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
 
@@ -38,6 +39,8 @@ MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_VALUE_COPY, copy_key_value_function, LRU_CACHE_KEY_VALUE_FREE, free_key_value_function);
 
 MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
+
+MOCKABLE_FUNCTION(, LRU_CACHE_EVICT_RESULT, lru_cache_evict, LRU_CACHE_HANDLE, lru_cache, void*, key);
 ```
 
 ### clds_hash_table_create
@@ -204,3 +207,36 @@ Gets the `value` of the `key` from the cache. If the `key` is found, the node is
 **SRS_LRU_CACHE_13_060: [** On success, `lru_cache_get` shall return `CLDS_HASH_TABLE_ITEM` value of the `key`. **]**
 
 **SRS_LRU_CACHE_13_061: [** If there are any failures, `lru_cache_get` shall return `NULL`. **]**
+
+
+### lru_cache_evict
+
+```c
+MOCKABLE_FUNCTION(, LRU_CACHE_EVICT_RESULT, lru_cache_evict, LRU_CACHE_HANDLE, lru_cache, void*, key);
+```
+
+Evicts the `key` from the cache if exists. 
+
+**SRS_LRU_CACHE_13_085: [** If `lru_cache` is `NULL`, then `lru_cache_evict` shall fail and return `LRU_CACHE_EVICT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_086: [** If `key` is `NULL`, then `lru_cache_evict` shall fail and return `LRU_CACHE_EVICT_ERROR`. **]**
+
+**SRS_LRU_CACHE_13_087: [** `lru_cache_evict` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
+
+**SRS_LRU_CACHE_13_088: [** `lru_cache_evict` shall acquire the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_089: [** `lru_cache_evict` shall remove the `key` by calling `clds_hash_table_remove` on the `key`. **]**
+
+**SRS_LRU_CACHE_13_090: [**  If the `key` is removed: **]**
+
+- **SRS_LRU_CACHE_13_096: [** `lru_cache_evict` shall update the `current_size` by subtracting the removed old value size. **]**
+
+- **SRS_LRU_CACHE_13_091: [** `lru_cache_evict` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
+
+- **SRS_LRU_CACHE_13_092: [** On success, `lru_cache_evict` shall return `LRU_CACHE_EVICT_OK`. **]**
+
+**SRS_LRU_CACHE_13_093: [** If `key` is not found, `lru_cache_evict` shall return `LRU_CACHE_EVICT_NOT_FOUND`. **]**
+
+**SRS_LRU_CACHE_13_094: [** `lru_cache_evict` shall release the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_095: [** If there are any failures, `lru_cache_evict` shall return `LRU_CACHE_EVICT_ERROR`. **]**

@@ -1670,6 +1670,339 @@ TEST_FUNCTION(lru_cache_get_return_NULL_when_not_found)
     lru_cache_destroy(lru_cache);
 }
 
+
+/*Tests_SRS_LRU_CACHE_13_085: [ If lru_cache is NULL, then lru_cache_evict shall fail and return LRU_CACHE_EVICT_ERROR. ]*/
+TEST_FUNCTION(lru_cache_evict_fails_with_NULL_lru_handle)
+{
+    // arrange
+    int key = 10;
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(NULL, &key);
+
+    //assert
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_ERROR, evict_result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+}
+
+/*Tests_SRS_LRU_CACHE_13_086: [ If key is NULL, then lru_cache_evict shall fail and return LRU_CACHE_EVICT_ERROR. ]*/
+TEST_FUNCTION(lru_cache_evict_fails_with_NULL_key)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, NULL);
+
+    //assert
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_ERROR, evict_result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+/*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_093: [ If key is not found, lru_cache_evict shall return LRU_CACHE_EVICT_NOT_FOUND. ]*/
+/*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
+TEST_FUNCTION(lru_cache_evict_returns_NOT_FOUND_when_clds_hash_table_remove_returns_NOT_FOUND)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, NULL)).SetReturn(CLDS_HASH_TABLE_REMOVE_NOT_FOUND);
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, &key);
+
+    //assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_NOT_FOUND, evict_result);
+
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+/*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
+TEST_FUNCTION(lru_cache_evict_returns_ERROR_when_clds_hash_table_remove_returns_ERROR)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, NULL)).SetReturn(CLDS_HASH_TABLE_REMOVE_ERROR);
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, &key);
+
+    //assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_ERROR, evict_result);
+
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+/*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
+TEST_FUNCTION(lru_cache_evict_returns_OK_with_old_item_NULL_fails)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10;
+    CLDS_HASH_TABLE_ITEM** hash_table_item = NULL;
+
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_remove(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, NULL))
+        .SetReturn(CLDS_HASH_TABLE_REMOVE_OK)
+        .CaptureArgumentValue_item(&hash_table_item);
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, &key);
+
+    //assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_ERROR, evict_result);
+
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+/*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_090: [ If the key is removed: ]*/
+/*Tests_SRS_LRU_CACHE_13_096: [ lru_cache_evict shall update the current_size by subtracting the removed old value size. ]*/
+/*Tests_SRS_LRU_CACHE_13_091: [ lru_cache_evict shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+/*Tests_SRS_LRU_CACHE_13_092: [ On success, lru_cache_evict shall return LRU_CACHE_EVICT_OK. ]*/
+/*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
+TEST_FUNCTION(lru_cache_evict_removes_recent_key_succeeds)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10, key2 = 11, value = 1000, value2 = 1500, size = 1;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+    CLDS_HASH_TABLE_ITEM* hash_table_item2;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    set_lru_put_insert_expectations(&key, &hash_table_item);
+    set_lru_put_nothing_to_evict_expectations();
+
+    set_lru_put_insert_expectations(&key2, &hash_table_item2);
+    set_lru_put_nothing_to_evict_expectations();
+
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    void* get_value_ptr = lru_cache_get(lru_cache, &key2);
+    ASSERT_IS_NOT_NULL(get_value_ptr);
+    int get_value = *((int*)get_value_ptr);
+    ASSERT_ARE_EQUAL(int, get_value, value2);
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, &key2);
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, evict_result);
+
+    //assert
+    get_value_ptr = lru_cache_get(lru_cache, &key2);
+    ASSERT_IS_NULL(get_value_ptr);
+
+    // key exists
+    get_value_ptr = lru_cache_get(lru_cache, &key);
+    ASSERT_IS_NOT_NULL(get_value_ptr);
+    get_value = *((int*)get_value_ptr);
+    ASSERT_ARE_EQUAL(int, get_value, value);
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+/*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
+/*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_090: [ If the key is removed: ]*/
+/*Tests_SRS_LRU_CACHE_13_096: [ lru_cache_evict shall update the current_size by subtracting the removed old value size. ]*/
+/*Tests_SRS_LRU_CACHE_13_091: [ lru_cache_evict shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+/*Tests_SRS_LRU_CACHE_13_092: [ On success, lru_cache_evict shall return LRU_CACHE_EVICT_OK. ]*/
+/*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
+TEST_FUNCTION(lru_cache_evict_removes_old_key_succeeds)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10, key2 = 11, value = 1000, value2 = 1500, size = 1;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+    CLDS_HASH_TABLE_ITEM* hash_table_item2;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    set_lru_put_insert_expectations(&key, &hash_table_item);
+    set_lru_put_nothing_to_evict_expectations();
+
+    set_lru_put_insert_expectations(&key2, &hash_table_item2);
+    set_lru_put_nothing_to_evict_expectations();
+
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    void* get_value_ptr = lru_cache_get(lru_cache, &key);
+    ASSERT_IS_NOT_NULL(get_value_ptr);
+    int get_value = *((int*)get_value_ptr);
+    ASSERT_ARE_EQUAL(int, get_value, value);
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, &key);
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, evict_result);
+
+    //assert
+    get_value_ptr = lru_cache_get(lru_cache, &key);
+    ASSERT_IS_NULL(get_value_ptr);
+
+    // key2 exists
+    get_value_ptr = lru_cache_get(lru_cache, &key2);
+    ASSERT_IS_NOT_NULL(get_value_ptr);
+    get_value = *((int*)get_value_ptr);
+    ASSERT_ARE_EQUAL(int, get_value, value2);
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_096: [ lru_cache_evict shall update the current_size by subtracting the removed old value size. ]*/
+/*Tests_SRS_LRU_CACHE_13_091: [ lru_cache_evict shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+/*Tests_SRS_LRU_CACHE_13_092: [ On success, lru_cache_evict shall return LRU_CACHE_EVICT_OK. ]*/
+TEST_FUNCTION(lru_cache_evict_updates_current_size_and_does_not_trigger_evict_succeeds)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10, key2 = 11, key3 = 12, value = 1000, value2 = 1500, value3 = 2000, size = 5;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+    CLDS_HASH_TABLE_ITEM* hash_table_item2;
+    CLDS_HASH_TABLE_ITEM* hash_table_item3;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    set_lru_put_insert_expectations(&key, &hash_table_item);
+    set_lru_put_nothing_to_evict_expectations();
+
+    set_lru_put_insert_expectations(&key2, &hash_table_item2);
+    set_lru_put_nothing_to_evict_expectations();
+
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+
+    //act
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(lru_cache, &key);
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, evict_result);
+    umock_c_reset_all_calls();
+
+    //assert
+    set_lru_put_insert_expectations(&key3, &hash_table_item3);
+    set_lru_put_nothing_to_evict_expectations();
+
+    result = lru_cache_put(lru_cache, &key3, &value3, size, test_eviction_callback, NULL, NULL, NULL);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
 // This test requires mock of interlocked. At the time of writing this test, interlocked does not play well with 
 // real_thread_notifications_dispatcher as its causing a crash. 
 // Creating this work item for the fix: Task 25774695: Fix mocking for interlocked when using reals hazard pointers

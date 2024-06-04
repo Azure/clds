@@ -33,7 +33,8 @@ MU_DEFINE_ENUM(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_RESULT_VALUES);
 
 #define LRU_CACHE_EVICT_RESULT_VALUES \
     LRU_CACHE_EVICT_OK, \
-    LRU_CACHE_EVICT_ERROR
+    LRU_CACHE_EVICT_ERROR, \
+    LRU_CACHE_EVICT_NOT_FOUND
 MU_DEFINE_ENUM(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_RESULT_VALUES);
 
 
@@ -52,6 +53,9 @@ MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_VALUE_COPY, copy_key_value_function, LRU_CACHE_KEY_VALUE_FREE, free_key_value_function);
 
 MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
+
+MOCKABLE_FUNCTION(, LRU_CACHE_EVICT_RESULT, lru_cache_evict, LRU_CACHE_HANDLE, lru_cache, void*, key);
+
 
 #ifdef __cplusplus
 }
