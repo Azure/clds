@@ -18,7 +18,7 @@ jobs:
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64, custom script)'
   pool:
-    name: Azure-MessagingStore-WinBuildPoolVS2022
+    name: Azure-MessagingStore-WinBuildPoolVS2022_0
     demands:
     - Build
     - Cmd
