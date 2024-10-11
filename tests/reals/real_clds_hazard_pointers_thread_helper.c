@@ -2,6 +2,8 @@
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include "real_gballoc_hl_renames.h"
+#include "real_ps_util_renames.h"
+#include "real_thread_notifications_lackey_dll_rename.h"
 #include "real_clds_hazard_pointers_renames.h"
 #include "real_thread_notifications_dispatcher_renames.h"
 

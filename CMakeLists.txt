@@ -8,8 +8,7 @@ endif()
 
 #if ((NOT TARGET clds) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/clds/CMakeLists.txt))
 #    add_subdirectory(deps/clds)
-#    include_directories(${CMAKE_CURRENT_LIST_DIR}/deps/clds/inc)
-#endif() 
+#endif()
 
 project(clds)
 
@@ -46,7 +45,7 @@ endif()
 if ((NOT TARGET c_build_tools) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-build-tools/CMakeLists.txt))
     add_subdirectory(deps/c-build-tools)
     set_default_build_options()
-endif() 
+endif()
 
 if ((WIN32) AND ("${GBALLOC_LL_TYPE}" STREQUAL "JEMALLOC"))
     # Bring in vcpkg
@@ -55,40 +54,34 @@ endif()
 
 if ((NOT TARGET macro_utils_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/macro-utils-c/CMakeLists.txt))
     add_subdirectory(deps/macro-utils-c)
-    include_directories(${MACRO_UTILS_INC_FOLDER})
-endif() 
+endif()
 
 if ((NOT TARGET c_logging) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-logging/CMakeLists.txt))
     add_subdirectory(deps/c-logging)
-    include_directories(deps/c-logging/v2/inc)
-endif() 
+endif()
 
 if ((NOT TARGET ctest) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/ctest/CMakeLists.txt))
     add_subdirectory(deps/ctest)
-    include_directories(${CTEST_INC_FOLDER})
-endif() 
+endif()
 
 if ((NOT TARGET testrunnerswitcher) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-testrunnerswitcher/CMakeLists.txt))
     add_subdirectory(deps/c-testrunnerswitcher)
-    include_directories(${TESTRUNNERSWITCHER_INC_FOLDER})
-endif() 
+endif()
 
 if ((NOT TARGET umock_c) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/umock-c/CMakeLists.txt))
     add_subdirectory(deps/umock-c)
-    include_directories(${UMOCK_C_INC_FOLDER})
-endif() 
+endif()
 
 if ((NOT TARGET c_pal) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-pal/CMakeLists.txt))
     add_subdirectory(deps/c-pal)
-    include_directories(${C_PAL_INC_FOLDER})
-endif() 
+endif()
 
 if (
-    (NOT TARGET mimalloc-obj) AND 
+    (NOT TARGET mimalloc-obj) AND
     (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/mimalloc/CMakeLists.txt)
     )
         set(MI_BUILD_SHARED OFF CACHE BOOL "Build shared library" FORCE) #not building a dll allows building on 32 bit, otherwise there's some errors on init.c about not finding a imported symbol
-        set(MI_BUILD_TESTS OFF CACHE BOOL "Build test executables" FORCE) 
+        set(MI_BUILD_TESTS OFF CACHE BOOL "Build test executables" FORCE)
         #for mimalloc disable this warning: Warning C4459: declaration of 'os_page_size' hides global declaration
         #for mimalloc disable this warning: Warning C4100: 'try_alignment': unreferenced formal parameter
         #for mimalloc disable this warning: warning C4505: 'mi_os_get_aligned_hint': unreferenced local function has been removed
@@ -102,14 +95,14 @@ if (
 
         add_subdirectory(deps/mimalloc)
         include_directories(deps/mimalloc/include)
-        
+
         set(CMAKE_C_FLAGS ${PREV_CMAKE_C_FLAGS})
         set(CMAKE_CXX_FLAGS ${PREV_CMAKE_CXX_FLAGS})
 endif()
 
 if (
     (WIN32) AND
-    (NOT TARGET jemalloc) AND 
+    (NOT TARGET jemalloc) AND
     (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/jemalloc/README)
     )
     set(PREV_CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
@@ -135,8 +128,7 @@ endif()
 
 if ((NOT TARGET c_util) AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/c-util/CMakeLists.txt))
     add_subdirectory(deps/c-util)
-    include_directories(${C_UTIL_INC_FOLDER})
-endif() 
+endif()
 
 set(run_e2e_tests ${original_run_e2e_tests})
 set(run_unittests ${original_run_unittests})
@@ -201,7 +193,12 @@ add_library(clds
     ${clds_md_files}
     )
 
+if(WIN32)
+target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
+else()
 target_link_libraries(clds c_util c_pal)
+endif()
+target_include_directories(clds PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc)
 
 # make an install target so we can produce a Linux native client package.
 install_library_with_prefix(clds clds ${clds_h_files})

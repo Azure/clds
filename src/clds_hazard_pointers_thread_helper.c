@@ -12,6 +12,7 @@
 #include "c_pal/log_critical_and_terminate.h"
 
 #include "c_util/thread_notifications_dispatcher.h"
+#include "thread_notifications_lackey_dll/thread_notifications_lackey_dll.h"
 
 #include "clds/clds_hazard_pointers.h"
 
@@ -24,8 +25,6 @@ typedef struct CLDS_HAZARD_POINTERS_THREAD_HELPER_TAG
     TCALL_DISPATCHER_TARGET_HANDLE(THREAD_NOTIFICATION_CALL) thread_notification_target_handle;
     TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL) call_dispatcher;
 } CLDS_HAZARD_POINTERS_THREAD_HELPER;
-
-MU_DEFINE_ENUM_STRINGS(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_VALUES);
 
 static void clds_hazard_pointers_thread_helper_thread_notification(void* context, THREAD_NOTIFICATIONS_LACKEY_DLL_REASON reason)
 {
