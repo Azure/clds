@@ -198,6 +198,7 @@ target_link_libraries(clds c_util c_pal thread_notifications_lackey_dll)
 else()
 target_link_libraries(clds c_util c_pal)
 endif()
+target_include_directories(clds PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc)
 
 # make an install target so we can produce a Linux native client package.
 install_library_with_prefix(clds clds ${clds_h_files})
