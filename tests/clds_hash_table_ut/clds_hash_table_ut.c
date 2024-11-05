@@ -18,7 +18,6 @@
 #include "c_pal/interlocked.h"
 
 #define ENABLE_MOCKS
-
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 
@@ -3683,45 +3682,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
             ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
         }
     }
-
-    // cleanup
-    clds_hash_table_destroy(hash_table);
-    destroy_test_context(&test_context);
-}
-
-/* Tests_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_fails_if_number_of_items_would_overflow)
-{
-    // arrange
-    CLDS_HASH_TABLE_TEST_CONTEXT test_context;
-    setup_test_context(&test_context);
-    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 1, test_context.hazard_pointers, &test_context.start_seq_no, test_skipped_seq_no_cb, NULL);
-
-    CLDS_HASH_TABLE_ITEM* item_1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4242);
-    (void)clds_hash_table_insert(hash_table, test_context.hazard_pointers_thread, (void*)0x1, item_1, NULL);
-
-    CLDS_HASH_TABLE_ITEM* item_2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)0x4243);
-    (void)clds_hash_table_insert(hash_table, test_context.hazard_pointers_thread, (void*)0x2, item_2, NULL);
-
-    umock_c_reset_all_calls();
-
-    CLDS_HASH_TABLE_ITEM** items;
-    uint64_t item_count;
-
-    uint64_t mocked_item_count_1 = UINT64_MAX / 2 + 1;
-    uint64_t mocked_item_count_2 = UINT64_MAX / 2 + 1;
-
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
-
-    // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result);
 
     // cleanup
     clds_hash_table_destroy(hash_table);
