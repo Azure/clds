@@ -3,8 +3,6 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
-#include <stdbool.h>
-#include <time.h>
 
 #include "testrunnerswitcher.h"
 
@@ -12,16 +10,10 @@
 
 #include "c_logging/logger.h"
 
-#include "c_pal/interlocked.h"
-#include "c_pal/sync.h"
-
-#include "c_pal/interlocked_hl.h"
-
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 
 #include "c_pal/timer.h"
-#include "c_pal/threadapi.h"
 
 #include "c_util/thread_notifications_dispatcher.h"
 
@@ -32,7 +24,6 @@
 
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_RESULT_VALUES);
 TEST_DEFINE_ENUM_TYPE(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
-TEST_DEFINE_ENUM_TYPE(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_RESULT_VALUES);
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
@@ -60,7 +51,6 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 typedef struct TEST_ITEM_TAG
 {
     uint32_t key;
-    uint32_t appendix;
 } TEST_ITEM;
 
 DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
@@ -118,7 +108,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_perf_is_decent)
         TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
 
         test_item->key = i + 1;
-        test_item->appendix = i;
 
         int64_t insert_sequence_number;
         CLDS_HASH_TABLE_INSERT_RESULT result = clds_hash_table_insert(hash_table, clds_hazard_pointers_thread, (void*)(uintptr_t)test_item->key, (void*)item, &insert_sequence_number);
