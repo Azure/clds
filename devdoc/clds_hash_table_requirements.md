@@ -462,11 +462,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, C
 
 **SRS_CLDS_HASH_TABLE_42_018: [** `clds_hash_table_snapshot` shall wait for the ongoing write operations to complete. **]**
 
-**SRS_CLDS_HASH_TABLE_42_019: [** For each level of buckets maintained by the hash table: **]**
-
 **SRS_CLDS_HASH_TABLE_01_114: [** `clds_hash_table_snapshot` shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. **]**
-
- - **SRS_CLDS_HASH_TABLE_42_022: [** If the addition of the list count causes overflow then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`. **]**
 
 **SRS_CLDS_HASH_TABLE_42_064: [** If there are no items then `clds_hash_table_snapshot` shall set `items` to `NULL` and `item_count` to `0` and return `CLDS_HASH_TABLE_SNAPSHOT_OK`. **]**
 
