@@ -40,6 +40,7 @@ if(${run_perf_tests})
     if(WIN32)
         build_test_folder(clds_hazard_pointers_thread_helper_perf) # Windows only until there is a PAL for thread local storage
     endif()
+    build_test_folder(clds_hash_table_snapshot_perf)
     add_subdirectory(clds_hash_table_perf)
     add_subdirectory(clds_singly_linked_list_perf)
     add_subdirectory(clds_sorted_list_perf)
