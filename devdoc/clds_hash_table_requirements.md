@@ -462,11 +462,9 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, C
 
 **SRS_CLDS_HASH_TABLE_42_018: [** `clds_hash_table_snapshot` shall wait for the ongoing write operations to complete. **]**
 
-**SRS_CLDS_HASH_TABLE_42_019: [** For each bucket in the array: **]**
+**SRS_CLDS_HASH_TABLE_42_019: [** For each level of buckets maintained by the hash table: **]**
 
- - **SRS_CLDS_HASH_TABLE_42_020: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_lock_writes`. **]**
-
- - **SRS_CLDS_HASH_TABLE_42_021: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_get_count` and add to the running total. **]**
+**SRS_CLDS_HASH_TABLE_01_114: [** `clds_hash_table_snapshot` shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. **]**
 
  - **SRS_CLDS_HASH_TABLE_42_022: [** If the addition of the list count causes overflow then `clds_hash_table_snapshot` shall fail and return `CLDS_HASH_TABLE_SNAPSHOT_ERROR`. **]**
 
@@ -475,6 +473,8 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, C
 **SRS_CLDS_HASH_TABLE_42_023: [** `clds_hash_table_snapshot` shall allocate an array of `CLDS_HASH_TABLE_ITEM*` **]**
 
 **SRS_CLDS_HASH_TABLE_42_024: [** For each bucket in the array: **]**
+
+ - **SRS_CLDS_HASH_TABLE_42_020: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_lock_writes`. **]**
 
  - **SRS_CLDS_HASH_TABLE_42_025: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_get_count`. **]**
 

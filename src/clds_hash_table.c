@@ -1119,7 +1119,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         uint64_t temp_item_count = 0;
         bool need_to_unlock_all = false;
 
-        /* Codes_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
+        /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
         BUCKET_ARRAY* current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hash_table->first_hash_table, NULL, NULL);
         while (current_bucket_array != NULL)
         {
@@ -1129,7 +1129,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
 
             if (current_bucket_array_item_count + temp_item_count < temp_item_count)
             {
-                /* Codes_SRS_CLDS_HASH_TABLE_42_022: [ If the addition of the list count causes overflow then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
                 LogError("overflow in computing total count (%" PRIu64 " + %" PRIu64 ")", temp_item_count, current_bucket_array_item_count);
             }
             else
@@ -1184,6 +1184,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
                             {
                                 if (current_bucket_array->hash_table[i] != NULL)
                                 {
+                                    /*Codes_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
                                     clds_sorted_list_lock_writes(current_bucket_array->hash_table[i]);
 
                                     if (!failed)
