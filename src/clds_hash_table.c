@@ -1117,7 +1117,6 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         internal_lock_writes(clds_hash_table);
 
         uint64_t temp_item_count = 0;
-        bool failed = false;
         bool need_to_unlock_all = false;
 
         /* Codes_SRS_CLDS_HASH_TABLE_42_019: [ For each bucket in the array: ]*/
@@ -1126,63 +1125,22 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         {
             BUCKET_ARRAY* next_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*)&current_bucket_array->next_bucket, NULL, NULL);
 
-            if (interlocked_add(&current_bucket_array->item_count, 0) != 0)
+            int64_t current_bucket_array_item_count = interlocked_add(&current_bucket_array->item_count, 0);
+
+            if (current_bucket_array_item_count + temp_item_count < temp_item_count)
             {
-                int32_t bucket_count = interlocked_add(&current_bucket_array->bucket_count, 0);
-                int32_t i;
-                for (i = 0; i < bucket_count; i++)
-                {
-                    if (current_bucket_array->hash_table[i] != NULL)
-                    {
-                        /* Codes_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
-                        clds_sorted_list_lock_writes(current_bucket_array->hash_table[i]);
-                        need_to_unlock_all = true;
-
-                        /* Codes_SRS_CLDS_HASH_TABLE_42_021: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count and add to the running total. ]*/
-                        uint64_t list_item_count;
-                        CLDS_SORTED_LIST_GET_COUNT_RESULT count_result = clds_sorted_list_get_count(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, &list_item_count);
-                        if (count_result != CLDS_SORTED_LIST_GET_COUNT_OK)
-                        {
-                            /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-                            LogError("clds_sorted_list_get_count failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_COUNT_RESULT, count_result));
-                            clds_sorted_list_unlock_writes(current_bucket_array->hash_table[i]);
-                            break;
-                        }
-                        else
-                        {
-                            if (list_item_count + temp_item_count < temp_item_count)
-                            {
-                                /* Codes_SRS_CLDS_HASH_TABLE_42_022: [ If the addition of the list count causes overflow then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-                                LogError("overflow in computing total count (%" PRIu64 " + %" PRIu64 ")", temp_item_count, list_item_count);
-                                clds_sorted_list_unlock_writes(current_bucket_array->hash_table[i]);
-                                break;
-                            }
-                            else
-                            {
-                                temp_item_count += list_item_count;
-                            }
-                        }
-                    }
-                }
-
-                if (i < bucket_count)
-                {
-                    for (int32_t index_to_clean = 0; index_to_clean < i; index_to_clean++)
-                    {
-                        if (current_bucket_array->hash_table[index_to_clean] != NULL)
-                        {
-                            clds_sorted_list_unlock_writes(current_bucket_array->hash_table[index_to_clean]);
-                        }
-                    }
-                    failed = true;
-                    break;
-                }
+                /* Codes_SRS_CLDS_HASH_TABLE_42_022: [ If the addition of the list count causes overflow then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
+                LogError("overflow in computing total count (%" PRIu64 " + %" PRIu64 ")", temp_item_count, current_bucket_array_item_count);
+            }
+            else
+            {
+                temp_item_count += current_bucket_array_item_count;
             }
 
             current_bucket_array = next_bucket_array;
         }
 
-        if (failed)
+        if (current_bucket_array != NULL)
         {
             result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
         }
@@ -1209,6 +1167,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
                 }
                 else
                 {
+                    bool failed = false;
                     uint64_t result_index = 0;
 
                     /* Codes_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
@@ -1225,6 +1184,8 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
                             {
                                 if (current_bucket_array->hash_table[i] != NULL)
                                 {
+                                    clds_sorted_list_lock_writes(current_bucket_array->hash_table[i]);
+
                                     if (!failed)
                                     {
                                         /* Codes_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
