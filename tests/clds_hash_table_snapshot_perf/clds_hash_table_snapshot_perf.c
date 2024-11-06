@@ -55,7 +55,7 @@ typedef struct TEST_ITEM_TAG
 
 DECLARE_HASH_TABLE_NODE_TYPE(TEST_ITEM)
 
-#define TEST_ITEM_COUNT                (500000)
+#define TEST_ITEM_COUNT                (1500000)
 
 static uint64_t test_compute_hash(void* key)
 {
