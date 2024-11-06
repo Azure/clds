@@ -5,6 +5,7 @@
 #define REAL_CLDS_SORTED_LIST_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "macro_utils/macro_utils.h"
@@ -44,7 +45,7 @@ CLDS_SORTED_LIST_SET_VALUE_RESULT real_clds_sorted_list_set_value(CLDS_SORTED_LI
 void real_clds_sorted_list_lock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list);
 void real_clds_sorted_list_unlock_writes(CLDS_SORTED_LIST_HANDLE clds_sorted_list);
 CLDS_SORTED_LIST_GET_COUNT_RESULT real_clds_sorted_list_get_count(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t* item_count);
-CLDS_SORTED_LIST_GET_ALL_RESULT real_clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t item_count, CLDS_SORTED_LIST_ITEM** items);
+CLDS_SORTED_LIST_GET_ALL_RESULT real_clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, uint64_t item_count, CLDS_SORTED_LIST_ITEM** items, uint64_t* retrieved_item_count, bool require_locked_list);
 
 // helper APIs for creating/destroying a singly linked list node
 CLDS_SORTED_LIST_ITEM* real_clds_sorted_list_node_create(size_t node_size, SORTED_LIST_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context);

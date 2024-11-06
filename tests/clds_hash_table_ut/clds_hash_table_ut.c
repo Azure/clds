@@ -3231,10 +3231,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
 
     STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
@@ -3293,10 +3290,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
 
     STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
@@ -3381,10 +3375,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     // act
@@ -3474,10 +3465,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     // act
@@ -3547,10 +3535,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
 
     STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     umock_c_negative_tests_snapshot();
 
@@ -3601,10 +3586,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     umock_c_negative_tests_snapshot();
@@ -3660,10 +3642,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     umock_c_negative_tests_snapshot();

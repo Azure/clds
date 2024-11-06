@@ -144,7 +144,7 @@ MU_DEFINE_ENUM(CLDS_SORTED_LIST_GET_COUNT_RESULT, CLDS_SORTED_LIST_GET_COUNT_RES
 #define CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES \
     CLDS_SORTED_LIST_GET_ALL_OK, \
     CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED, \
-    CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE, \
+    CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE, \
     CLDS_SORTED_LIST_GET_ALL_ERROR
 
 MU_DEFINE_ENUM(CLDS_SORTED_LIST_GET_ALL_RESULT, CLDS_SORTED_LIST_GET_ALL_RESULT_VALUES);
@@ -164,8 +164,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_SET_VALUE_RESULT, clds_sorted_list_set_valu
 MOCKABLE_FUNCTION(, void, clds_sorted_list_lock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 MOCKABLE_FUNCTION(, void, clds_sorted_list_unlock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_COUNT_RESULT, clds_sorted_list_get_count, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t*, item_count);
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items);
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all_no_lock_check, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items, uint64_t*, retrieved_item_count);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items, uint64_t*, retrieved_item_count, bool, require_locked_list);
 
 // helper APIs for creating/destroying a sorted list node
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_node_create, size_t, node_size, SORTED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
@@ -521,6 +520,8 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, C
 
 **SRS_CLDS_SORTED_LIST_42_044: [** If `items` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
+**SRS_CLDS_SORTED_LIST_01_095: [** If `retrieved_item_count` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
+
 **SRS_CLDS_SORTED_LIST_42_045: [** If `require_locked_list` is `true` and the counter to lock the list for writes is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED`. **]**
 
 **SRS_CLDS_SORTED_LIST_42_046: [** For each item in the list: **]**
@@ -529,7 +530,9 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, C
 
  - **SRS_CLDS_SORTED_LIST_42_048: [** `clds_sorted_list_get_all` shall store the pointer in `items`. **]**
 
-**SRS_CLDS_SORTED_LIST_42_049: [** If `item_count` does not match the number of items in the list then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE`. **]**
+**SRS_CLDS_SORTED_LIST_42_049: [** If `item_count` is less than the number of items in the list then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE`. **]**
+
+**SRS_CLDS_SORTED_LIST_01_094: [** Otherwise, `clds_sorted_list_get_all` shall write in `retrieved_item_count` the number of items copied to `items`. **]**
 
 **SRS_CLDS_SORTED_LIST_42_050: [** `clds_sorted_list_get_all` shall succeed and return `CLDS_SORTED_LIST_GET_ALL_OK`. **]**
 

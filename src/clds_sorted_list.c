@@ -1829,10 +1829,10 @@ CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE
         (item_count == 0) ||
         /*Codes_SRS_CLDS_SORTED_LIST_42_044: [ If items is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
         (items == NULL) ||
+        /*Codes_SRS_CLDS_SORTED_LIST_01_095: [ If retrieved_item_count is NULL then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_ERROR. ]*/
         (retrieved_item_count == NULL)
         )
     {
-        /*Codes_SRS_CLDS_SORTED_LIST_42_045: [ If require_locked_list is true and the counter to lock the list for writes is 0 then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED. ]*/
         LogError("Invalid arguments: CLDS_SORTED_LIST_HANDLE clds_sorted_list=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, uint64_t item_count=%" PRIu64 ", CLDS_SORTED_LIST_ITEM** items=%p, uint64_t* retrieved_item_count=%p, bool require_locked_list=%" PRI_BOOL "",
             clds_sorted_list, clds_hazard_pointers_thread, item_count, items, retrieved_item_count, MU_BOOL_VALUE(require_locked_list));
         result = CLDS_SORTED_LIST_GET_ALL_ERROR;
@@ -1850,8 +1850,6 @@ CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE
         }
         else
         {
-            result = CLDS_SORTED_LIST_GET_ALL_OK;
-
             /*Codes_SRS_CLDS_SORTED_LIST_42_046: [ For each item in the list: ]*/
             uint64_t current_index = 0;
             CLDS_SORTED_LIST_ITEM* current_item = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_sorted_list->head, NULL, NULL);
@@ -1862,7 +1860,7 @@ CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE
 
                 if (current_index + 1 > item_count)
                 {
-                    /*Codes_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE. ]*/
+                    /*Codes_SRS_CLDS_SORTED_LIST_42_049: [ If item_count is less than the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE. ]*/
                     LogError("Attempted to get all items with array of size %" PRIu64 ", but there were at least %" PRIu64 " items in the list (too small)",
                         item_count, current_index + 1);
                     break;
@@ -1880,19 +1878,21 @@ CLDS_SORTED_LIST_GET_ALL_RESULT clds_sorted_list_get_all(CLDS_SORTED_LIST_HANDLE
 
             if (current_item != NULL)
             {
-                /*Codes_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE. ]*/
+                /*Codes_SRS_CLDS_SORTED_LIST_42_049: [ If item_count is less than the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE. ]*/
                 LogError("Attempted to get all items with array of size %" PRIu64 ", but there were %" PRIu64 " items in the list (too large)",
                     item_count, current_index);
-                result = CLDS_SORTED_LIST_GET_ALL_WRONG_SIZE;
 
                 for (uint64_t i = 0; i < current_index; ++i)
                 {
                     clds_sorted_list_node_release(items[i]);
                     items[i] = NULL;
                 }
+
+                result = CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE;
             }
             else
             {
+                /*Codes_SRS_CLDS_SORTED_LIST_01_094: [ Otherwise, clds_sorted_list_get_all shall write in retrieved_item_count the number of items copied to items. ] */
                 *retrieved_item_count = current_index;
 
                 /*Codes_SRS_CLDS_SORTED_LIST_42_050: [ clds_sorted_list_get_all shall succeed and return CLDS_SORTED_LIST_GET_ALL_OK. ]*/
