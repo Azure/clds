@@ -165,6 +165,7 @@ MOCKABLE_FUNCTION(, void, clds_sorted_list_lock_writes, CLDS_SORTED_LIST_HANDLE,
 MOCKABLE_FUNCTION(, void, clds_sorted_list_unlock_writes, CLDS_SORTED_LIST_HANDLE, clds_sorted_list);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_COUNT_RESULT, clds_sorted_list_get_count, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t*, item_count);
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all_no_lock_check, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items, uint64_t*, retrieved_item_count);
 
 // helper APIs for creating/destroying a sorted list node
 MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_ITEM*, clds_sorted_list_node_create, size_t, node_size, SORTED_LIST_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);
@@ -507,10 +508,10 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_COUNT_RESULT, clds_sorted_list_get_coun
 ### clds_sorted_list_get_all
 
 ```c
-MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items);
+MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, CLDS_SORTED_LIST_HANDLE, clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, uint64_t, item_count, CLDS_SORTED_LIST_ITEM**, items, uint64_t*, retrieved_item_count, bool, require_locked_list);
 ```
 
-`clds_sorted_list_get_all` copies all items in the list into the `items` while the write lock is held. The array `items` must have `item_count` elements allocated. If the number of items in the list does not match `item_count`, this will fail (caller should get the count first under the same lock).
+`clds_sorted_list_get_all` copies all items in the list into the `items` while the write lock is held. The array `items` must have `item_count` elements allocated. If the number of items in the list is more than `item_count`, `clds_sorted_list_get_all` will fail (caller should get the count first).
 
 **SRS_CLDS_SORTED_LIST_42_041: [** If `clds_sorted_list` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
@@ -520,7 +521,7 @@ MOCKABLE_FUNCTION(, CLDS_SORTED_LIST_GET_ALL_RESULT, clds_sorted_list_get_all, C
 
 **SRS_CLDS_SORTED_LIST_42_044: [** If `items` is `NULL` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_ERROR`. **]**
 
-**SRS_CLDS_SORTED_LIST_42_045: [** If the counter to lock the list for writes is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED`. **]**
+**SRS_CLDS_SORTED_LIST_42_045: [** If `require_locked_list` is `true` and the counter to lock the list for writes is `0` then `clds_sorted_list_get_all` shall fail and return `CLDS_SORTED_LIST_GET_ALL_NOT_LOCKED`. **]**
 
 **SRS_CLDS_SORTED_LIST_42_046: [** For each item in the list: **]**
 
