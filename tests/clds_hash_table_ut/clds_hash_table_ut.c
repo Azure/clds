@@ -3208,10 +3208,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_empty_table_succeeds)
 /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
@@ -3231,10 +3228,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
 
     STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
@@ -3262,10 +3256,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
 /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
@@ -3293,10 +3284,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
 
     STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
@@ -3346,10 +3334,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
 /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
@@ -3381,10 +3366,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     // act
@@ -3435,10 +3417,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
 /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
@@ -3474,10 +3453,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     // act
@@ -3547,10 +3523,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
 
     STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
 
-    STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     umock_c_negative_tests_snapshot();
 
@@ -3601,10 +3574,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     umock_c_negative_tests_snapshot();
@@ -3660,10 +3630,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
 
     for (uint32_t i = 0; i < number_of_sorted_lists; i++)
     {
-        STRICT_EXPECTED_CALL(clds_sorted_list_lock_writes(IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_count(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG));
-        STRICT_EXPECTED_CALL(clds_sorted_list_unlock_writes(IGNORED_ARG));
+        STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
     }
 
     umock_c_negative_tests_snapshot();

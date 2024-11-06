@@ -1162,53 +1162,30 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
                     {
                         int32_t bucket_count = interlocked_add(&current_bucket_array->bucket_count, 0);
                         int32_t i;
-                        bool failed = false;
 
-                        for (i = 0; (i < bucket_count) && !failed; i++)
+                        for (i = 0; i < bucket_count; i++)
                         {
                             if (current_bucket_array->hash_table[i] != NULL)
                             {
-                                /*Codes_SRS_CLDS_HASH_TABLE_42_020: [ clds_hash_table_snapshot shall call clds_sorted_list_lock_writes. ]*/
-                                clds_sorted_list_lock_writes(current_bucket_array->hash_table[i]);
+                                uint64_t retrieved_item_count;
 
-                                /* Codes_SRS_CLDS_HASH_TABLE_42_025: [ clds_hash_table_snapshot shall call clds_sorted_list_get_count. ]*/
-                                uint64_t list_item_count;
-                                CLDS_SORTED_LIST_GET_COUNT_RESULT count_result = clds_sorted_list_get_count(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, &list_item_count);
-                                if (count_result != CLDS_SORTED_LIST_GET_COUNT_OK)
+                                /* Codes_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
+                                CLDS_SORTED_LIST_GET_ALL_RESULT get_all_result = clds_sorted_list_get_all(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, temp_item_count, items_to_return + result_index, &retrieved_item_count, false);
+                                if (get_all_result != CLDS_SORTED_LIST_GET_ALL_OK)
                                 {
                                     /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-                                    LogError("clds_sorted_list_get_count failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_COUNT_RESULT, count_result));
-                                    failed = true;
+                                    LogError("clds_sorted_list_get_all failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_ALL_RESULT, get_all_result));
+                                    break;
                                 }
                                 else
                                 {
-                                    if (list_item_count == 0)
-                                    {
-                                        // skip
-                                    }
-                                    else
-                                    {
-                                        /* Codes_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array. ]*/
-                                        CLDS_SORTED_LIST_GET_ALL_RESULT get_all_result = clds_sorted_list_get_all(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, list_item_count, items_to_return + result_index);
-                                        if (get_all_result != CLDS_SORTED_LIST_GET_ALL_OK)
-                                        {
-                                            /* Codes_SRS_CLDS_HASH_TABLE_42_061: [ If there are any other failures then clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ERROR. ]*/
-                                            LogError("clds_sorted_list_get_all failed with %" PRI_MU_ENUM, MU_ENUM_VALUE(CLDS_SORTED_LIST_GET_ALL_RESULT, get_all_result));
-                                            failed = true;
-                                        }
-                                        else
-                                        {
-                                            result_index += list_item_count;
-                                        }
-                                    }
+                                    result_index += retrieved_item_count;
+                                    temp_item_count -= retrieved_item_count;
                                 }
-
-                                /* Codes_SRS_CLDS_HASH_TABLE_42_027: [ clds_hash_table_snapshot shall call clds_sorted_list_unlock_writes. ]*/
-                                clds_sorted_list_unlock_writes(current_bucket_array->hash_table[i]);
                             }
                         }
 
-                        if (failed)
+                        if (i < bucket_count)
                         {
                             break;
                         }

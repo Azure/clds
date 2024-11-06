@@ -470,13 +470,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, C
 
 **SRS_CLDS_HASH_TABLE_42_024: [** For each bucket in the array: **]**
 
- - **SRS_CLDS_HASH_TABLE_42_020: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_lock_writes`. **]**
-
- - **SRS_CLDS_HASH_TABLE_42_025: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_get_count`. **]**
-
- - **SRS_CLDS_HASH_TABLE_42_026: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_get_all` with the next portion of the allocated array. **]**
-
- - **SRS_CLDS_HASH_TABLE_42_027: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_unlock_writes`. **]**
+ - **SRS_CLDS_HASH_TABLE_42_026: [** `clds_hash_table_snapshot` shall call `clds_sorted_list_get_all` with the next portion of the allocated array and `false` as `required_locked_list`. **]**
 
 **SRS_CLDS_HASH_TABLE_42_028: [** `clds_hash_table_snapshot` shall store the allocated array of items in `items`. **]**
 
