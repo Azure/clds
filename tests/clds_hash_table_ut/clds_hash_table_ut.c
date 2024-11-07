@@ -3421,6 +3421,96 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
 /* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
+TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_after_an_insert_and_delete_multiple_buckets_succeeds)
+{
+    // arrange
+    CLDS_HASH_TABLE_TEST_CONTEXT test_context;
+    setup_test_context(&test_context);
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare_func, 2, test_context.hazard_pointers, &test_context.start_seq_no, test_skipped_seq_no_cb, NULL);
+    ASSERT_IS_NOT_NULL(hash_table);
+
+    CLDS_HASH_TABLE_ITEM* original_items[1];
+    bool found_originals[1];
+    uint32_t number_of_items = 1;
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        original_items[i] = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4242 + i));
+        ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, test_context.hazard_pointers_thread, (void*)(uintptr_t)(0x1 + i), original_items[i], NULL));
+        found_originals[i] = false;
+    }
+
+    // insert the extra item to create a new list
+    CLDS_HASH_TABLE_ITEM* extra_item;
+    extra_item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, test_item_cleanup_func, (void*)(uintptr_t)(0x4243));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, test_context.hazard_pointers_thread, (void*)(uintptr_t)0x2, extra_item, NULL));
+
+    // delete the extra item
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, clds_hash_table_delete(hash_table, test_context.hazard_pointers_thread, (void*)(uintptr_t)0x2, NULL));
+
+    umock_c_reset_all_calls();
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    STRICT_EXPECTED_CALL(malloc_2(IGNORED_ARG, sizeof(CLDS_SORTED_LIST_ITEM*)));
+
+    // only the first bucket is used
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
+    STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+
+    // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
+
+    ASSERT_ARE_EQUAL(uint64_t, number_of_items, item_count);
+    ASSERT_IS_NOT_NULL(items);
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        uint32_t original;
+        for (original = 0; original < number_of_items; original++)
+        {
+            if (!found_originals[original] &&
+                (void*)original_items[original] == (void*)items[i])
+            {
+                found_originals[original] = true;
+                break;
+            }
+        }
+
+        if (original >= number_of_items)
+        {
+            ASSERT_FAIL("The returned item in index %" PRIu32 " was not found in the original", i);
+        }
+    }
+
+    for (uint32_t i = 0; i < number_of_items; i++)
+    {
+        ASSERT_IS_TRUE(found_originals[i], "should have found the item with index %" PRIu32, i);
+    }
+
+    // cleanup
+    for (uint64_t i = 0; i < item_count; i++)
+    {
+        CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, items[i]);
+    }
+    free(items);
+
+    clds_hash_table_destroy(hash_table);
+    destroy_test_context(&test_context);
+}
+
+/* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_023: [ clds_hash_table_snapshot shall allocate an array of CLDS_HASH_TABLE_ITEM* ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_028: [ clds_hash_table_snapshot shall store the allocated array of items in items. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_029: [ clds_hash_table_snapshot shall store the count of items in item_count. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_031: [ clds_hash_table_snapshot shall succeed and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
 TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different_hashes_succeeds)
 {
     // arrange
