@@ -1165,7 +1165,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
 
                         for (i = 0; i < bucket_count; i++)
                         {
-                            if (current_bucket_array->hash_table[i] != NULL)
+                            if ((current_bucket_array->hash_table[i] != NULL) && (temp_item_count > 0))
                             {
                                 uint64_t retrieved_item_count;
 
