@@ -353,7 +353,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
             }
             else
             {
-                TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads = TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INACTIVE_THREADS_QUEUE_SIZE, NULL, NULL, NULL);
+                TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads = TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INACTIVE_THREADS_QUEUE_SIZE, INACTIVE_THREADS_QUEUE_SIZE, NULL, NULL, NULL);
                 if (inactive_threads == NULL)
                 {
                     LogError("TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INACTIVE_THREADS_QUEUE_SIZE, false) failed");
