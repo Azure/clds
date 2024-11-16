@@ -46,13 +46,11 @@ static void clds_hazard_pointers_thread_helper_thread_notification(void* context
 
         case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH:
             /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_006: [ If reason is THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_ATTACH, clds_hazard_pointers_thread_helper_thread_notification shall return. ]*/
-            LogInfo("Got notification: %" PRI_MU_ENUM "", MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, reason));
             break;
 
         case THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH:
         {
             CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE hazard_pointers_helper = context;
-            LogInfo("Got notification: %" PRI_MU_ENUM "", MU_ENUM_VALUE(THREAD_NOTIFICATIONS_LACKEY_DLL_REASON, reason));
 
             /* Codes_SRS_CLDS_HAZARD_POINTERS_THREAD_HELPER_01_007: [ If reason is THREAD_NOTIFICATIONS_LACKEY_DLL_REASON_THREAD_DETACH, clds_hazard_pointers_thread_helper_thread_notification shall call TlsGetValue obtain the thread local value for the slot created in the clds_hazard_pointers_thread_create. ]*/
             CLDS_HAZARD_POINTERS_THREAD_HANDLE hp_thread_handle = TlsGetValue(hazard_pointers_helper->tls_slot);
