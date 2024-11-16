@@ -29,8 +29,9 @@
 
 #define DEFAULT_RECLAIM_THRESHOLD 1
 
+#define INITIAL_INACTIVE_THREADS_QUEUE_SIZE 16
 // Let's have a decent number, if we have 16K inactive threads we'd have issues iterating over them anyway
-#define INACTIVE_THREADS_QUEUE_SIZE 16384
+#define MAX_INACTIVE_THREADS_QUEUE_SIZE 16384
 
 typedef struct CLDS_HAZARD_POINTER_RECORD_TAG
 {
@@ -353,7 +354,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
             }
             else
             {
-                TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads = TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INACTIVE_THREADS_QUEUE_SIZE, INACTIVE_THREADS_QUEUE_SIZE, NULL, NULL, NULL);
+                TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads = TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INITIAL_INACTIVE_THREADS_QUEUE_SIZE, MAX_INACTIVE_THREADS_QUEUE_SIZE, NULL, NULL, NULL);
                 if (inactive_threads == NULL)
                 {
                     LogError("TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INACTIVE_THREADS_QUEUE_SIZE, false) failed");
