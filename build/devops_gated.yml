@@ -95,12 +95,11 @@ jobs:
     workingDirectory: 'build_x64'
     displayName: 'Run lock_free_set_perf tests'
 
-  - task: CmdLine@1
+  - task: CmdLine@2
     displayName: 'Run ctest tests - Perf'
     inputs:
-      filename: ctest
-      arguments: '-C "RelWithDebInfo" -V --output-on-failure -R perf'
-      workingFolder: 'build_x64'
+      script: 'ctest -C "RelWithDebInfo" -V --output-on-failure -R perf'
+      workingDirectory: 'build_x64'
 
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu'
