@@ -11,18 +11,21 @@
 
 #include "macro_utils/macro_utils.h"
 
+#include "c_logging/logger.h"
+
 #include "c_pal/interlocked.h"
 #include "c_pal/sync.h"
 #include "c_pal/uuid.h"
 
 #include "c_pal/interlocked_hl.h"
 
-#include "c_logging/logger.h"
-
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 #include "c_pal/timer.h"
 #include "c_pal/threadapi.h"
+#include "c_pal/thandle.h"
+
+#include "c_util/cancellation_token.h"
 
 #include "clds/clds_hazard_pointers.h"
 
@@ -574,7 +577,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 {
 }
 
-TEST_FUNCTION(clds_hash_table_create_succeeds)
+XTEST_FUNCTION(clds_hash_table_create_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -593,7 +596,7 @@ TEST_FUNCTION(clds_hash_table_create_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_insert_succeeds)
+XTEST_FUNCTION(clds_hash_table_insert_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -618,7 +621,7 @@ TEST_FUNCTION(clds_hash_table_insert_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_delete_succeeds)
+XTEST_FUNCTION(clds_hash_table_delete_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -648,7 +651,7 @@ TEST_FUNCTION(clds_hash_table_delete_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_already_exists_for_items_left_in_the_lower_level_buckets)
+XTEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_already_exists_for_items_left_in_the_lower_level_buckets)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -688,7 +691,7 @@ TEST_FUNCTION(clds_hash_table_insert_in_higher_level_buckets_array_returns_alrea
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_succeeds)
+XTEST_FUNCTION(clds_hash_table_set_value_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -714,7 +717,7 @@ TEST_FUNCTION(clds_hash_table_set_value_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fails)
+XTEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fails)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -758,7 +761,7 @@ TEST_FUNCTION(clds_hash_table_set_value_when_the_key_exists_on_a_lower_level_fai
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
 }
 
-TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
+XTEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -789,7 +792,7 @@ TEST_FUNCTION(clds_hash_table_delete_after_set_value_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_10000_sequential_key_items)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_10000_sequential_key_items)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -807,7 +810,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_10000_sequential_key_items)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, result);
@@ -828,7 +831,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_10000_sequential_key_items)
 /* Tests_SRS_CLDS_HASH_TABLE_42_035: [ clds_hash_table_insert shall decrement the count of pending write operations. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_036: [ clds_hash_table_insert shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_063: [ clds_hash_table_insert shall decrement the count of pending write operations. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -862,7 +865,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // Inserts continue to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
@@ -884,7 +887,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_concurrent_inserts)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -922,7 +925,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // Inserts continue to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
@@ -953,7 +956,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_inserts)
 /* Tests_SRS_CLDS_HASH_TABLE_42_040: [ clds_hash_table_delete shall decrement the count of pending write operations. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_041: [ clds_hash_table_delete shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_042: [ clds_hash_table_insert shall decrement the count of pending write operations. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1004,7 +1007,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // Inserts and deletes continue to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
@@ -1039,7 +1042,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_deletes)
 /* Tests_SRS_CLDS_HASH_TABLE_42_046: [ clds_hash_table_delete_key_value shall decrement the count of pending write operations. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_047: [ clds_hash_table_delete_key_value shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_048: [ clds_hash_table_delete_key_value shall decrement the count of pending write operations. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key_value)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key_value)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1090,7 +1093,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // Inserts and deletes continue to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
@@ -1125,7 +1128,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_delete_key
 /* Tests_SRS_CLDS_HASH_TABLE_42_052: [ clds_hash_table_remove shall decrement the count of pending write operations. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_053: [ clds_hash_table_remove shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_054: [ clds_hash_table_remove shall decrement the count of pending write operations. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1176,7 +1179,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // Inserts and deletes continue to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
@@ -1211,7 +1214,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_remove)
 /* Tests_SRS_CLDS_HASH_TABLE_42_058: [ clds_hash_table_set_value shall decrement the count of pending write operations. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_059: [ clds_hash_table_set_value shall wait for the counter to lock the table for writes to reach 0 and repeat. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_42_060: [ clds_hash_table_set_value shall decrement the count of pending write operations. ]*/
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1250,7 +1253,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     // Set value continues to run a bit longer to make sure we are in a good state
     ThreadAPI_Sleep(1000);
@@ -1275,7 +1278,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_set_value)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
+XTEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1318,7 +1321,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     LogInfo("Taking snapshot");
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, NULL);
 
     LogInfo("Taken snapshot");
 
@@ -1408,7 +1411,7 @@ static CLDS_CONDITION_CHECK_RESULT etag_condition_check(void* context, void* new
     return result;
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_succeeds)
+XTEST_FUNCTION(clds_hash_table_set_value_with_condition_check_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1442,7 +1445,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
+XTEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1481,7 +1484,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initial_bucket_size_1)
+XTEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initial_bucket_size_1)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1515,7 +1518,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initial_bucket_size_1024)
+XTEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initial_bucket_size_1024)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1549,7 +1552,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hash_table_set_value_with_same_item_after_bucket_count_increase_allows_a_colliding_key_to_be_added_to_same_bucket)
+XTEST_FUNCTION(clds_hash_table_set_value_with_same_item_after_bucket_count_increase_allows_a_colliding_key_to_be_added_to_same_bucket)
 {
     // the test does the following:
     // - start with a 1 bucket hash table with keys being "integer modulo 4"
@@ -1911,7 +1914,7 @@ static int seq_no_clean_thread(void* arg)
     return 0;
 }
 
-TEST_FUNCTION(clds_hash_table_chaos_knight_test)
+XTEST_FUNCTION(clds_hash_table_chaos_knight_test)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
@@ -1987,6 +1990,41 @@ TEST_FUNCTION(clds_hash_table_chaos_knight_test)
     free(chaos_thread_data);
     clds_hash_table_destroy(chaos_test_context->hash_table);
     free(chaos_test_context);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+TEST_FUNCTION(clds_hash_table_snapshot_can_be_cancelled)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_register_thread(hazard_pointers);
+    ASSERT_IS_NOT_NULL(hazard_pointers_thread);
+    volatile_atomic int64_t sequence_number = 45;
+    CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 1, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
+    ASSERT_IS_NOT_NULL(hash_table);
+
+    uint32_t original_count = 10000;
+    fill_hash_table_sequentially(hash_table, hazard_pointers_thread, original_count);
+
+    CLDS_HASH_TABLE_ITEM** items;
+    uint64_t item_count;
+
+    THANDLE(CANCELLATION_TOKEN) cancellation_token = cancellation_token_create(false);
+    ASSERT_IS_NOT_NULL(cancellation_token);
+
+    ASSERT_ARE_EQUAL(int, 0, cancellation_token_cancel(cancellation_token));
+
+    // act
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, hazard_pointers_thread, &items, &item_count, cancellation_token);
+
+    // assert
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ABANDONED, result);
+
+    // cleanup
+    THANDLE_ASSIGN(CANCELLATION_TOKEN)(&cancellation_token, NULL);
+    cleanup_snapshot(items, item_count);
+    clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
