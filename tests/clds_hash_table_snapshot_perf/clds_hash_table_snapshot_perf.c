@@ -126,7 +126,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_perf_is_decent)
     double start_time = timer_global_get_elapsed_ms();
     CLDS_HASH_TABLE_ITEM** items = NULL;
     uint64_t item_count;
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, clds_hash_table_snapshot(hash_table, clds_hazard_pointers_thread, &items, &item_count));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, clds_hash_table_snapshot(hash_table, clds_hazard_pointers_thread, &items, &item_count, NULL));
     double end_time = timer_global_get_elapsed_ms();
 
     LogInfo("Snapshot took %.02f ms", end_time - start_time);

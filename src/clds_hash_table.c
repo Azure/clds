@@ -1153,6 +1153,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
             else
             {
                 uint64_t result_index = 0;
+                bool is_cancelled = false;
 
                 /* Codes_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
                 current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hash_table->first_hash_table, NULL, NULL);
@@ -1167,6 +1168,15 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
 
                         for (i = 0; i < bucket_count; i++)
                         {
+                            if (
+                                (cancellation_token != NULL) &&
+                                (cancellation_token_is_canceled(cancellation_token))
+                                )
+                            {
+                                is_cancelled = true;
+                                break;
+                            }
+
                             if ((current_bucket_array->hash_table[i] != NULL) && (temp_item_count > 0))
                             {
                                 uint64_t retrieved_item_count;
@@ -1198,7 +1208,14 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
 
                 if (current_bucket_array != NULL)
                 {
-                    result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+                    if (is_cancelled)
+                    {
+                        result = CLDS_HASH_TABLE_SNAPSHOT_ABANDONED;
+                    }
+                    else
+                    {
+                        result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+                    }
 
                     for (uint64_t i = 0; i < result_index; i++)
                     {

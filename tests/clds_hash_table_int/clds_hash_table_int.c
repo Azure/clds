@@ -1859,7 +1859,7 @@ static int chaos_thread(void* arg)
             }
             break;
 
-            case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_NOT_MET:
+        case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_NOT_MET:
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* old_item;
@@ -1875,7 +1875,7 @@ static int chaos_thread(void* arg)
             }
             break;
 
-            case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_ERROR:
+        case CHAOS_TEST_ACTION_SET_VALUE_WITH_CONDITION_CHECK_ERROR:
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* old_item;
@@ -2023,7 +2023,6 @@ TEST_FUNCTION(clds_hash_table_snapshot_can_be_cancelled)
 
     // cleanup
     THANDLE_ASSIGN(CANCELLATION_TOKEN)(&cancellation_token, NULL);
-    cleanup_snapshot(items, item_count);
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(hazard_pointers);
 }

@@ -21,6 +21,8 @@
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 
+#include "c_util/cancellation_token.h"
+
 #include "clds/clds_sorted_list.h"
 #include "clds/clds_st_hash_set.h"
 #include "clds/clds_hazard_pointers.h"
@@ -3096,7 +3098,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_clds_hash_table_fails)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(NULL, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(NULL, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3120,7 +3122,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_clds_hazard_pointers_thread_fai
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, NULL, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, NULL, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3143,7 +3145,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_items_fails)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, NULL, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, NULL, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3166,7 +3168,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_item_count_fails)
     CLDS_HASH_TABLE_ITEM** items;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, NULL);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3191,7 +3193,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_empty_table_succeeds)
     uint64_t item_count;
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3231,7 +3233,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_succeeds)
     STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3287,7 +3289,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_succeeds)
     STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3370,7 +3372,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_succeeds)
     }
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3460,7 +3462,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_1_item_after_an_insert_and_delete_mu
     STRICT_EXPECTED_CALL(clds_sorted_list_get_all(IGNORED_ARG, test_context.hazard_pointers_thread, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, false));
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3547,7 +3549,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_100_items_multiple_buckets_different
     }
 
     // act
-    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+    CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -3625,7 +3627,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_same_bucket_fails_when_unde
             umock_c_negative_tests_fail_call(i);
 
             // act
-            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
             // assert
             ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
@@ -3677,7 +3679,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_10_items_multiple_buckets_fails_when
             umock_c_negative_tests_fail_call(i);
 
             // act
-            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
             // assert
             ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
@@ -3733,7 +3735,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_20_items_multiple_buckets_different_
             umock_c_negative_tests_fail_call(i);
 
             // act
-            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count);
+            CLDS_HASH_TABLE_SNAPSHOT_RESULT result = clds_hash_table_snapshot(hash_table, test_context.hazard_pointers_thread, &items, &item_count, NULL);
 
             // assert
             ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_ERROR, result, "On failed call %zu", i);
