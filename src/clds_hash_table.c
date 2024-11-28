@@ -1168,18 +1168,20 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
 
                         for (i = 0; i < bucket_count; i++)
                         {
-                            if (
-                                (cancellation_token != NULL) &&
-                                (cancellation_token_is_canceled(cancellation_token))
-                                )
-                            {
-                                is_cancelled = true;
-                                break;
-                            }
-
                             if ((current_bucket_array->hash_table[i] != NULL) && (temp_item_count > 0))
                             {
                                 uint64_t retrieved_item_count;
+
+                                if (
+                                    /* Codes_SRS_CLDS_HASH_TABLE_01_115: [ If cancellation_token is non-NULL and cancellation_token_is_cancelled returns true for cancellation_token, clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ABANDONED. ]*/
+                                    (cancellation_token != NULL) &&
+                                    (cancellation_token_is_canceled(cancellation_token))
+                                    )
+                                {
+                                    LogVerbose("snapshot cancelled");
+                                    is_cancelled = true;
+                                    break;
+                                }
 
                                 /* Codes_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
                                 CLDS_SORTED_LIST_GET_ALL_RESULT get_all_result = clds_sorted_list_get_all(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, temp_item_count, items_to_return + result_index, &retrieved_item_count, false);

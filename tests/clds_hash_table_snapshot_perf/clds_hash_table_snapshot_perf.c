@@ -82,7 +82,7 @@ static int test_key_compare(void* key1, void* key2)
     return result;
 }
 
-TEST_FUNCTION(clds_hash_table_snapshot_perf_is_decent)
+static void test_clds_hash_table_snapshot_perf_is_decent(THANDLE(CANCELLATION_TOKEN) cancellation_token)
 {
     // The test wants to test the snapshot of a hash table that contains many items
     // arrange
@@ -126,7 +126,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_perf_is_decent)
     double start_time = timer_global_get_elapsed_ms();
     CLDS_HASH_TABLE_ITEM** items = NULL;
     uint64_t item_count;
-    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, clds_hash_table_snapshot(hash_table, clds_hazard_pointers_thread, &items, &item_count, NULL));
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_OK, clds_hash_table_snapshot(hash_table, clds_hazard_pointers_thread, &items, &item_count, cancellation_token));
     double end_time = timer_global_get_elapsed_ms();
 
     LogInfo("Snapshot took %.02f ms", end_time - start_time);
@@ -143,6 +143,23 @@ TEST_FUNCTION(clds_hash_table_snapshot_perf_is_decent)
     clds_hazard_pointers_unregister_thread(clds_hazard_pointers_thread);
     clds_hash_table_destroy(hash_table);
     clds_hazard_pointers_destroy(clds_hazard_pointers);
+}
+
+TEST_FUNCTION(clds_hash_table_snapshot_perf_is_decent)
+{
+    // The test wants to test the snapshot of a hash table that contains many items and no cancellation token
+    test_clds_hash_table_snapshot_perf_is_decent(NULL);
+}
+
+TEST_FUNCTION(clds_hash_table_snapshot_perf_with_cancellation_token_is_decent)
+{
+    // The test wants to test the snapshot of a hash table that contains many items with cancellation token
+    THANDLE(CANCELLATION_TOKEN) cancellation_token = cancellation_token_create(false);
+    ASSERT_IS_NOT_NULL(cancellation_token);
+
+    test_clds_hash_table_snapshot_perf_is_decent(cancellation_token);
+
+    THANDLE_ASSIGN(CANCELLATION_TOKEN)(&cancellation_token, NULL);
 }
 
 END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

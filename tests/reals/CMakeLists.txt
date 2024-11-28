@@ -48,5 +48,5 @@ endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../src)
 add_library(clds_reals ${clds_reals_c_files} ${clds_reals_h_files})
-target_link_libraries(clds_reals c_pal_reals c_util_reals)
+target_link_libraries(clds_reals c_util_reals c_pal_reals)
 target_include_directories(clds_reals PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/reals>)
