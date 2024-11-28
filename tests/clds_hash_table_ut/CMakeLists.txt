@@ -14,4 +14,4 @@ set(${theseTestsName}_h_files
 ../../inc/clds/clds_hash_table.h
 )
 
-build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS clds_reals c_pal_reals c_pal c_util_reals)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal_reals c_pal clds_reals)
