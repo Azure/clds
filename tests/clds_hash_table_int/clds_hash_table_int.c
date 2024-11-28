@@ -2358,7 +2358,6 @@ static void THANDLE_CANCELLATION_TOKEN_dispose(void* context, THANDLE(CANCELLATI
 }
 
 // This is yet another chaos test, but throwing in the mix get snapshot and get snapshot cancel
-// The test also adds initially a number of items to stimulate the get snapshot to take longer
 TEST_FUNCTION(clds_hash_table_chaos_knight_test_with_get_snapshot)
 {
     // arrange
