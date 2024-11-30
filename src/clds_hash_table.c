@@ -11,6 +11,8 @@
 #include "c_pal/gballoc_hl_redirect.h"
 #include "c_pal/sync.h"
 #include "c_pal/interlocked.h"
+#include "c_pal/thandle.h"
+#include "c_util/cancellation_token.h"
 
 #include "clds/clds_sorted_list.h"
 #include "clds/clds_hazard_pointers.h"
@@ -1093,7 +1095,7 @@ CLDS_HASH_TABLE_ITEM* clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_tabl
     return result;
 }
 
-CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM*** items, uint64_t* item_count)
+CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM*** items, uint64_t* item_count, THANDLE(CANCELLATION_TOKEN) cancellation_token)
 {
     CLDS_HASH_TABLE_SNAPSHOT_RESULT result;
 
@@ -1108,8 +1110,8 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
         (item_count == NULL)
         )
     {
-        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_HASH_TABLE_ITEM*** items=%p, uint64_t* item_count=%p",
-            clds_hash_table, clds_hazard_pointers_thread, items, item_count);
+        LogError("Invalid arguments: CLDS_HASH_TABLE_HANDLE clds_hash_table=%p, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_HASH_TABLE_ITEM*** items=%p, uint64_t* item_count=%p, THANDLE(CANCELLATION_TOKEN) cancellation_token=%p",
+            clds_hash_table, clds_hazard_pointers_thread, items, item_count, cancellation_token);
         result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
     }
     else
@@ -1151,6 +1153,7 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
             else
             {
                 uint64_t result_index = 0;
+                bool is_cancelled = false;
 
                 /* Codes_SRS_CLDS_HASH_TABLE_42_024: [ For each bucket in the array: ]*/
                 current_bucket_array = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hash_table->first_hash_table, NULL, NULL);
@@ -1168,6 +1171,17 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
                             if ((current_bucket_array->hash_table[i] != NULL) && (temp_item_count > 0))
                             {
                                 uint64_t retrieved_item_count;
+
+                                if (
+                                    /* Codes_SRS_CLDS_HASH_TABLE_01_115: [ If cancellation_token is non-NULL and cancellation_token_is_cancelled returns true for cancellation_token, clds_hash_table_snapshot shall fail and return CLDS_HASH_TABLE_SNAPSHOT_ABANDONED. ]*/
+                                    (cancellation_token != NULL) &&
+                                    (cancellation_token_is_canceled(cancellation_token))
+                                    )
+                                {
+                                    LogVerbose("snapshot cancelled");
+                                    is_cancelled = true;
+                                    break;
+                                }
 
                                 /* Codes_SRS_CLDS_HASH_TABLE_42_026: [ clds_hash_table_snapshot shall call clds_sorted_list_get_all with the next portion of the allocated array and false as required_locked_list. ]*/
                                 CLDS_SORTED_LIST_GET_ALL_RESULT get_all_result = clds_sorted_list_get_all(current_bucket_array->hash_table[i], clds_hazard_pointers_thread, temp_item_count, items_to_return + result_index, &retrieved_item_count, false);
@@ -1196,7 +1210,14 @@ CLDS_HASH_TABLE_SNAPSHOT_RESULT clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE 
 
                 if (current_bucket_array != NULL)
                 {
-                    result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+                    if (is_cancelled)
+                    {
+                        result = CLDS_HASH_TABLE_SNAPSHOT_ABANDONED;
+                    }
+                    else
+                    {
+                        result = CLDS_HASH_TABLE_SNAPSHOT_ERROR;
+                    }
 
                     for (uint64_t i = 0; i < result_index; i++)
                     {

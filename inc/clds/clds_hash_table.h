@@ -9,9 +9,14 @@
 #include <stdint.h>
 #endif
 
+#include "c_pal/thandle.h"
+
+#include "c_util/cancellation_token.h"
+
+#include "clds/clds_hazard_pointers.h"
+#include "clds/clds_sorted_list.h"
+
 #include "umock_c/umock_c_prod.h"
-#include "clds_hazard_pointers.h"
-#include "clds_sorted_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,7 +92,8 @@ MU_DEFINE_ENUM(CLDS_HASH_TABLE_SET_VALUE_RESULT, CLDS_HASH_TABLE_SET_VALUE_RESUL
 
 #define CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES \
     CLDS_HASH_TABLE_SNAPSHOT_OK, \
-    CLDS_HASH_TABLE_SNAPSHOT_ERROR
+    CLDS_HASH_TABLE_SNAPSHOT_ERROR, \
+    CLDS_HASH_TABLE_SNAPSHOT_ABANDONED
 
 MU_DEFINE_ENUM(CLDS_HASH_TABLE_SNAPSHOT_RESULT, CLDS_HASH_TABLE_SNAPSHOT_RESULT_VALUES);
 
@@ -100,7 +106,7 @@ MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_REMOVE_RESULT, clds_hash_table_remove, CLDS_
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SET_VALUE_RESULT, clds_hash_table_set_value, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key, CLDS_HASH_TABLE_ITEM*, new_item, CONDITION_CHECK_CB, condition_check_func, void*, condition_check_context, CLDS_HASH_TABLE_ITEM**, old_item, int64_t*, sequence_number);
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_find, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, void*, key);
 
-MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM***, items, uint64_t*, item_count);
+MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_SNAPSHOT_RESULT, clds_hash_table_snapshot, CLDS_HASH_TABLE_HANDLE, clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM***, items, uint64_t*, item_count, THANDLE(CANCELLATION_TOKEN), cancellation_token);
 
 // helper APIs for creating/destroying a hash table node
 MOCKABLE_FUNCTION(, CLDS_HASH_TABLE_ITEM*, clds_hash_table_node_create, size_t, node_size, HASH_TABLE_ITEM_CLEANUP_CB, item_cleanup_callback, void*, item_cleanup_callback_context);

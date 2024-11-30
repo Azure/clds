@@ -7,6 +7,10 @@
 #include <stddef.h>
 
 #include "macro_utils/macro_utils.h"
+
+#include "c_pal/thandle.h"
+#include "c_util/cancellation_token.h"
+
 #include "clds/clds_hash_table.h"
 
 #define R2(X) REGISTER_GLOBAL_MOCK_HOOK(X, real_##X);
@@ -36,7 +40,7 @@ CLDS_HASH_TABLE_DELETE_RESULT real_clds_hash_table_delete_key_value(CLDS_HASH_TA
 CLDS_HASH_TABLE_REMOVE_RESULT real_clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM** item, int64_t* sequence_number);
 CLDS_HASH_TABLE_ITEM* real_clds_hash_table_find(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key);
 CLDS_HASH_TABLE_SET_VALUE_RESULT real_clds_hash_table_set_value(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM* new_item, CONDITION_CHECK_CB condition_check_func, void* condition_check_context, CLDS_HASH_TABLE_ITEM** old_item, int64_t* sequence_number);
-CLDS_HASH_TABLE_SNAPSHOT_RESULT real_clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM*** items, uint64_t* item_count);
+CLDS_HASH_TABLE_SNAPSHOT_RESULT real_clds_hash_table_snapshot(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, CLDS_HASH_TABLE_ITEM*** items, uint64_t* item_count, THANDLE(CANCELLATION_TOKEN) cancellation_token);
 
 // helper APIs for creating/destroying a hash table node
 CLDS_HASH_TABLE_ITEM* real_clds_hash_table_node_create(size_t node_size, HASH_TABLE_ITEM_CLEANUP_CB item_cleanup_callback, void* item_cleanup_callback_context);
