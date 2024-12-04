@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include "real_cancellation_token_renames.h"
-
 #define clds_hash_table_create real_clds_hash_table_create
 #define clds_hash_table_destroy real_clds_hash_table_destroy
 #define clds_hash_table_insert real_clds_hash_table_insert
