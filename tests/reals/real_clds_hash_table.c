@@ -6,6 +6,7 @@
 #include "real_clds_hazard_pointers_renames.h"
 #include "real_sync_renames.h"
 #include "real_interlocked_renames.h"
+#include "real_cancellation_token_renames.h"
 
 #include "real_clds_hash_table_renames.h"
 
