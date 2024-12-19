@@ -31,8 +31,6 @@
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
 
-#define XTEST_FUNCTION(A) void A(void)
-
 #define SEQ_NO_STATE_VALUES \
     SEQ_NO_NOT_USED, \
     SEQ_NO_USED
