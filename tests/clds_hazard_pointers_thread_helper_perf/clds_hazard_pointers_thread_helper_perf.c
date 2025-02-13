@@ -86,6 +86,9 @@ typedef struct CLDS_HP_PERF_TEST_CONTEXT_TAG
     THREAD_DATA* thread_data;
     volatile_atomic int64_t total_inserts;
     volatile_atomic int32_t active_thread_count;
+    int32_t desired_thread_count;
+
+    THREAD_START_FUNC thread_work_func;
 } CLDS_HP_PERF_TEST_CONTEXT;
 
 // How much should the test run?
@@ -100,6 +103,9 @@ typedef struct CLDS_HP_PERF_TEST_CONTEXT_TAG
 
 // How many threads should be doing operations concurrently
 #define TEST_DESIRED_THREAD_COUNT   1
+
+#define TEST_INACTIVE_THREAD_STRESS_COUNT_TOTAL  32000
+#define TEST_INACTIVE_THREAD_STRESS_COUNT_ACTIVE 32
 
 static int insert_and_delete_thread_func(void* arg)
 {
@@ -130,7 +136,7 @@ static int insert_and_delete_thread_func(void* arg)
                 clds_hash_table_insert(perf_test_context->hash_table, clds_hazard_pointers_thread, (void*)(uintptr_t)(thread_data->key + i + 1), item, &insert_seq_no));
 
             // delete it right away
-            ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK, 
+            ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_DELETE_RESULT, CLDS_HASH_TABLE_DELETE_OK,
                 clds_hash_table_delete(perf_test_context->hash_table, clds_hazard_pointers_thread, (void*)(uintptr_t)(thread_data->key + i + 1), &insert_seq_no));
 
             (void)interlocked_increment_64(&perf_test_context->total_inserts);
@@ -139,6 +145,36 @@ static int insert_and_delete_thread_func(void* arg)
         // check if the thread is done
         current_time = timer_global_get_elapsed_ms();
     } while (current_time - start_time < TEST_THREAD_RUNTIME);
+
+    // signal that the thread is done with its work
+    (void)InterlockedHL_DecrementAndWake(&perf_test_context->active_thread_count);
+
+    result = 0;
+
+    return result;
+}
+
+static int insert_and_exit_func(void* arg)
+{
+    THREAD_DATA* thread_data = arg;
+    int result;
+
+    CLDS_HP_PERF_TEST_CONTEXT* perf_test_context = thread_data->perf_test_context;
+
+    // get the hazard pointers thread handle
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(perf_test_context->clds_hazard_pointers_thread_helper);
+    ASSERT_IS_NOT_NULL(clds_hazard_pointers_thread);
+
+    // perform a single insert action
+    CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+    TEST_ITEM* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, item);
+    test_item->key = rand() % INT32_MAX;
+    int64_t insert_seq_no;
+
+    ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK,
+        clds_hash_table_insert(perf_test_context->hash_table, clds_hazard_pointers_thread, (void*)(uintptr_t)(thread_data->key + 1), item, &insert_seq_no));
+
+    (void)interlocked_increment_64(&perf_test_context->total_inserts);
 
     // signal that the thread is done with its work
     (void)InterlockedHL_DecrementAndWake(&perf_test_context->active_thread_count);
@@ -192,7 +228,7 @@ static int thread_spawner_thread_func(void* arg)
     {
         // check if we have to spawn a new thread
         int32_t current_active_thread_count = interlocked_add(&perf_test_context->active_thread_count, 0);
-        if (current_active_thread_count < TEST_DESIRED_THREAD_COUNT)
+        if (current_active_thread_count < perf_test_context->desired_thread_count)
         {
             // get the entry in the array where we should spawn it
             int32_t current_used_threads_head = interlocked_add(&perf_test_context->used_threads_head, 0);
@@ -204,7 +240,7 @@ static int thread_spawner_thread_func(void* arg)
             thread_data->perf_test_context = perf_test_context;
 
             // start the thread
-            ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&perf_test_context->thread_data[current_used_threads_head].thread_handle, insert_and_delete_thread_func, thread_data));
+            ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&perf_test_context->thread_data[current_used_threads_head].thread_handle, perf_test_context->thread_work_func, thread_data));
             (void)interlocked_increment(&perf_test_context->used_threads_head);
 
             (void)interlocked_increment(&perf_test_context->active_thread_count);
@@ -237,10 +273,10 @@ TEST_FUNCTION(clds_hash_table_perf_does_not_degrade_over_time_with_more_and_more
     // are forgotten and let die.
     // Thus threads are spun up, do work for a certain amount of time and then they exit
     // The test has a manager thread that makes sure that new threads are spun up to do more work
-    // 
+    //
     // The test measures the number of operations that are performed in 1s slices
     // The expectation is that this number of operations per second does not degrade over time
-    // 
+    //
     // arrange
     CLDS_HP_PERF_TEST_CONTEXT perf_test_context;
     perf_test_context.hazard_pointers = clds_hazard_pointers_create();
@@ -261,6 +297,9 @@ TEST_FUNCTION(clds_hash_table_perf_does_not_degrade_over_time_with_more_and_more
     (void)interlocked_exchange(&perf_test_context.stop_requested, 0);
     (void)interlocked_exchange_64(&perf_test_context.total_inserts, 0);
     (void)interlocked_exchange(&perf_test_context.used_threads_head, 0);
+
+    perf_test_context.thread_work_func = insert_and_delete_thread_func;
+    perf_test_context.desired_thread_count = TEST_DESIRED_THREAD_COUNT;
 
     // allocate an array of thread structures where we keep the handle for each thread and other
     // thread relevant information
@@ -297,6 +336,89 @@ TEST_FUNCTION(clds_hash_table_perf_does_not_degrade_over_time_with_more_and_more
             ASSERT_IS_TRUE((current_insert_count - last_insert_count >= inserts_first_second / 2), "Expected inserts/s to not degrade, but it did, first iteration=%" PRIu64 ", current iteration=%" PRIu64 "", inserts_first_second, current_insert_count - last_insert_count);
         }
     } while (current_time - start_time < TEST_RUNTIME);
+
+    // stop the test
+    (void)interlocked_exchange(&perf_test_context.stop_requested, 1);
+    wake_by_address_all(&perf_test_context.stop_requested);
+
+    // assert
+    int dont_care;
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(thread_spawner_thread, &dont_care));
+
+    // join all threads to make sure we exit cleanly
+
+    int32_t used_threads_head = interlocked_add(&perf_test_context.used_threads_head, 0);
+    for (int32_t i = 0; i < used_threads_head; i++)
+    {
+        ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(perf_test_context.thread_data[i].thread_handle, &dont_care));
+    }
+
+    // cleanup
+    free(perf_test_context.thread_data);
+    clds_hazard_pointers_thread_helper_destroy(perf_test_context.clds_hazard_pointers_thread_helper);
+    clds_hash_table_destroy(perf_test_context.hash_table);
+    clds_hazard_pointers_destroy(perf_test_context.hazard_pointers);
+}
+
+// Tests a bug where the inactive threads list could grow unbounded and then crash if nothing is deleted from the hash table
+// Product Backlog Item 31234560
+TEST_FUNCTION(clds_hash_table_can_handle_threads_continuously_starting_and_stopping_without_any_deletes)
+{
+    // The test wants to constantly have new threads do the work, while old threads
+    // are forgotten and let die.
+    // Thus threads are spun up, do a single insert and then they exit
+    // The test has a manager thread that makes sure that new threads are spun up to do more work
+
+    // arrange
+    CLDS_HP_PERF_TEST_CONTEXT perf_test_context;
+    perf_test_context.hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(perf_test_context.hazard_pointers);
+
+    (void)interlocked_exchange_64(&perf_test_context.sequence_number, 0);
+
+    // create a hash table
+    perf_test_context.hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 8, perf_test_context.hazard_pointers, &perf_test_context.sequence_number, test_skipped_seq_chaos, NULL);
+    ASSERT_IS_NOT_NULL(perf_test_context.hash_table);
+
+    // create the helper for hazard pointers
+    perf_test_context.clds_hazard_pointers_thread_helper = clds_hazard_pointers_thread_helper_create(perf_test_context.hazard_pointers);
+    ASSERT_IS_NOT_NULL(perf_test_context.clds_hazard_pointers_thread_helper);
+
+    // initialize number of active threads to 0 and the rest of variables
+    (void)interlocked_exchange(&perf_test_context.active_thread_count, 0);
+    (void)interlocked_exchange(&perf_test_context.stop_requested, 0);
+    (void)interlocked_exchange_64(&perf_test_context.total_inserts, 0);
+    (void)interlocked_exchange(&perf_test_context.used_threads_head, 0);
+
+    perf_test_context.thread_work_func = insert_and_exit_func;
+    perf_test_context.desired_thread_count = TEST_INACTIVE_THREAD_STRESS_COUNT_ACTIVE;
+
+    // allocate an array of thread structures where we keep the handle for each thread and other
+    // thread relevant information
+    perf_test_context.thread_data = malloc_2(MAX_TEST_THREADS, sizeof(THREAD_DATA));
+    ASSERT_IS_NOT_NULL(perf_test_context.thread_data);
+
+    // start the manager thread
+    THREAD_HANDLE thread_spawner_thread;
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&thread_spawner_thread, thread_spawner_thread_func, &perf_test_context));
+
+    // wait and print the number of inserts done
+    double start_time = timer_global_get_elapsed_ms();
+    double current_time;
+    int32_t threads_spawned;
+    do
+    {
+        int64_t last_insert_count = interlocked_add_64(&perf_test_context.total_inserts, 0);
+
+        ThreadAPI_Sleep(1000);
+
+        current_time = timer_global_get_elapsed_ms();
+
+        int64_t current_insert_count = interlocked_add_64(&perf_test_context.total_inserts, 0);
+        threads_spawned = interlocked_add(&perf_test_context.used_threads_head, 0);
+        LogInfo("Elapsed: %.02f, total inserts=%" PRIu64 ", last second inserts=%" PRIu64 ", total threads spawned=%" PRIu32 "",
+            current_time - start_time, current_insert_count, current_insert_count - last_insert_count, threads_spawned);
+    } while (threads_spawned < TEST_INACTIVE_THREAD_STRESS_COUNT_TOTAL);
 
     // stop the test
     (void)interlocked_exchange(&perf_test_context.stop_requested, 1);

@@ -292,7 +292,20 @@ static void hp_thread_cleanup_func(void* context)
 {
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = context;
 
-    (void)clds_hazard_pointers;
+    // Clean up the inactive threads in case reclaim hasn't been running
+    (void)interlocked_increment(&clds_hazard_pointers->pending_reclaim_calls);
+    int64_t current_epoch = interlocked_add_64(&clds_hazard_pointers->epoch, 0);
+    if (interlocked_decrement(&clds_hazard_pointers->pending_reclaim_calls) == 0)
+    {
+        if (interlocked_compare_exchange_64(&clds_hazard_pointers->epoch, current_epoch + 1, current_epoch) != current_epoch)
+        {
+            // epoch already incremented by other thread, let them do the cleanup
+        }
+        else
+        {
+            free_inactive_threads_in_previous_epochs(clds_hazard_pointers, current_epoch + 1);
+        }
+    }
 
     void* volatile_atomic* current_thread_address = (void* volatile_atomic*)&clds_hazard_pointers->head;
     CLDS_HAZARD_POINTERS_THREAD_HANDLE current_thread = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
@@ -536,7 +549,7 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
 
                 (void)interlocked_exchange_pointer(&hazard_ptr->node, node);
                 hazard_ptr->next = current_list_head;
-                
+
                 (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, hazard_ptr);
 
                 // inserted in the used hazard pointer list, we are done
