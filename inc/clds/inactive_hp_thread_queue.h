@@ -13,7 +13,7 @@
 
 #include "c_pal/thandle.h"
 
-#include "c_util/tqueue.h"
+#include "c_pal/tqueue.h"
 
 #include "clds/clds_hazard_pointers.h"
 
