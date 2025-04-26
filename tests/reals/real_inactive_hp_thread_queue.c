@@ -8,6 +8,6 @@
 #include "real_interlocked_renames.h"
 
 #include "c_pal/thandle_ll.h"
-#include "c_util/tqueue_ll.h"
+#include "c_pal/tqueue_ll.h"
 
 #include "../../src/inactive_hp_thread_queue.c"
