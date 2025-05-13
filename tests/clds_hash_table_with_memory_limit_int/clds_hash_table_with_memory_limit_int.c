@@ -111,7 +111,6 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
     CLDS_HASH_TABLE_HANDLE hash_table = clds_hash_table_create(test_compute_hash, test_key_compare, 500, hazard_pointers, &sequence_number, test_skipped_seq_no_ignore, (void*)0x5556);
     ASSERT_IS_NOT_NULL(hash_table);
     int64_t insert_seq_no;
-    CLDS_HASH_TABLE_ITEM* item;
     CLDS_HASH_TABLE_ITEM* already_exists_item;
 
     uint64_t last_item = 0;
@@ -140,7 +139,7 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
     for (size_t i = 0; i < 10000000; i++)
     {
         // 3. Insert an item
-        item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
+        CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
         ASSERT_IS_NOT_NULL(item);
         ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_INSERT_OK, clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)(0x42 + last_item), item, &insert_seq_no));
 
@@ -158,7 +157,7 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
 
     // cleanup
     clds_hash_table_destroy(hash_table);
-    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
+    CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, already_exists_item);
     clds_hazard_pointers_destroy(hazard_pointers);
 
     THANDLE_ASSIGN(JOB_OBJECT_HELPER)(&job_object_helper, NULL);
