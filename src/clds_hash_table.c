@@ -464,6 +464,8 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
             if (bucket_list == NULL)
             {
+                (void)interlocked_decrement(&current_bucket_array->item_count);
+
                 LogError("Cannot acquire bucket list");
                 result = CLDS_HASH_TABLE_INSERT_ERROR;
             }
@@ -480,11 +482,15 @@ CLDS_HASH_TABLE_INSERT_RESULT clds_hash_table_insert(CLDS_HASH_TABLE_HANDLE clds
 
                 if (list_insert_result == CLDS_SORTED_LIST_INSERT_KEY_ALREADY_EXISTS)
                 {
+                    (void)interlocked_decrement(&current_bucket_array->item_count);
+
                     /* Codes_SRS_CLDS_HASH_TABLE_01_046: [ If the key already exists in the hash table, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ALREADY_EXISTS. ]*/
                     result = CLDS_HASH_TABLE_INSERT_KEY_ALREADY_EXISTS;
                 }
                 else if (list_insert_result != CLDS_SORTED_LIST_INSERT_OK)
                 {
+                    (void)interlocked_decrement(&current_bucket_array->item_count);
+
                     /* Codes_SRS_CLDS_HASH_TABLE_01_022: [ If any error is encountered while inserting the key/value pair, clds_hash_table_insert shall fail and return CLDS_HASH_TABLE_INSERT_ERROR. ]*/
                     LogError("Cannot insert hash table item into list");
                     result = CLDS_HASH_TABLE_INSERT_ERROR;

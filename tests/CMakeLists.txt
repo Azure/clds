@@ -28,6 +28,7 @@ if(${run_int_tests})
 if(WIN32)
         # this test has a problem on Linux, suspicion of badly written test
         build_test_folder(clds_hash_table_int)
+        build_test_folder(clds_hash_table_with_memory_limit_int)
         # this test uses clds_hazard_pointers_thread_helper which runs on Windows only
         build_test_folder(lru_cache_int)
 endif()
