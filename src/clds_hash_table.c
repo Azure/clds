@@ -721,7 +721,7 @@ CLDS_HASH_TABLE_DELETE_RESULT clds_hash_table_delete_key_value(CLDS_HASH_TABLE_H
 
 CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds_hash_table, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* key, CLDS_HASH_TABLE_ITEM** item, int64_t* sequence_number)
 {
-    CLDS_HASH_TABLE_DELETE_RESULT result;
+    CLDS_HASH_TABLE_REMOVE_RESULT result;
 
     if (
         /* Codes_SRS_CLDS_HASH_TABLE_01_050: [ If clds_hash_table is NULL, clds_hash_table_remove shall fail and return CLDS_HASH_TABLE_REMOVE_ERROR. ]*/
