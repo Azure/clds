@@ -393,7 +393,7 @@ static CLDS_SORTED_LIST_DELETE_RESULT internal_delete(CLDS_SORTED_LIST_HANDLE cl
 
 static CLDS_SORTED_LIST_REMOVE_RESULT internal_remove(CLDS_SORTED_LIST_HANDLE clds_sorted_list, CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, SORTED_LIST_ITEM_COMPARE_CB item_compare_callback, void* item_compare_target, CLDS_SORTED_LIST_ITEM** item, int64_t* sequence_number)
 {
-    CLDS_SORTED_LIST_REMOVE_RESULT result = CLDS_SORTED_LIST_DELETE_ERROR;
+    CLDS_SORTED_LIST_REMOVE_RESULT result = CLDS_SORTED_LIST_REMOVE_ERROR;
 
     // check that the node is really in the list and obtain
     bool restart_needed;
