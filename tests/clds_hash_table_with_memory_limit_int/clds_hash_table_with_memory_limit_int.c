@@ -92,7 +92,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 // This test is reproducing the issue of "doubling memory usage"
 // The problem stems in the fact that we keep a counter that should indicate when the array oif hash table buckets should be doubled
 // This counter was incorrectly incremented also when insert would return "already exists"
-// 
+//
 // Test steps:
 // 1. Create a hash table
 // 2. Setup a job object that limits memory usage to a percentage that hovers around 200MB (note that the job object helper is somewhat innacurate because it uses %)
@@ -116,8 +116,6 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
     uint64_t last_item = 0;
 
     // 2. Setup a job object that limits memory usage to a percentage that hovers around 200MB (note that the job object helper is somewhat innacurate because it uses %)
-    THANDLE(JOB_OBJECT_HELPER) job_object_helper = job_object_helper_create();
-    ASSERT_IS_NOT_NULL(job_object_helper);
 
     MEMORYSTATUSEX memory_status_ex;
     memory_status_ex.dwLength = sizeof(memory_status_ex);
@@ -130,7 +128,8 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
         percent_to_use = 1;
     }
 
-    ASSERT_ARE_EQUAL(int, 0, job_object_helper_limit_memory(job_object_helper, 1));
+    THANDLE(JOB_OBJECT_HELPER) job_object_helper = job_object_helper_set_job_limits_to_current_process("", 0, 1);
+    ASSERT_IS_NOT_NULL(job_object_helper);
 
     already_exists_item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     ASSERT_IS_NOT_NULL(already_exists_item);
