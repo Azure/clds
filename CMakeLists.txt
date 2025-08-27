@@ -140,7 +140,7 @@ set(run_reals_check ${original_run_reals_check})
 if((WIN32) AND (${run_traceability}))
     #add traceability custom target
     add_custom_target(clds_traceability ALL
-        COMMAND traceabilitytool -buildcheck -e ${CMAKE_CURRENT_LIST_DIR}/deps -i ${CMAKE_CURRENT_LIST_DIR})
+        COMMAND traceabilitytool -buildcheck -e ${CMAKE_CURRENT_LIST_DIR}/deps -e ${CMAKE_CURRENT_LIST_DIR}/.github -i ${CMAKE_CURRENT_LIST_DIR})
     add_dependencies(clds_traceability traceabilitytool)
 endif()
 
