@@ -15,4 +15,4 @@ set(lock_free_set_perf_rc_files
 
 add_executable(lock_free_set_perf ${lock_free_set_perf_h_files} ${lock_free_set_perf_c_files} ${lock_free_set_perf_rc_files})
 
-target_link_libraries(lock_free_set_perf clds c_logging)
+target_link_libraries(lock_free_set_perf clds c_logging_v2)
