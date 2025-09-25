@@ -1,42 +1,16 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
-#include <stdlib.h>
+#include "clds_hazard_pointers_ut_pch.h"
 
-#include "macro_utils/macro_utils.h"
-#include "testrunnerswitcher.h"
-
-#include "real_gballoc_ll.h"
 void* real_malloc(size_t size)
 {
     return real_gballoc_ll_malloc(size);
 }
-
 void real_free(void* ptr)
 {
     real_gballoc_ll_free(ptr);
 }
-
-#include "umock_c/umock_c.h"
-#include "umock_c/umocktypes_stdint.h"
-
-#include "c_pal/interlocked.h" /*included for mocking reasons - it will prohibit creation of mocks belonging to interlocked.h - at the moment verified through int tests - this is porting legacy code, temporary solution*/
-
-#include "clds/clds_hazard_pointers.h"
-
-#define ENABLE_MOCKS
-
-#include "c_pal/gballoc_hl.h"
-#include "c_pal/gballoc_hl_redirect.h"
-
-#include "c_util/worker_thread.h"
-
-#include "clds/inactive_hp_thread_queue.h"
-
-#undef ENABLE_MOCKS
-
-#include "real_gballoc_hl.h"
-#include "real_inactive_hp_thread_queue.h"
 
 MU_DEFINE_ENUM_STRINGS(WORKER_THREAD_SCHEDULE_PROCESS_RESULT, WORKER_THREAD_SCHEDULE_PROCESS_RESULT_VALUES)
 MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)

@@ -1,37 +1,16 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
-#include <stdbool.h>
-#include <stdlib.h>
+#include "lock_free_set_ut_pch.h"
 
-#include "macro_utils/macro_utils.h"
-#include "testrunnerswitcher.h"
-
-#include "real_gballoc_ll.h"
 void* real_malloc(size_t size)
 {
     return real_gballoc_ll_malloc(size);
 }
-
 void real_free(void* ptr)
 {
     real_gballoc_ll_free(ptr);
 }
-
-#include "umock_c/umock_c.h"
-#include "umock_c/umocktypes_bool.h"
-#include "c_pal/interlocked.h"
-
-#define ENABLE_MOCKS
-
-#include "c_pal/gballoc_hl.h"
-#include "c_pal/gballoc_hl_redirect.h"
-
-#undef ENABLE_MOCKS
-
-#include "real_gballoc_hl.h"
-
-#include "clds/lock_free_set.h"
 
 MU_DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
 

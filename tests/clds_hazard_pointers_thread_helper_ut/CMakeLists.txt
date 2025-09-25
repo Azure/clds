@@ -1,4 +1,4 @@
-#Copyright (c) Microsoft. All rights reserved.
+﻿#Copyright (c) Microsoft. All rights reserved.
 
 set(theseTestsName clds_hazard_pointers_thread_helper_ut)
 
@@ -14,4 +14,5 @@ set(${theseTestsName}_h_files
 ../../inc/clds/clds_hazard_pointers_thread_helper.h
 )
 
-build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal_reals c_pal_umocktypes thread_notifications_lackey_dll clds_reals)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal_reals c_pal_umocktypes thread_notifications_lackey_dll clds_reals
+    ENABLE_TEST_FILES_PRECOMPILED_HEADERS "${CMAKE_CURRENT_LIST_DIR}/clds_hazard_pointers_thread_helper_ut_pch.h")
