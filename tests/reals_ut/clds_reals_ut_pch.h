@@ -1,12 +1,15 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // Precompiled header for clds_reals_ut
 
+#ifndef CLDS_REALS_UT_PCH_H
+#define CLDS_REALS_UT_PCH_H
+
 #include "testrunnerswitcher.h"
 #include "umock_c/umock_c.h"
 
-#define ENABLE_MOCKS
+#include "umock_c/umock_c_ENABLE_MOCKS.h" // ============================== ENABLE_MOCKS
 
 #if WIN32
 #include "clds/clds_hazard_pointers.h"
@@ -20,7 +23,7 @@
 #include "clds/mpsc_lock_free_queue.h"
 #include "clds/inactive_hp_thread_queue.h"
 
-#undef ENABLE_MOCKS
+#include "umock_c/umock_c_DISABLE_MOCKS.h" // ============================== DISABLE_MOCKS
 
 #if WIN32
 #include "../tests/reals/real_clds_hazard_pointers.h"
@@ -33,3 +36,5 @@
 #include "../tests/reals/real_lock_free_set.h"
 #include "../tests/reals/real_mpsc_lock_free_queue.h"
 #include "../tests/reals/real_inactive_hp_thread_queue.h"
+
+#endif // CLDS_REALS_UT_PCH_H
