@@ -76,7 +76,7 @@ static void clds_hazard_pointers_thread_helper_thread_notification(void* context
     }
 }
 
-IMPLEMENT_MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, clds_hazard_pointers_thread_helper_create, CLDS_HAZARD_POINTERS_HANDLE, hazard_pointers)
+CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE clds_hazard_pointers_thread_helper_create(CLDS_HAZARD_POINTERS_HANDLE hazard_pointers)
 {
     CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE result;
 
@@ -147,7 +147,7 @@ all_ok:
     return result;
 }
 
-IMPLEMENT_MOCKABLE_FUNCTION(, void, clds_hazard_pointers_thread_helper_destroy, CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, hazard_pointers_helper)
+void clds_hazard_pointers_thread_helper_destroy(CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE hazard_pointers_helper)
 {
     if (hazard_pointers_helper == NULL)
     {
@@ -170,7 +170,7 @@ IMPLEMENT_MOCKABLE_FUNCTION(, void, clds_hazard_pointers_thread_helper_destroy, 
     }
 }
 
-IMPLEMENT_MOCKABLE_FUNCTION(, CLDS_HAZARD_POINTERS_THREAD_HANDLE, clds_hazard_pointers_thread_helper_get_thread, CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE, hazard_pointers_helper)
+CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread_helper_get_thread(CLDS_HAZARD_POINTERS_THREAD_HELPER_HANDLE hazard_pointers_helper)
 {
     CLDS_HAZARD_POINTERS_THREAD_HANDLE result;
 
