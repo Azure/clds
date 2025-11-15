@@ -101,7 +101,7 @@ void clds_st_hash_set_destroy(CLDS_ST_HASH_SET_HANDLE clds_st_hash_set)
     {
         size_t i;
 
-        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ clds_st_hash_set_destroy shall free all resources associated with the hash table instance. ]*/
+        /* Codes_SRS_CLDS_HASH_TABLE_01_006: [ clds_hash_table_destroy shall free all resources associated with the hash table instance. ]*/
         for (i = 0; i < clds_st_hash_set->bucket_count; i++)
         {
             HASH_TABLE_ITEM* hash_table_item = clds_st_hash_set->hash_set[i];

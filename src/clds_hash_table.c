@@ -780,7 +780,7 @@ CLDS_HASH_TABLE_REMOVE_RESULT clds_hash_table_remove(CLDS_HASH_TABLE_HANDLE clds
                 else
                 {
                     CLDS_SORTED_LIST_REMOVE_RESULT list_remove_result;
-                    /* Codes_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove_key. ]*/
+                    /* Codes_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove. ]*/
                     list_remove_result = clds_sorted_list_remove_key(bucket_list, clds_hazard_pointers_thread, key, (void*)item, sequence_number);
                     if (list_remove_result == CLDS_SORTED_LIST_REMOVE_NOT_FOUND)
                     {
