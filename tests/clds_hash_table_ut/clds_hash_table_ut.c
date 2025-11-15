@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include "clds_hash_table_ut_pch.h"
@@ -1707,7 +1707,7 @@ TEST_FUNCTION(clds_hash_table_delete_key_value_with_non_NULL_sequence_no_but_NUL
 /* Tests_SRS_CLDS_HASH_TABLE_01_047: [ clds_hash_table_remove shall remove a key from the hash table and return a pointer to the item to the user. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_049: [ On success clds_hash_table_remove shall return CLDS_HASH_TABLE_REMOVE_OK. ]*/
 /* Tests_SRS_CLDS_HASH_TABLE_01_048: [ clds_hash_table_remove shall hash the key by calling the compute_hash function passed to clds_hash_table_create. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove_key. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove. ]*/
 TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
 {
     // arrange
@@ -1740,7 +1740,7 @@ TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list)
     destroy_test_context(&test_context);
 }
 
-/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove_key. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_01_067: [ For each remove the order of the operation shall be computed by passing sequence_number to clds_sorted_list_remove. ]*/
 TEST_FUNCTION(clds_hash_table_remove_removes_the_key_from_the_list_with_non_NULL_sequence_no)
 {
     // arrange
@@ -3149,7 +3149,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_item_count_fails)
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_064: [ If there are no items then clds_hash_table_snapshot shall set items to NULL and item_count to 0 and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_064: [ If there are no items then clds_hash_table_snapshot shall set items to NULL and item_count to 0 and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]*/
 TEST_FUNCTION(clds_hash_table_snapshot_with_empty_table_succeeds)
 {
     // arrange
