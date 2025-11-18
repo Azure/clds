@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "lru_cache_ut_pch.h"
@@ -260,7 +260,7 @@ static void set_lru_get_value_expectations(void* key)
 /*Tests_SRS_LRU_CACHE_13_015: [ lru_cache_create shall allocate clds_hash_table by calling clds_hash_table_create. ]*/
 /*Tests_SRS_LRU_CACHE_13_016: [ lru_cache_create shall initialize SRW_LOCK_LL by calling srw_lock_ll_init. ]*/
 /*Tests_SRS_LRU_CACHE_13_017: [ lru_cache_create shall initialize the doubly linked list by calling DList_InitializeListHead. ]*/
-/*Tests_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign 0 to current_size and the capacity to capacity. ]*/
+/*Tests_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign value of 0 to current_size and the capacity to capacity. ]*/
 /*Tests_SRS_LRU_CACHE_13_019: [ On success, lru_cache_create shall return LRU_CACHE_HANDLE. ]*/
 TEST_FUNCTION(lru_cache_create_succeeds)
 {
@@ -363,7 +363,7 @@ TEST_FUNCTION(lru_cache_create_with_null_hazard_pointers_fails)
     // cleanup
 }
 
-/*Tests_SRS_LRU_CACHE_13_010: [ If capacity is less than or equals 0, then lru_cache_create shall fail and return NULL. ]*/
+/*Tests_SRS_LRU_CACHE_13_010: [ If capacity is less than or equal to 0, then lru_cache_create shall fail and return NULL. ]*/
 TEST_FUNCTION(lru_cache_create_with_capacity_0_fails)
 {
     // arrange
@@ -477,7 +477,7 @@ TEST_FUNCTION(lru_cache_destroy_frees_the_resources)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_value_function or free_key_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
 /*Tests_SRS_LRU_CACHE_13_022: [ lru_cache_destroy shall free all resources associated with the LRU_CACHE_HANDLE. ]*/
 TEST_FUNCTION(lru_cache_destroy_calls_free_function_multiple_times)
@@ -543,7 +543,7 @@ TEST_FUNCTION(lru_cache_destroy_calls_free_function_multiple_times)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_021: [ If lru_cache is NULL, then lru_cache_destroy shall fail. ]*/
+/*Tests_SRS_LRU_CACHE_13_021: [ If lru_cache is NULL, then lru_cache_destroy shall return. ]*/
 TEST_FUNCTION(lru_cache_destroy_with_NULL_handle_returns)
 {
     // arrange
@@ -666,7 +666,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_callback_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_value_function or free_key_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 TEST_FUNCTION(lru_cache_put_with_NULL_copy_function_fails)
 {
     // arrange
@@ -690,7 +690,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_function_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_value_function or free_key_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 TEST_FUNCTION(lru_cache_put_with_NULL_free_function_fails)
 {
     // arrange
@@ -774,7 +774,7 @@ TEST_FUNCTION(lru_cache_put_succeeds)
 }
 
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_value_function or free_key_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
 /*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
@@ -812,7 +812,7 @@ TEST_FUNCTION(lru_cache_put_succeeds_with_copy_function_works)
 }
 
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_value_function or free_key_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
 /*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
@@ -1012,7 +1012,7 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
+/*Tests_SRS_LRU_CACHE_13_037: [ While the current_size of the cache exceeds capacity: ]*/
 /*Tests_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
 /*Tests_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node which is Flink of head node. ]*/
 /*Tests_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
@@ -1064,14 +1064,14 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
+/*Tests_SRS_LRU_CACHE_13_037: [ While the current_size of the cache exceeds capacity: ]*/
 /*Tests_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
 /*Tests_SRS_LRU_CACHE_13_038: [ lru_cache_put shall get the least used node which is Flink of head node. ]*/
 /*Tests_SRS_LRU_CACHE_13_042: [ lru_cache_put shall release the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_072: [ lru_cache_put shall decrement the least used node size from current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_039: [ The least used node is removed from clds_hash_table by calling clds_hash_table_remove. ]*/
 /*Tests_SRS_LRU_CACHE_13_041: [ lru_cache_put shall remove the old node from the list by calling DList_RemoveEntryList. ]*/
-/*Tests_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the status LRU_CACHE_EVICT_OK and the evicted item. ]*/
+/*Tests_SRS_LRU_CACHE_13_043: [ On success, evict_callback is called with the evicted item. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
 TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
 {
@@ -1215,7 +1215,7 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
+/*Tests_SRS_LRU_CACHE_13_037: [ While the current_size of the cache exceeds capacity: ]*/
 /*Tests_SRS_LRU_CACHE_13_040: [ lru_cache_put shall acquire the lock in exclusive. ]*/
 /*Tests_SRS_LRU_CACHE_13_050: [ For any other errors, lru_cache_put shall return LRU_CACHE_PUT_ERROR ]*/
 TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callback)
@@ -1713,7 +1713,7 @@ TEST_FUNCTION(lru_cache_evict_returns_NOT_FOUND_when_clds_hash_table_remove_retu
 /*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
-/*Tests_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_evict shall return LRU_CACHE_EVICT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
 TEST_FUNCTION(lru_cache_evict_returns_ERROR_when_clds_hash_table_remove_returns_ERROR)
 {
@@ -1750,7 +1750,7 @@ TEST_FUNCTION(lru_cache_evict_returns_ERROR_when_clds_hash_table_remove_returns_
 /*Tests_SRS_LRU_CACHE_13_087: [ lru_cache_evict shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_088: [ lru_cache_evict shall acquire the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_089: [ lru_cache_evict shall remove the key by calling clds_hash_table_remove on the key. ]*/
-/*Tests_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_evict shall return LRU_CACHE_EVICT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_094: [ lru_cache_evict shall release the lock in exclusive mode. ]*/
 TEST_FUNCTION(lru_cache_evict_returns_OK_with_old_item_NULL_fails)
 {

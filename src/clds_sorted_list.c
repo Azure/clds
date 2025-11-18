@@ -853,7 +853,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
 
                         if (clds_sorted_list->skipped_seq_no_cb != NULL)
                         {
-                            /* Codes_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
+                            /* Codes_SRS_CLDS_SORTED_LIST_01_079: [If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
                             clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
                         }
 
@@ -899,7 +899,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
 
                                 if (clds_sorted_list->skipped_seq_no_cb != NULL)
                                 {
-                                    /* Codes_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
+                                    /* Codes_SRS_CLDS_SORTED_LIST_01_079: [If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
                                     clds_sorted_list->skipped_seq_no_cb(clds_sorted_list->skipped_seq_no_cb_context, local_seq_no);
                                 }
 
@@ -930,7 +930,7 @@ CLDS_SORTED_LIST_INSERT_RESULT clds_sorted_list_insert(CLDS_SORTED_LIST_HANDLE c
                                         clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
                                         restart_needed = false;
 
-                                        /* Codes_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return 0. ]*/
+                                        /* Codes_SRS_CLDS_SORTED_LIST_01_010: [ On success clds_sorted_list_insert shall return CLDS_SORTED_LIST_INSERT_OK. ]*/
                                         result = CLDS_SORTED_LIST_INSERT_OK;
                                         break;
                                     }
@@ -1100,12 +1100,12 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
 {
     CLDS_SORTED_LIST_ITEM* result;
 
-    /* Codes_SRS_CLDS_SORTED_LIST_01_028: [ If clds_sorted_list is NULL, clds_sorted_list_find shall fail and return NULL. ]*/
+    /* Codes_SRS_CLDS_SORTED_LIST_01_028: [ If clds_sorted_list is NULL, clds_sorted_list_find_key shall fail and return NULL. ]*/
     if (
         (clds_sorted_list == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_030: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_find shall fail and return NULL. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_030: [ If clds_hazard_pointers_thread is NULL, clds_sorted_list_find_key shall fail and return NULL. ]*/
         (clds_hazard_pointers_thread == NULL) ||
-        /* Codes_SRS_CLDS_SORTED_LIST_01_031: [ If key is NULL, clds_sorted_list_find shall fail and return NULL. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_031: [ If key is NULL, clds_sorted_list_find_key shall fail and return NULL. ]*/
         (key == NULL)
         )
     {
@@ -1115,7 +1115,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
     }
     else
     {
-        /* Codes_SRS_CLDS_SORTED_LIST_01_027: [ clds_sorted_list_find shall find in the list the first item that matches the criteria given by a user compare function. ]*/
+        /* Codes_SRS_CLDS_SORTED_LIST_01_027: [ clds_sorted_list_find_key shall find in the list the first item that matches the criteria given by a user compare function. ]*/
 
         bool restart_needed;
         result = NULL;
@@ -1206,7 +1206,7 @@ CLDS_SORTED_LIST_ITEM* clds_sorted_list_find_key(CLDS_SORTED_LIST_HANDLE clds_so
                                 (void)interlocked_increment(&current_item->ref_count);
                                 clds_hazard_pointers_release(clds_hazard_pointers_thread, current_item_hp);
 
-                                /* Codes_SRS_CLDS_SORTED_LIST_01_029: [ On success clds_sorted_list_find shall return a non-NULL pointer to the found linked list item. ]*/
+                                /* Codes_SRS_CLDS_SORTED_LIST_01_029: [ On success clds_sorted_list_find_key shall return a non-NULL pointer to the found linked list item. ]*/
                                 result = (CLDS_SORTED_LIST_ITEM*)current_item;
                                 restart_needed = false;
                                 break;

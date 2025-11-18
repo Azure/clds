@@ -74,7 +74,7 @@ int mpsc_lock_free_queue_enqueue(MPSC_LOCK_FREE_QUEUE_HANDLE mpsc_lock_free_queu
 
         do
         {
-            /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_014: [** Concurrent mpsc_lock_free_queue_enqueue from multiple threads shall be safe. ]*/
+            /* Codes_SRS_MPSC_LOCK_FREE_QUEUE_01_014: [Concurrent mpsc_lock_free_queue_enqueue from multiple threads shall be safe. ]*/
 
             // first get the current enqueue_head
             MPSC_LOCK_FREE_QUEUE_ITEM* current_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&mpsc_lock_free_queue->enqueue_head, NULL, NULL);

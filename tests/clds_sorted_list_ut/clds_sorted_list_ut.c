@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include "clds_sorted_list_ut_pch.h"
@@ -727,7 +727,7 @@ TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/* Tests_SRS_CLDS_SORTED_LIST_01_079: [** If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
+/* Tests_SRS_CLDS_SORTED_LIST_01_079: [If sequence numbers are generated and a skipped sequence number callback was provided to clds_sorted_list_create, when the item is indicated as already existing, the generated sequence number shall be indicated as skipped. ]*/
 TEST_FUNCTION(clds_sorted_list_insert_for_a_key_that_already_exists_indicates_the_seq_no_as_skipped)
 {
     // arrange
@@ -3457,7 +3457,7 @@ TEST_FUNCTION(clds_sorted_list_get_all_with_3_items_succeeds)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE. ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_049: [ If item_count is less than the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE. ]*/
 TEST_FUNCTION(clds_sorted_list_get_all_with_3_items_but_item_count_1_fails)
 {
     // arrange
@@ -3500,7 +3500,7 @@ TEST_FUNCTION(clds_sorted_list_get_all_with_3_items_but_item_count_1_fails)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_CLDS_SORTED_LIST_42_049: [ If item_count does not match the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE. ]*/
+/*Tests_SRS_CLDS_SORTED_LIST_42_049: [ If item_count is less than the number of items in the list then clds_sorted_list_get_all shall fail and return CLDS_SORTED_LIST_GET_ALL_NOT_ENOUGH_SPACE. ]*/
 TEST_FUNCTION(clds_sorted_list_get_all_with_1_item_but_item_count_2_still_succeeds)
 {
     // arrange

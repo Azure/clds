@@ -69,7 +69,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
         (initial_bucket_size == 0) ||
         /*Codes_SRS_LRU_CACHE_13_004: [ If clds_hazard_pointers is NULL, lru_cache_create shall fail and return NULL. ]*/
         (clds_hazard_pointers == NULL) ||
-        /*Codes_SRS_LRU_CACHE_13_010: [ If capacity is less than or equals to 0, then lru_cache_create shall fail and return NULL. ]*/
+        /*Codes_SRS_LRU_CACHE_13_010: [ If capacity is less than or equal to 0, then lru_cache_create shall fail and return NULL. ]*/
         (capacity <= 0) || 
         /*Codes_SRS_LRU_CACHE_13_079: [ If on_error_callback is NULL then lru_cache_create shall fail and return NULL. ]*/
         on_error_callback == NULL
@@ -122,7 +122,7 @@ LRU_CACHE_HANDLE lru_cache_create(COMPUTE_HASH_FUNC compute_hash, KEY_COMPARE_FU
                         /*Codes_SRS_LRU_CACHE_13_017: [ lru_cache_create shall initialize the doubly linked list by calling DList_InitializeListHead. ]*/
                         DList_InitializeListHead(&(lru_cache->head));
 
-                        /*Codes_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign 0 to current_size and the capacity to capacity. ]*/
+                        /*Codes_SRS_LRU_CACHE_13_018: [ lru_cache_create shall assign value of 0 to current_size and the capacity to capacity. ]*/
                         lru_cache->current_size = 0;
                         lru_cache->capacity = capacity;
 
@@ -149,7 +149,7 @@ void lru_cache_destroy(LRU_CACHE_HANDLE lru_cache)
 {
     if (lru_cache == NULL)
     {
-        /*Codes_SRS_LRU_CACHE_13_021: [ If lru_cache is NULL, then lru_cache_destroy shall fail. ]*/
+        /*Codes_SRS_LRU_CACHE_13_021: [ If lru_cache is NULL, then lru_cache_destroy shall return. ]*/
         LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p", lru_cache);
     }
     else
@@ -179,7 +179,7 @@ static LRU_CACHE_EVICT_RESULT evict_internal(LRU_CACHE_HANDLE lru_cache, CLDS_HA
         }
         else
         {
-            /*Codes_SRS_LRU_CACHE_13_037: [ While the current size of the cache exceeds capacity: ]*/
+            /*Codes_SRS_LRU_CACHE_13_037: [ While the current_size of the cache exceeds capacity: ]*/
 
             if (DList_IsListEmpty(&lru_cache->head))
             {
@@ -288,7 +288,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
         size <= 0 ||
         /*Codes_SRS_LRU_CACHE_13_075: [ If evict_callback is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         evict_callback == NULL ||
-        /*Codes_SRS_LRU_CACHE_13_081: [ If either of copy_key_value_function or free_key_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+        /*Codes_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
         ((copy_key_value_function == NULL) ^ (free_key_value_function == NULL)))
     {
         LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, CLDS_HASH_TABLE_ITEM* value=%p, int64_t size=%" PRId64 "", lru_cache, key, value, size);
@@ -493,7 +493,7 @@ LRU_CACHE_EVICT_RESULT lru_cache_evict(LRU_CACHE_HANDLE lru_cache, void* key)
         CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
         if (hazard_pointers_thread == NULL)
         {
-            /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+            /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_evict shall return LRU_CACHE_EVICT_ERROR. ]*/
             LogError("clds_hazard_pointers_thread_helper_get_thread failed");
             result = LRU_CACHE_EVICT_ERROR;
         }
@@ -516,7 +516,7 @@ LRU_CACHE_EVICT_RESULT lru_cache_evict(LRU_CACHE_HANDLE lru_cache, void* key)
             else if (remove_result != CLDS_HASH_TABLE_REMOVE_OK)
             {
                 result = LRU_CACHE_EVICT_ERROR;
-                /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+                /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_evict shall return LRU_CACHE_EVICT_ERROR. ]*/
                 LogError("clds_hash_table_delete_key_value returned (%" PRI_MU_ENUM ").", MU_ENUM_VALUE(CLDS_HASH_TABLE_REMOVE_RESULT, remove_result));
             }
             else
@@ -542,7 +542,7 @@ LRU_CACHE_EVICT_RESULT lru_cache_evict(LRU_CACHE_HANDLE lru_cache, void* key)
                 else
                 {
                     LogError("something went wrong. clds_hash_table_remove returned (%" PRI_MU_ENUM ") but old_item is NULL.", MU_ENUM_VALUE(CLDS_HASH_TABLE_REMOVE_RESULT, remove_result));
-                    /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_get shall return LRU_CACHE_EVICT_ERROR. ]*/
+                    /*Codes_SRS_LRU_CACHE_13_095: [ If there are any failures, lru_cache_evict shall return LRU_CACHE_EVICT_ERROR. ]*/
                     result = LRU_CACHE_EVICT_ERROR;
                 }
             }
