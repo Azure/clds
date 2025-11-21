@@ -4,14 +4,16 @@
 clds (C Lockless Data Structures) is a library implementing high-performance, lock-free data structures for multi-threaded applications. It provides hazard pointer-based memory management for safe concurrent access to shared data structures without traditional locking mechanisms.
 
 ## External Dependencies and Standards
-All code must follow the comprehensive coding standards defined in `deps/c-build-tools/.github/general_coding_instructions.md`. For detailed patterns and conventions, refer to dependency-specific instructions:
+All code must follow the comprehensive coding standards defined in #file:../deps/c-build-tools/.github/general_coding_instructions.md. For detailed patterns and conventions, refer to dependency-specific instructions:
 
-- **Build Infrastructure**: `deps/c-build-tools/.github/copilot-instructions.md`
-- **Utilities & Collections**: `deps/c-util/.github/copilot-instructions.md` (THANDLE patterns, async operations, generic programming)
-- **Platform Abstraction**: `deps/c-pal/.github/copilot-instructions.md` (memory management, threading primitives)
-- **Logging Framework**: `deps/c-logging/.github/copilot-instructions.md`
-- **Test Framework**: `deps/ctest/.github/copilot-instructions.md`
-- **Mocking Framework**: `deps/umock-c/.github/copilot-instructions.md`
+- **Build Infrastructure**: #file:../deps/c-build-tools/.github/copilot-instructions.md
+- **Utilities & Collections**: #file:../deps/c-util/.github/copilot-instructions.md (THANDLE patterns, async operations, generic programming)
+- **Platform Abstraction**: #file:../deps/c-pal/.github/copilot-instructions.md (memory management, threading primitives)
+- **Logging Framework**: #file:../deps/c-logging/.github/copilot-instructions.md
+- **Macro Utilities**: #file:../deps/macro-utils-c/.github/copilot-instructions.md
+- **Test Framework**: #file:../deps/ctest/.github/copilot-instructions.md
+- **Test Runner**: #file:../deps/c-testrunnerswitcher/.github/copilot-instructions.md
+- **Mocking Framework**: #file:../deps/umock-c/.github/copilot-instructions.md
 
 ## Core Architecture
 
