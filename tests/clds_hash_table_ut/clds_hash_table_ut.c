@@ -3149,7 +3149,7 @@ TEST_FUNCTION(clds_hash_table_snapshot_with_null_item_count_fails)
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_114: [ clds_hash_table_snapshot shall determine all the items in the hash table by summing up the item count for all bucket arrays in all levels. ]*/
-/* Tests_SRS_CLDS_HASH_TABLE_42_064: [ If there are no items then clds_hash_table_snapshot shall set items to NULL and item_count to 0 and return CLDS_HASH_TABLE_SNAPSHOT_OK. ]. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_42_064: [ If there are no items then clds_hash_table_snapshot shall set items to NULL and item_count to 0 and return CLDS_HASH_TABLE_SNAPSHOT_OK.]*/
 TEST_FUNCTION(clds_hash_table_snapshot_with_empty_table_succeeds)
 {
     // arrange
