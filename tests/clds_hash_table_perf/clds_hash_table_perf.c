@@ -191,7 +191,7 @@ int clds_hash_table_perf_main(void)
                         else
                         {
                             UUID_T uuid;
-                            if (uuid_produce(uuid) != 0)
+                            if (uuid_produce(&uuid) != 0)
                             {
                                 LogError("Cannot get uuid");
                                 break;

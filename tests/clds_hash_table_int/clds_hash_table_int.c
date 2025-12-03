@@ -1309,9 +1309,9 @@ TEST_FUNCTION(clds_hash_table_snapshot_works_with_multiple_concurrent_find)
     for (uint32_t i = 0; i < THREAD_COUNT; i++)
     {
         (void)interlocked_exchange(&shared[i].last_written_key, original_count - 1);
-    
+
         initialize_thread_data(&find_thread_data[i], &shared[i], hash_table, hazard_pointers, i, THREAD_COUNT);
-    
+
         if (ThreadAPI_Create(&find_thread[i], continuous_find_thread, &find_thread_data[i]) != THREADAPI_OK)
         {
             ASSERT_FAIL("Error spawning find test thread %" PRIu32, i);
@@ -1407,7 +1407,7 @@ static CLDS_CONDITION_CHECK_RESULT etag_condition_check(void* context, void* new
     {
         result = CLDS_CONDITION_CHECK_ERROR;
     }
-    else if (memcmp(item_new_key->etag, item_old_key->etag, sizeof(UUID_T)) != 0)
+    else if (memcmp(&item_new_key->etag, &item_old_key->etag, sizeof(UUID_T)) != 0)
     {
         result = CLDS_CONDITION_CHECK_NOT_MET;
     }
@@ -1434,7 +1434,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_succeeds)
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM2, NULL, NULL);
     TEST_ITEM2* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM2, item);
     test_item->key.key = 0;
-    ASSERT_ARE_EQUAL(int, 0, uuid_produce(test_item->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(&test_item->key.etag));
 
     int64_t insert_seq_no;
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)&test_item->key, item, &insert_seq_no);
@@ -1468,7 +1468,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
     CLDS_HASH_TABLE_ITEM* item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM2, NULL, NULL);
     TEST_ITEM2* test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM2, item);
     test_item->key.key = 0;
-    ASSERT_ARE_EQUAL(int, 0, uuid_produce(test_item->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(&test_item->key.etag));
 
     int64_t insert_seq_no;
     result = clds_hash_table_insert(hash_table, hazard_pointers_thread, (void*)&test_item->key, item, &insert_seq_no);
@@ -1480,7 +1480,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_condition_check_fails_with_not_met)
     CLDS_HASH_TABLE_ITEM* item2 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM2, NULL, NULL);
     TEST_ITEM2* test_item2 = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM2, item2);
     test_item2->key.key = 0;
-    ASSERT_ARE_EQUAL(int, 0, uuid_produce(test_item2->key.etag));
+    ASSERT_ARE_EQUAL(int, 0, uuid_produce(&test_item2->key.etag));
     CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result = clds_hash_table_set_value(hash_table, hazard_pointers_thread, (void*)&test_item2->key, item2, etag_condition_check, (void*)0x42, &old_item, &insert_seq_no);
 
     // assert
@@ -1791,7 +1791,7 @@ static int chaos_thread(void* arg)
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_NOT_USED);
             }
             break;
-        
+
         case CHAOS_TEST_ACTION_FIND:
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_FINDING, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
@@ -1803,7 +1803,7 @@ static int chaos_thread(void* arg)
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
-        
+
         case CHAOS_TEST_ACTION_FIND_NOT_FOUND:
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_FINDING, TEST_HASH_TABLE_ITEM_NOT_USED, &item_index))
             {
@@ -1837,15 +1837,15 @@ static int chaos_thread(void* arg)
             if (get_item_and_change_state(chaos_test_context->items, CHAOS_ITEM_COUNT, TEST_HASH_TABLE_ITEM_SETTING_VALUE, TEST_HASH_TABLE_ITEM_USED, &item_index))
             {
                 CLDS_HASH_TABLE_ITEM* old_item;
-            
+
                 CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, chaos_test_context->items[item_index].item);
-            
+
                 ASSERT_ARE_EQUAL(CLDS_HASH_TABLE_INSERT_RESULT, CLDS_HASH_TABLE_SET_VALUE_OK, clds_hash_table_set_value(chaos_test_context->hash_table, chaos_thread_data->clds_hazard_pointers_thread, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, NULL, NULL, &old_item, &seq_no));
                 ASSERT_ARE_NOT_EQUAL(int64_t, 0, seq_no);
                 mark_seq_no_as_used(chaos_test_context, seq_no);
 
                 CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, old_item);
-            
+
                 (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
             }
             break;
