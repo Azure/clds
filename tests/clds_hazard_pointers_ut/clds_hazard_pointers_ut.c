@@ -69,12 +69,18 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 TEST_FUNCTION(clds_hazard_pointers_create_succeeds)
 {
     // arrange
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(worker_thread_create(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(worker_thread_open(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(THANDLE_INITIALIZE_MOVE(TQUEUE_TYPEDEF_NAME(CLDS_HP_INACTIVE_THREAD))(IGNORED_ARG, IGNORED_ARG));
 
     // act
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
 
     // assert
     ASSERT_IS_NOT_NULL(clds_hazard_pointers);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -102,11 +108,19 @@ TEST_FUNCTION(clds_hazard_pointers_destroy_frees_the_resources)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(worker_thread_close(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(worker_thread_destroy(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(TQUEUE_POP(CLDS_HP_INACTIVE_THREAD)(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(THANDLE_ASSIGN(TQUEUE_TYPEDEF_NAME(CLDS_HP_INACTIVE_THREAD))(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
     // act
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 
     // assert
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /*Tests_SRS_CLDS_HAZARD_POINTERS_01_005: [ If clds_hazard_pointers is NULL, clds_hazard_pointers_destroy shall return. ]*/
@@ -118,7 +132,7 @@ TEST_FUNCTION(clds_hazard_pointers_destroy_with_NULL_handle_returns)
     clds_hazard_pointers_destroy(NULL);
 
     // assert
-    // no crash, implicit success
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /* clds_hazard_pointers_register_thread */
@@ -128,12 +142,16 @@ TEST_FUNCTION(clds_hazard_pointers_register_thread_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
 
     // assert
     ASSERT_IS_NOT_NULL(clds_hazard_pointers_thread);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -149,6 +167,7 @@ TEST_FUNCTION(clds_hazard_pointers_register_thread_with_NULL_handle_fails)
 
     // assert
     ASSERT_IS_NULL(clds_hazard_pointers_thread);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /*Tests_SRS_CLDS_HAZARD_POINTERS_01_008: [ If any error occurs, clds_hazard_pointers_register_thread shall fail and return NULL. ]*/
@@ -180,12 +199,15 @@ TEST_FUNCTION(clds_hazard_pointers_unregister_thread_frees_the_thread_specific_d
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(worker_thread_schedule_process(IGNORED_ARG));
 
     // act
     clds_hazard_pointers_unregister_thread(clds_hazard_pointers_thread);
 
     // assert
-    // implicit - cleanup should succeed
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -200,7 +222,7 @@ TEST_FUNCTION(clds_hazard_pointers_unregister_thread_with_NULL_handle_returns)
     clds_hazard_pointers_unregister_thread(NULL);
 
     // assert
-    // no crash, implicit success
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /* clds_hazard_pointers_acquire */
@@ -213,12 +235,16 @@ TEST_FUNCTION(clds_hazard_pointer_acquire_succeeds)
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(malloc(IGNORED_ARG));
 
     // act
     hazard_pointer = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, pointer_1);
 
     // assert
     ASSERT_IS_NOT_NULL(hazard_pointer);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -235,6 +261,7 @@ TEST_FUNCTION(clds_hazard_pointers_acquire_with_NULL_thread_fails)
 
     // assert
     ASSERT_IS_NULL(hazard_pointer);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /*Tests_SRS_CLDS_HAZARD_POINTERS_01_013: [ If any error occurs, clds_hazard_pointers_acquire shall fail and return NULL. ]*/
@@ -271,12 +298,13 @@ TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer)
     CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_pointer;
     void* pointer_1 = (void*)0x4242;
     hazard_pointer = clds_hazard_pointers_acquire(clds_hazard_pointers_thread, pointer_1);
+    umock_c_reset_all_calls();
 
     // act
     clds_hazard_pointers_release(clds_hazard_pointers_thread, hazard_pointer);
 
     // assert
-    // implicit - cleanup should succeed (pointer was released so no leaks)
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -288,12 +316,13 @@ TEST_FUNCTION(clds_hazard_pointers_release_with_NULL_record_returns)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    umock_c_reset_all_calls();
 
     // act
     clds_hazard_pointers_release(clds_hazard_pointers_thread, NULL);
 
     // assert
-    // no crash, implicit success
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -340,7 +369,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_NULL_thread_returns)
     clds_hazard_pointers_reclaim(NULL, pointer_1, test_reclaim_func);
 
     // assert
-    // no crash, implicit success
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /*Tests_SRS_CLDS_HAZARD_POINTERS_01_018: [ If node is NULL, clds_hazard_pointers_reclaim shall return. ]*/
@@ -349,12 +378,13 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_NULL_node_returns)
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
     CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    umock_c_reset_all_calls();
 
     // act
     clds_hazard_pointers_reclaim(clds_hazard_pointers_thread, NULL, test_reclaim_func);
 
     // assert
-    // no crash, implicit success
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -429,12 +459,14 @@ TEST_FUNCTION(clds_hazard_pointers_set_reclaim_threshold_succeeds)
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    umock_c_reset_all_calls();
 
     // act
     int result = clds_hazard_pointers_set_reclaim_threshold(clds_hazard_pointers, 100);
 
     // assert
     ASSERT_ARE_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
@@ -450,6 +482,7 @@ TEST_FUNCTION(clds_hazard_pointers_set_reclaim_threshold_with_NULL_handle_fails)
 
     // assert
     ASSERT_ARE_NOT_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
 /*Tests_SRS_CLDS_HAZARD_POINTERS_01_023: [ If reclaim_threshold is 0, clds_hazard_pointers_set_reclaim_threshold shall fail and return a non-zero value. ]*/
@@ -457,12 +490,14 @@ TEST_FUNCTION(clds_hazard_pointers_set_reclaim_threshold_with_zero_threshold_fai
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    umock_c_reset_all_calls();
 
     // act
     int result = clds_hazard_pointers_set_reclaim_threshold(clds_hazard_pointers, 0);
 
     // assert
     ASSERT_ARE_NOT_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
     clds_hazard_pointers_destroy(clds_hazard_pointers);
