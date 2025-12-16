@@ -65,6 +65,7 @@ TEST_FUNCTION_CLEANUP(method_cleanup)
 
 /* clds_hazard_pointers_create */
 
+/*Tests_SRS_CLDS_HAZARD_POINTERS_01_001: [ clds_hazard_pointers_create shall create a new hazard pointers instance and on success return a non-NULL handle to it. ]*/
 TEST_FUNCTION(clds_hazard_pointers_create_succeeds)
 {
     // arrange
@@ -81,6 +82,7 @@ TEST_FUNCTION(clds_hazard_pointers_create_succeeds)
 
 /* clds_hazard_pointers_destroy */
 
+/*Tests_SRS_CLDS_HAZARD_POINTERS_01_004: [ clds_hazard_pointers_destroy shall free all resources associated with the hazard pointers instance. ]*/
 TEST_FUNCTION(clds_hazard_pointers_destroy_frees_the_resources)
 {
     // arrange
@@ -94,7 +96,7 @@ TEST_FUNCTION(clds_hazard_pointers_destroy_frees_the_resources)
 
 /* clds_hazard_pointers_register_thread */
 
-TEST_FUNCTION(clds_hazard_pointers_register_thread_succeeds)
+TEST_FUNCTION(clds_hazard_pointers_register_thread_succeeds) // no-srs
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
@@ -111,7 +113,7 @@ TEST_FUNCTION(clds_hazard_pointers_register_thread_succeeds)
 
 /* clds_hazard_pointers_unregister_thread */
 
-TEST_FUNCTION(clds_hazard_pointers_unregister_thread_frees_the_thread_specific_data)
+TEST_FUNCTION(clds_hazard_pointers_unregister_thread_frees_the_thread_specific_data) // no-srs
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
@@ -128,7 +130,7 @@ TEST_FUNCTION(clds_hazard_pointers_unregister_thread_frees_the_thread_specific_d
 
 /* clds_hazard_pointers_acquire */
 
-TEST_FUNCTION(clds_hazard_pointer_acquire_succeeds)
+TEST_FUNCTION(clds_hazard_pointer_acquire_succeeds) // no-srs
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
@@ -148,7 +150,7 @@ TEST_FUNCTION(clds_hazard_pointer_acquire_succeeds)
 
 /* clds_hazard_pointers_release */
 
-TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer)
+TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer) // no-srs
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
@@ -167,7 +169,7 @@ TEST_FUNCTION(clds_hazard_pointers_release_releases_the_pointer)
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_reclaim_the_pointer)
+TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_reclaim_the_pointer) // no-srs
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
@@ -198,7 +200,7 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_hazard_pointer_set_does_not_re
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 }
 
-TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_reclaims_the_memory)
+TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_reclaims_the_memory) // no-srs
 {
     // arrange
     CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
