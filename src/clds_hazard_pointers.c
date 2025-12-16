@@ -238,6 +238,7 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                 }
                 else if (find_result == CLDS_ST_HASH_SET_FIND_NOT_FOUND)
                 {
+                    /*Codes_SRS_CLDS_HAZARD_POINTERS_01_020: [ If no thread has acquired a hazard pointer for node, reclaim_func shall be called for node to reclaim it. ]*/
                     // node is safe to be reclaimed
                     current_reclaim_entry->reclaim(current_reclaim_entry->node);
 
@@ -260,6 +261,7 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                 }
                 else
                 {
+                    /*Codes_SRS_CLDS_HAZARD_POINTERS_01_019: [ If any other thread has acquired a hazard pointer for node, the reclaim_func shall not be called for node. ]*/
                     // not safe, sorry, shall still have it around, move to next reclaim entry
                     prev_reclaim_entry = current_reclaim_entry;
                     current_reclaim_entry = current_reclaim_entry->next;
@@ -347,9 +349,11 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
 {
     CLDS_HAZARD_POINTERS_HANDLE result;
 
+    /*Codes_SRS_CLDS_HAZARD_POINTERS_01_001: [ clds_hazard_pointers_create shall create a new hazard pointers instance and on success return a non-NULL handle to it. ]*/
     result = malloc(sizeof(CLDS_HAZARD_POINTERS));
     if (result == NULL)
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_002: [ If any error happens, clds_hazard_pointers_create shall fail and return NULL. ]*/
         LogError("malloc failed");
     }
     else
@@ -357,12 +361,14 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
         result->hp_thread_cleanup_worker = worker_thread_create(hp_thread_cleanup_func, result);
         if (result->hp_thread_cleanup_worker == NULL)
         {
+            /*Codes_SRS_CLDS_HAZARD_POINTERS_01_002: [ If any error happens, clds_hazard_pointers_create shall fail and return NULL. ]*/
             LogError("worker_thread_create failed");
         }
         else
         {
             if (worker_thread_open(result->hp_thread_cleanup_worker) != 0)
             {
+                /*Codes_SRS_CLDS_HAZARD_POINTERS_01_002: [ If any error happens, clds_hazard_pointers_create shall fail and return NULL. ]*/
                 LogError("worker_thread_open failed");
             }
             else
@@ -370,6 +376,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
                 TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads = TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INITIAL_INACTIVE_THREADS_QUEUE_SIZE, MAX_INACTIVE_THREADS_QUEUE_SIZE, NULL, NULL, NULL);
                 if (inactive_threads == NULL)
                 {
+                    /*Codes_SRS_CLDS_HAZARD_POINTERS_01_002: [ If any error happens, clds_hazard_pointers_create shall fail and return NULL. ]*/
                     LogError("TQUEUE_CREATE(CLDS_HP_INACTIVE_THREAD)(INACTIVE_THREADS_QUEUE_SIZE, false) failed");
                 }
                 else
@@ -401,10 +408,12 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
 {
     if (clds_hazard_pointers == NULL)
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_005: [ If clds_hazard_pointers is NULL, clds_hazard_pointers_destroy shall return. ]*/
         LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p", clds_hazard_pointers);
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_004: [ clds_hazard_pointers_destroy shall free all resources associated with the hazard pointers instance. ]*/
         worker_thread_close(clds_hazard_pointers->hp_thread_cleanup_worker);
 
         worker_thread_destroy(clds_hazard_pointers->hp_thread_cleanup_worker);
@@ -436,35 +445,48 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
 
 CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_register_thread(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers)
 {
-    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread = malloc(sizeof(CLDS_HAZARD_POINTERS_THREAD));
-    if (clds_hazard_pointers_thread == NULL)
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread;
+
+    if (clds_hazard_pointers == NULL)
     {
-        LogError("malloc failed");
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_007: [ If clds_hazard_pointers is NULL, clds_hazard_pointers_register_thread shall fail and return NULL. ]*/
+        LogError("Invalid arguments: CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers=%p", clds_hazard_pointers);
+        clds_hazard_pointers_thread = NULL;
     }
     else
     {
-        bool restart_needed;
-
-        clds_hazard_pointers_thread->clds_hazard_pointers = clds_hazard_pointers;
-        do
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_006: [ clds_hazard_pointers_register_thread shall register the current thread with the hazard pointers instance clds_hazard_pointers and on success return a non-NULL handle to the registered thread. ]*/
+        clds_hazard_pointers_thread = malloc(sizeof(CLDS_HAZARD_POINTERS_THREAD));
+        if (clds_hazard_pointers_thread == NULL)
         {
-            CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
-            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, current_threads_head);
-            clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
-            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL);
-            (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL);
-            clds_hazard_pointers_thread->reclaim_list = NULL;
-            (void)interlocked_exchange(&clds_hazard_pointers_thread->active, 1);
-            if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, clds_hazard_pointers_thread, current_threads_head) != current_threads_head)
+            /*Codes_SRS_CLDS_HAZARD_POINTERS_01_008: [ If any error occurs, clds_hazard_pointers_register_thread shall fail and return NULL. ]*/
+            LogError("malloc failed");
+        }
+        else
+        {
+            bool restart_needed;
+
+            clds_hazard_pointers_thread->clds_hazard_pointers = clds_hazard_pointers;
+            do
             {
-                restart_needed = true;
-            }
-            else
-            {
-                // done
-                restart_needed = false;
-            }
-        } while (restart_needed);
+                CLDS_HAZARD_POINTERS_THREAD_HANDLE current_threads_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, NULL, NULL);
+                (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->next, current_threads_head);
+                clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
+                (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->pointers, NULL);
+                (void)interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers_thread->free_pointers, NULL);
+                clds_hazard_pointers_thread->reclaim_list = NULL;
+                (void)interlocked_exchange(&clds_hazard_pointers_thread->active, 1);
+                if (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->head, clds_hazard_pointers_thread, current_threads_head) != current_threads_head)
+                {
+                    restart_needed = true;
+                }
+                else
+                {
+                    // done
+                    restart_needed = false;
+                }
+            } while (restart_needed);
+        }
     }
 
     return clds_hazard_pointers_thread;
@@ -474,10 +496,12 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
 {
     if (clds_hazard_pointers_thread == NULL)
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_010: [ If clds_hazard_pointers_thread is NULL, clds_hazard_pointers_unregister_thread shall return. ]*/
         LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p", clds_hazard_pointers_thread);
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_009: [ clds_hazard_pointers_unregister_thread shall unregister the thread identified by clds_hazard_pointers_thread from its associated hazard pointers instance. ]*/
         CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
 
         // remove the thread from the thread list
@@ -498,12 +522,14 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
 
     if (clds_hazard_pointers_thread == NULL)
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_012: [ If clds_hazard_pointers_thread is NULL, clds_hazard_pointers_acquire shall fail and return NULL. ]*/
         LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, void* node=%p",
             clds_hazard_pointers_thread, node);
         result = NULL;
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_011: [ clds_hazard_pointers_acquire shall acquire a hazard pointer for the given node and on success return a non-NULL handle to the hazard pointer record. ]*/
         bool restart_needed;
         CLDS_HAZARD_POINTER_RECORD_HANDLE hazard_ptr;
 
@@ -537,6 +563,7 @@ CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointers_acquire(CLDS_HAZARD_POINT
             hazard_ptr = malloc(sizeof(CLDS_HAZARD_POINTER_RECORD));
             if (hazard_ptr == NULL)
             {
+                /*Codes_SRS_CLDS_HAZARD_POINTERS_01_013: [ If any error occurs, clds_hazard_pointers_acquire shall fail and return NULL. ]*/
                 LogError("Error allocating hazard pointer");
                 result = NULL;
             }
@@ -580,11 +607,13 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
 {
     if (clds_hazard_pointer_record == NULL)
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_015: [ If clds_hazard_pointer_record is NULL, clds_hazard_pointers_release shall return. ]*/
         LogError("Invalid arguments: CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread=%p, CLDS_HAZARD_POINTER_RECORD_HANDLE clds_hazard_pointer_record=%p",
             clds_hazard_pointers_thread, clds_hazard_pointer_record);
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_014: [ clds_hazard_pointers_release shall release the hazard pointer associated with clds_hazard_pointer_record. ]*/
         // remove it from the hazard pointers list for this thread, this thread is the only one removing
         // so no contention on the list
         CLDS_HAZARD_POINTER_RECORD_HANDLE previous_hazard_pointer = NULL;
@@ -624,7 +653,9 @@ void clds_hazard_pointers_release(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
 void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_pointers_thread, void* node, RECLAIM_FUNC reclaim_func)
 {
     if (
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_017: [ If clds_hazard_pointers_thread is NULL, clds_hazard_pointers_reclaim shall return. ]*/
         (clds_hazard_pointers_thread == NULL) ||
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_018: [ If node is NULL, clds_hazard_pointers_reclaim shall return. ]*/
         (node == NULL)
         )
     {
@@ -633,6 +664,7 @@ void clds_hazard_pointers_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_016: [ clds_hazard_pointers_reclaim shall add the node to the reclaim list and when the reclaim threshold is reached, it shall trigger a reclaim cycle. ]*/
         CLDS_RECLAIM_LIST_ENTRY* reclaim_list_entry = malloc(sizeof(CLDS_RECLAIM_LIST_ENTRY));
         if (reclaim_list_entry == NULL)
         {
@@ -661,7 +693,9 @@ int clds_hazard_pointers_set_reclaim_threshold(CLDS_HAZARD_POINTERS_HANDLE clds_
     int result;
 
     if (
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_022: [ If clds_hazard_pointers is NULL, clds_hazard_pointers_set_reclaim_threshold shall fail and return a non-zero value. ]*/
         (clds_hazard_pointers == NULL) ||
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_023: [ If reclaim_threshold is 0, clds_hazard_pointers_set_reclaim_threshold shall fail and return a non-zero value. ]*/
         (reclaim_threshold == 0)
         )
     {
@@ -671,7 +705,9 @@ int clds_hazard_pointers_set_reclaim_threshold(CLDS_HAZARD_POINTERS_HANDLE clds_
     }
     else
     {
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_021: [ clds_hazard_pointers_set_reclaim_threshold shall set the reclaim threshold for the hazard pointers instance to reclaim_threshold. ]*/
         clds_hazard_pointers->reclaim_threshold = reclaim_threshold;
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_024: [ On success, clds_hazard_pointers_set_reclaim_threshold shall return 0. ]*/
         result = 0;
     }
 
