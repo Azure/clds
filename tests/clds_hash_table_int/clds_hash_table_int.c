@@ -1562,6 +1562,7 @@ TEST_FUNCTION(clds_hash_table_set_value_with_the_same_value_succeeds_with_initia
 
 TEST_FUNCTION(clds_hash_table_set_value_with_same_item_after_bucket_count_increase_allows_a_colliding_key_to_be_added_to_same_bucket)
 {
+    // arrange
     // the test does the following:
     // - start with a 1 bucket hash table with keys being "integer modulo 4"
     // - insert one item with key value 1

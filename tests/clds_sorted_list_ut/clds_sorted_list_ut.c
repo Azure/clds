@@ -2834,6 +2834,8 @@ TEST_FUNCTION(clds_sorted_list_find_key_result_has_the_ref_count_incremented)
 /* Tests_SRS_CLDS_SORTED_LIST_42_030: [ If clds_sorted_list is NULL then clds_sorted_list_lock_writes shall return. ]*/
 TEST_FUNCTION(clds_sorted_list_lock_writes_with_NULL_clds_sorted_list_returns)
 {
+    // arrange
+
     // act
     clds_sorted_list_lock_writes(NULL);
 
@@ -2846,6 +2848,8 @@ TEST_FUNCTION(clds_sorted_list_lock_writes_with_NULL_clds_sorted_list_returns)
 /* Tests_SRS_CLDS_SORTED_LIST_42_033: [ If clds_sorted_list is NULL then clds_sorted_list_unlock_writes shall return. ]*/
 TEST_FUNCTION(clds_sorted_list_unlock_writes_with_NULL_clds_sorted_list_returns)
 {
+    // arrange
+
     // act
     clds_sorted_list_unlock_writes(NULL);
 

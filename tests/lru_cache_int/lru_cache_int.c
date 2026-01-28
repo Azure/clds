@@ -243,7 +243,6 @@ TEST_FUNCTION(test_put_and_get)
     LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
-
     LRU_CACHE_PUT_RESULT result;
     CLDS_HASH_TABLE_ITEM* item1 = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     ASSERT_IS_NOT_NULL(item1);
@@ -264,7 +263,7 @@ TEST_FUNCTION(test_put_and_get)
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-
+    // assert
     CLDS_HASH_TABLE_ITEM* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
     TEST_ITEM* return_test_item = CLDS_HASH_TABLE_GET_VALUE(TEST_ITEM, return_val1);
     ASSERT_IS_NOT_NULL(return_test_item);
@@ -664,6 +663,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     test_large_item->key = 100013;
     test_large_item->appendix = 110013;
 
+    // act
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 11, on_evict_callback, &count_context, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
@@ -982,6 +982,8 @@ TEST_FUNCTION(test_function_key_copy_works)
     free(key);
 
     void* return_val1 = lru_cache_get(lru_cache, key2);
+
+    // assert
     ASSERT_IS_NOT_NULL(return_val1);
     uintptr_t ptr_value = (uintptr_t)return_val1;
     ASSERT_ARE_EQUAL(uint32_t, 100, *(uint32_t*)&ptr_value);
@@ -1038,6 +1040,8 @@ TEST_FUNCTION(test_function_copy_works)
     free(value);
 
     char* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+
+    // assert
     ASSERT_IS_NOT_NULL(return_val1);
     ASSERT_ARE_EQUAL(char_ptr, "abc", return_val1);
 
@@ -1082,6 +1086,8 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     char* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+
+    // assert
     ASSERT_IS_NOT_NULL(return_val2);
     ASSERT_ARE_EQUAL(char_ptr, "wxyz", return_val2);
 
@@ -1124,6 +1130,8 @@ TEST_FUNCTION(test_function_copy_fails)
 
     // act
     result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, dummy_copy_error, dummy_free_error);
+
+    // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED, result);
 
 
