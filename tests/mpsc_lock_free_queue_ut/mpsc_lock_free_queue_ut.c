@@ -630,6 +630,7 @@ TEST_FUNCTION(mpsc_lock_free_queue_is_empty_with_NULL_queue_fails)
 /* Tests_SRS_MPSC_LOCK_FREE_QUEUE_01_024: [ If mpsc_lock_free_queue or is_empty is NULL then mpsc_lock_free_queue_is_empty shall fail and return a non-zero value. ]*/
 TEST_FUNCTION(mpsc_lock_free_queue_is_empty_with_NULL_is_empy_arg_fails)
 {
+    // arrange
     MPSC_LOCK_FREE_QUEUE_HANDLE queue = mpsc_lock_free_queue_create();
     int result;
     umock_c_reset_all_calls();
