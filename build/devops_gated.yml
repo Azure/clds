@@ -12,13 +12,13 @@ jobs:
 - template: /pipeline_templates/build_all_flavors.yml@c_build_tools
   parameters:
     GBALLOC_LL_TYPE_VALUES: ["PASSTHROUGH", "JEMALLOC"]
+    ARCH_TYPE_VALUES: ["x64"]
 
 - template: /pipeline_templates/run_master_check.yml@c_build_tools
   parameters:
     ignore_submodules: 'deps/mimalloc'
 
 - template: /pipeline_templates/codeql3000_default.yml@c_build_tools
-
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64, custom script)'
   pool:
