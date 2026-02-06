@@ -103,7 +103,7 @@ jobs:
       script: 'ctest -C "RelWithDebInfo" -V --output-on-failure -R perf'
       workingDirectory: 'build_x64'
 
-  - template : deps/c-build-tools/pipeline_templates/clean_ado_folders.yml
+  - template : /pipeline_templates/clean_ado_folders.yml@c_build_tools
 
 - job: linuxubuntu
   displayName: 'Build Linux Ubuntu'
