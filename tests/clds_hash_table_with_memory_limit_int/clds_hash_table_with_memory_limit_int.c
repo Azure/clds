@@ -80,10 +80,12 @@ TEST_SUITE_CLEANUP(suite_cleanup)
 
 TEST_FUNCTION_INITIALIZE(method_init)
 {
+    // no explicit init is needed for job_object_helper - it self-initializes lazily on first call to job_object_helper_set_job_limits_to_current_process
 }
 
 TEST_FUNCTION_CLEANUP(method_cleanup)
 {
+    job_object_helper_deinit_for_test();
 }
 
 // 200 MB should be enough for the below test
