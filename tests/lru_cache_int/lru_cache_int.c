@@ -21,6 +21,7 @@
 #include "c_pal/sync.h"
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
+#include "c_pal/timed_test_suite.h"
 
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
@@ -171,12 +172,12 @@ static int key_compare(void* key_1, void* key_2)
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
-TEST_SUITE_INITIALIZE(suite_init)
+TIMED_TEST_SUITE_INITIALIZE(suite_init, TIMED_TEST_DEFAULT_TIMEOUT_MS)
 {
     ASSERT_ARE_EQUAL(int, 0, gballoc_hl_init(NULL, NULL));
 }
 
-TEST_SUITE_CLEANUP(suite_cleanup)
+TIMED_TEST_SUITE_CLEANUP(suite_cleanup)
 {
     gballoc_hl_deinit();
 }

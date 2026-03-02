@@ -27,6 +27,7 @@
 
 #include "c_util/cancellation_token.h"
 #include "c_pal/tqueue.h"
+#include "c_pal/timed_test_suite.h"
 
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hash_table.h"
@@ -567,12 +568,12 @@ MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(CHAOS_TEST_ACTION, CHAOS_TEST_ACTION_VALU
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
-TEST_SUITE_INITIALIZE(suite_init)
+TIMED_TEST_SUITE_INITIALIZE(suite_init, TIMED_TEST_DEFAULT_TIMEOUT_MS)
 {
     gballoc_hl_init(NULL, NULL);
 }
 
-TEST_SUITE_CLEANUP(suite_cleanup)
+TIMED_TEST_SUITE_CLEANUP(suite_cleanup)
 {
     gballoc_hl_deinit();
 }
