@@ -2576,9 +2576,13 @@ TEST_FUNCTION(clds_hash_table_set_value_with_empty_hash_table_sets_the_value_on_
     destroy_test_context(&test_context);
 }
 
-static void test_when_clds_sorted_list_set_value_fails_clds_hash_table_set_value_with_empty_hash_table_fails(
-    CLDS_SORTED_LIST_SET_VALUE_RESULT sorted_list_result, CLDS_HASH_TABLE_SET_VALUE_RESULT set_value_result,
-    CONDITION_CHECK_CB condition_check_cb, void* condition_check_context)
+/* Tests_SRS_CLDS_HASH_TABLE_01_100: [ If clds_sorted_list_set_value returns any other value, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
+/* Tests_SRS_CLDS_HASH_TABLE_04_002: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET. ]*/
+PARAMETERIZED_TEST_FUNCTION(when_clds_sorted_list_set_value_fails_clds_hash_table_set_value_with_empty_hash_table_fails,
+    ARGS(CLDS_SORTED_LIST_SET_VALUE_RESULT, sorted_list_result, CLDS_HASH_TABLE_SET_VALUE_RESULT, set_value_result, CONDITION_CHECK_CB, condition_check_cb, void*, condition_check_context),
+    CASE((CLDS_SORTED_LIST_SET_VALUE_ERROR, CLDS_HASH_TABLE_SET_VALUE_ERROR, NULL, NULL), ERROR),
+    CASE((CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, CLDS_HASH_TABLE_SET_VALUE_ERROR, NULL, NULL), NOT_FOUND),
+    CASE((CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET, test_item_condition_check, (void*)0x42), CONDITION_NOT_MET))
 {
     // arrange
     CLDS_HASH_TABLE_TEST_CONTEXT test_context;
@@ -2608,24 +2612,6 @@ static void test_when_clds_sorted_list_set_value_fails_clds_hash_table_set_value
     clds_hash_table_destroy(hash_table);
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, item);
     destroy_test_context(&test_context);
-}
-
-/* Tests_SRS_CLDS_HASH_TABLE_01_100: [ If clds_sorted_list_set_value returns any other value, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
-TEST_FUNCTION(when_clds_sorted_list_set_value_fails_with_ERROR_clds_hash_table_set_value_with_empty_hash_table_fails)
-{
-    test_when_clds_sorted_list_set_value_fails_clds_hash_table_set_value_with_empty_hash_table_fails(CLDS_SORTED_LIST_SET_VALUE_ERROR, CLDS_HASH_TABLE_SET_VALUE_ERROR, NULL, NULL);
-}
-
-/* Tests_SRS_CLDS_HASH_TABLE_01_100: [ If clds_sorted_list_set_value returns any other value, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
-TEST_FUNCTION(when_clds_sorted_list_set_value_fails_with_NOT_FOUND_clds_hash_table_set_value_with_empty_hash_table_fails)
-{
-    test_when_clds_sorted_list_set_value_fails_clds_hash_table_set_value_with_empty_hash_table_fails(CLDS_SORTED_LIST_SET_VALUE_NOT_FOUND, CLDS_HASH_TABLE_SET_VALUE_ERROR, NULL, NULL);
-}
-
-/* Tests_SRS_CLDS_HASH_TABLE_04_002: [ If clds_sorted_list_set_value returns CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET. ]*/
-TEST_FUNCTION(when_clds_sorted_list_set_value_fails_with_CONDITION_NOT_MET_clds_hash_table_set_value_with_empty_hash_table_fails)
-{
-    test_when_clds_sorted_list_set_value_fails_clds_hash_table_set_value_with_empty_hash_table_fails(CLDS_SORTED_LIST_SET_VALUE_CONDITION_NOT_MET, CLDS_HASH_TABLE_SET_VALUE_CONDITION_NOT_MET, test_item_condition_check, (void*)0x42);
 }
 
 /* Tests_SRS_CLDS_HASH_TABLE_01_106: [ If any error occurs, clds_hash_table_set_value shall fail and return CLDS_HASH_TABLE_SET_VALUE_ERROR. ]*/
