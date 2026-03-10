@@ -330,133 +330,25 @@ TEST_FUNCTION(lock_free_set_insert_2nd_item_right)
 
 /* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
 /* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_insert_3rd_item_left_left)
+PARAMETERIZED_TEST_FUNCTION(lock_free_set_insert_3_items_in_order, // Tests_SRS_LOCK_FREE_SET_01_009, Tests_SRS_LOCK_FREE_SET_01_010
+    ARGS(int, first, int, second, int, third),
+    CASE((2, 1, 0), left_left),
+    CASE((0, 1, 2), right_right),
+    CASE((2, 0, 1), left_right),
+    CASE((0, 2, 1), right_left),
+    CASE((1, 0, 2), filling_left_first),
+    CASE((1, 2, 0), filling_right_first))
 {
     // arrange
     LOCK_FREE_SET_HANDLE set = lock_free_set_create();
     LOCK_FREE_SET_ITEM items[3];
     int result;
-    (void)lock_free_set_insert(set, &items[2]);
-    (void)lock_free_set_insert(set, &items[1]);
+    (void)lock_free_set_insert(set, &items[first]);
+    (void)lock_free_set_insert(set, &items[second]);
     umock_c_reset_all_calls();
 
     // act
-    result = lock_free_set_insert(set, &items[0]);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_insert_3rd_item_right_right)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result;
-    (void)lock_free_set_insert(set, &items[0]);
-    (void)lock_free_set_insert(set, &items[1]);
-    umock_c_reset_all_calls();
-
-    // act
-    result = lock_free_set_insert(set, &items[2]);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_insert_3rd_item_left_right)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result;
-    (void)lock_free_set_insert(set, &items[2]);
-    (void)lock_free_set_insert(set, &items[0]);
-    umock_c_reset_all_calls();
-
-    // act
-    result = lock_free_set_insert(set, &items[1]);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_insert_3rd_item_right_left)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result;
-    (void)lock_free_set_insert(set, &items[0]);
-    (void)lock_free_set_insert(set, &items[2]);
-    umock_c_reset_all_calls();
-
-    // act
-    result = lock_free_set_insert(set, &items[1]);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_insert_3_items_filling_both_left_and_right_left_first)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result;
-    (void)lock_free_set_insert(set, &items[1]);
-    (void)lock_free_set_insert(set, &items[0]);
-    umock_c_reset_all_calls();
-
-    // act
-    result = lock_free_set_insert(set, &items[2]);
-
-    // assert
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-    ASSERT_ARE_EQUAL(int, 0, result);
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_insert_3_items_filling_both_left_and_right_right_first)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result;
-    (void)lock_free_set_insert(set, &items[1]);
-    (void)lock_free_set_insert(set, &items[2]);
-    umock_c_reset_all_calls();
-
-    // act
-    result = lock_free_set_insert(set, &items[0]);
+    result = lock_free_set_insert(set, &items[third]);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -684,71 +576,13 @@ TEST_FUNCTION(lock_free_set_removes_both_items_insert_1_0_remove_1_0)
 
 /* Tests_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
 /* Tests_SRS_LOCK_FREE_SET_01_016: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_removes_all_3_items_insert_0_1_2_remove_0_1_2)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result1;
-    int result2;
-    int result3;
-    umock_c_reset_all_calls();
-
-    (void)lock_free_set_insert(set, &items[0]);
-    (void)lock_free_set_insert(set, &items[1]);
-    (void)lock_free_set_insert(set, &items[2]);
-
-
-    // act
-    result1 = lock_free_set_remove(set, &items[0]);
-    result2 = lock_free_set_remove(set, &items[1]);
-    result3 = lock_free_set_remove(set, &items[2]);
-
-    // assert
-    ASSERT_ARE_EQUAL(int, 0, result1);
-    ASSERT_ARE_EQUAL(int, 0, result2);
-    ASSERT_ARE_EQUAL(int, 0, result3);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_016: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_removes_all_3_items_insert_0_1_2_remove_0_2_1)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result1;
-    int result2;
-    int result3;
-    umock_c_reset_all_calls();
-
-    (void)lock_free_set_insert(set, &items[0]);
-    (void)lock_free_set_insert(set, &items[1]);
-    (void)lock_free_set_insert(set, &items[2]);
-
-
-    // act
-    result1 = lock_free_set_remove(set, &items[0]);
-    result2 = lock_free_set_remove(set, &items[2]);
-    result3 = lock_free_set_remove(set, &items[1]);
-
-    // assert
-    ASSERT_ARE_EQUAL(int, 0, result1);
-    ASSERT_ARE_EQUAL(int, 0, result2);
-    ASSERT_ARE_EQUAL(int, 0, result3);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_016: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_removes_all_3_items_insert_0_1_2_remove_1_0_2)
+PARAMETERIZED_TEST_FUNCTION(lock_free_set_removes_all_3_items, // Tests_SRS_LOCK_FREE_SET_01_015, Tests_SRS_LOCK_FREE_SET_01_016
+    ARGS(int, remove_first, int, remove_second, int, remove_third),
+    CASE((0, 1, 2), remove_0_1_2),
+    CASE((0, 2, 1), remove_0_2_1),
+    CASE((1, 0, 2), remove_1_0_2),
+    CASE((2, 0, 1), remove_2_0_1),
+    CASE((2, 1, 0), remove_2_1_0))
 {
     // arrange
     LOCK_FREE_SET_HANDLE set = lock_free_set_create();
@@ -763,71 +597,9 @@ TEST_FUNCTION(lock_free_set_removes_all_3_items_insert_0_1_2_remove_1_0_2)
     (void)lock_free_set_insert(set, &items[2]);
 
     // act
-    result1 = lock_free_set_remove(set, &items[1]);
-    result2 = lock_free_set_remove(set, &items[0]);
-    result3 = lock_free_set_remove(set, &items[2]);
-
-    // assert
-    ASSERT_ARE_EQUAL(int, 0, result1);
-    ASSERT_ARE_EQUAL(int, 0, result2);
-    ASSERT_ARE_EQUAL(int, 0, result3);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_016: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_removes_all_3_items_insert_0_1_2_remove_2_0_1)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result1;
-    int result2;
-    int result3;
-    umock_c_reset_all_calls();
-
-    (void)lock_free_set_insert(set, &items[0]);
-    (void)lock_free_set_insert(set, &items[1]);
-    (void)lock_free_set_insert(set, &items[2]);
-
-    // act
-    result1 = lock_free_set_remove(set, &items[2]);
-    result2 = lock_free_set_remove(set, &items[0]);
-    result3 = lock_free_set_remove(set, &items[1]);
-
-    // assert
-    ASSERT_ARE_EQUAL(int, 0, result1);
-    ASSERT_ARE_EQUAL(int, 0, result2);
-    ASSERT_ARE_EQUAL(int, 0, result3);
-    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-
-    // cleanup
-    lock_free_set_destroy(set, NULL, NULL);
-}
-
-/* Tests_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
-/* Tests_SRS_LOCK_FREE_SET_01_016: [ On success it shall return 0. ]*/
-TEST_FUNCTION(lock_free_set_removes_all_3_items_insert_0_1_2_remove_2_1_0)
-{
-    // arrange
-    LOCK_FREE_SET_HANDLE set = lock_free_set_create();
-    LOCK_FREE_SET_ITEM items[3];
-    int result1;
-    int result2;
-    int result3;
-    umock_c_reset_all_calls();
-
-    (void)lock_free_set_insert(set, &items[0]);
-    (void)lock_free_set_insert(set, &items[1]);
-    (void)lock_free_set_insert(set, &items[2]);
-
-    // act
-    result1 = lock_free_set_remove(set, &items[2]);
-    result2 = lock_free_set_remove(set, &items[1]);
-    result3 = lock_free_set_remove(set, &items[0]);
+    result1 = lock_free_set_remove(set, &items[remove_first]);
+    result2 = lock_free_set_remove(set, &items[remove_second]);
+    result3 = lock_free_set_remove(set, &items[remove_third]);
 
     // assert
     ASSERT_ARE_EQUAL(int, 0, result1);
