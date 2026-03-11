@@ -124,13 +124,14 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
     ASSERT_IS_TRUE(GlobalMemoryStatusEx(&memory_status_ex));
 
     // compute how much to set as limit in %
-    uint8_t percent_to_use = (uint8_t)((uint64_t)DESIRED_USAGE * 100 / memory_status_ex.ullTotalPhys);
+    uint32_t percent_to_use = (uint32_t)((uint64_t)DESIRED_USAGE * 100 / memory_status_ex.ullTotalPhys);
     if (percent_to_use == 0)
     {
         percent_to_use = 1;
     }
+    ASSERT_IS_TRUE(percent_to_use < 100, "Asking to use percent_to_use=%" PRIu32 " of memory", percent_to_use);
 
-    THANDLE(JOB_OBJECT_HELPER) job_object_helper = job_object_helper_set_job_limits_to_current_process("", 0, 1);
+    THANDLE(JOB_OBJECT_HELPER) job_object_helper = job_object_helper_set_job_limits_to_current_process("", 100, percent_to_use);
     ASSERT_IS_NOT_NULL(job_object_helper);
 
     already_exists_item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
