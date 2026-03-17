@@ -330,7 +330,7 @@ TEST_FUNCTION(lock_free_set_insert_2nd_item_right)
 
 /* Tests_SRS_LOCK_FREE_SET_01_009: [ lock_free_set_insert shall insert the item item in the set. ]*/
 /* Tests_SRS_LOCK_FREE_SET_01_010: [ On success it shall return 0. ]*/
-PARAMETERIZED_TEST_FUNCTION(lock_free_set_insert_3_items_in_order, // Tests_SRS_LOCK_FREE_SET_01_009, Tests_SRS_LOCK_FREE_SET_01_010
+PARAMETERIZED_TEST_FUNCTION(lock_free_set_insert_3_items_in_order,
     ARGS(int, first, int, second, int, third),
     CASE((2, 1, 0), left_left),
     CASE((0, 1, 2), right_right),
@@ -576,7 +576,7 @@ TEST_FUNCTION(lock_free_set_removes_both_items_insert_1_0_remove_1_0)
 
 /* Tests_SRS_LOCK_FREE_SET_01_015: [ lock_free_set_remove shall remove the item item from the set. ]*/
 /* Tests_SRS_LOCK_FREE_SET_01_016: [ On success it shall return 0. ]*/
-PARAMETERIZED_TEST_FUNCTION(lock_free_set_removes_all_3_items, // Tests_SRS_LOCK_FREE_SET_01_015, Tests_SRS_LOCK_FREE_SET_01_016
+PARAMETERIZED_TEST_FUNCTION(lock_free_set_removes_all_3_items,
     ARGS(int, remove_first, int, remove_second, int, remove_third),
     CASE((0, 1, 2), remove_0_1_2),
     CASE((0, 2, 1), remove_0_2_1),
