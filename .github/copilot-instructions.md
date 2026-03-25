@@ -4,10 +4,11 @@
 clds (C Lockless Data Structures) is a library implementing high-performance, lock-free data structures for multi-threaded applications. It provides hazard pointer-based memory management for safe concurrent access to shared data structures without traditional locking mechanisms.
 
 ## External Dependencies and Standards
-All code must follow the comprehensive coding standards defined in #file:../deps/c-build-tools/.github/general_coding_instructions.md. For detailed patterns and conventions, refer to dependency-specific instructions:
+All code must follow the comprehensive coding standards defined in #file:../deps/azure-messaging-ai-context/.github/general_coding_instructions.md. For detailed patterns and conventions, refer to dependency-specific instructions:
 
 - **Build Infrastructure**: #file:../deps/c-build-tools/.github/copilot-instructions.md
-- **Utilities & Collections**: #file:../deps/c-util/.github/copilot-instructions.md (THANDLE patterns, async operations, generic programming)
+- **AI Context & Coding Standards**: #file:../deps/azure-messaging-ai-context/.github/copilot-instructions.md (git conventions, terminal rules, agent skills)
+- **Utilities & Collections**: #file:../deps/c-util/.github/copilot-instructions.md(THANDLE patterns, async operations, generic programming)
 - **Platform Abstraction**: #file:../deps/c-pal/.github/copilot-instructions.md (memory management, threading primitives)
 - **Logging Framework**: #file:../deps/c-logging/.github/copilot-instructions.md
 - **Macro Utilities**: #file:../deps/macro-utils-c/.github/copilot-instructions.md
