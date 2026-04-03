@@ -17,7 +17,6 @@
 
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
-#include "c_pal/thandle.h"
 #include "c_pal/job_object_helper.h"
 
 #include "clds/clds_hazard_pointers.h"
@@ -131,8 +130,8 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
     }
     ASSERT_IS_TRUE(percent_to_use < 100, "Asking to use percent_to_use=%" PRIu32 " of memory", percent_to_use);
 
-    THANDLE(JOB_OBJECT_HELPER) job_object_helper = job_object_helper_set_job_limits_to_current_process("", 100, percent_to_use);
-    ASSERT_IS_NOT_NULL(job_object_helper);
+    int job_object_helper_result = job_object_helper_set_job_limits_to_current_process("", 100, percent_to_use);
+    ASSERT_ARE_EQUAL(int, 0, job_object_helper_result);
 
     already_exists_item = CLDS_HASH_TABLE_NODE_CREATE(TEST_ITEM, NULL, NULL);
     ASSERT_IS_NOT_NULL(already_exists_item);
@@ -162,7 +161,7 @@ TEST_FUNCTION(clds_hash_table_insert_same_block_again_does_not_leak_item_count)
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, already_exists_item);
     clds_hazard_pointers_destroy(hazard_pointers);
 
-    THANDLE_ASSIGN(JOB_OBJECT_HELPER)(&job_object_helper, NULL);
+    job_object_helper_deinit_for_test();
 }
 
 END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
