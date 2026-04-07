@@ -1,4 +1,19 @@
 name: $(BuildID)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+parameters:
+  - name: pool_name_windows_x64
+    displayName: 'Windows x64 Pool'
+    type: string
+    default: 'Azure-MessagingStore-WinBuildPoolVS2022_1'
+  - name: pool_name_windows_arm64
+    displayName: 'Windows ARM64 Pool'
+    type: string
+    default: 'Azure-MessagingStore-Win-ARM64-Dpldsv6-v01'
+  - name: pool_name_linux
+    displayName: 'Linux Pool'
+    type: string
+    default: 'Azure-MsgStore-Linux2204BuildMachinePool'
+
 resources:
   repositories:
   - repository: self
@@ -7,18 +22,22 @@ resources:
     type: github
     name: azure/c-build-tools
     endpoint: github.com_azure
-    ref: 4ff459918e6526a0c53417cf69071812f3db83dc
+    ref: e4e948c6d6ed54b3ab41010bc3996b9c71aedf85
+
 jobs:
 - template: /pipeline_templates/build_all_flavors.yml@c_build_tools
   parameters:
     GBALLOC_LL_TYPE_VALUES: ["PASSTHROUGH", "JEMALLOC"]
-    ARCH_TYPE_VALUES: ["x64"]
+    ARCH_TYPE_VALUES: ["x64", "ARM64"]
 
 - template: /pipeline_templates/run_master_check.yml@c_build_tools
   parameters:
     ignore_submodules: 'deps/mimalloc'
 
 - template: /pipeline_templates/codeql3000_default.yml@c_build_tools
+  parameters:
+    pool_name: 'Azure-MessagingStore-Win-x64-Dadsv7-v03'
+
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64, custom script)'
   pool:
