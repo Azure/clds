@@ -85,7 +85,7 @@ MOCK_FUNCTION_END()
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
-TEST_SUITE_INITIALIZE(suite_init)
+TIMED_TEST_SUITE_INITIALIZE(suite_init, TIMED_TEST_DEFAULT_TIMEOUT_MS)
 {
     ASSERT_ARE_EQUAL(int, 0, real_gballoc_hl_init(NULL, NULL));
 
@@ -137,7 +137,7 @@ TEST_SUITE_INITIALIZE(suite_init)
 
 }
 
-TEST_SUITE_CLEANUP(suite_cleanup)
+TIMED_TEST_SUITE_CLEANUP(suite_cleanup)
 {
     real_clds_hazard_pointers_thread_helper_destroy(test_clds_hazard_pointers_thread_helper);
     real_clds_hazard_pointers_destroy(test_clds_hazard_pointers);

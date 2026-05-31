@@ -13,4 +13,4 @@ set(${theseTestsName}_c_files
 set(${theseTestsName}_h_files
 )
 
-build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_util)
+build_test_artifacts(${theseTestsName} "tests/clds" ADDITIONAL_LIBS c_pal c_util)

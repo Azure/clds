@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
 #include "clds_hazard_pointers_thread_helper_ut_pch.h"
@@ -99,7 +99,7 @@ static TCALL_DISPATCHER(THREAD_NOTIFICATION_CALL) hook_thread_notifications_disp
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
-TEST_SUITE_INITIALIZE(suite_init)
+TIMED_TEST_SUITE_INITIALIZE(suite_init, TIMED_TEST_DEFAULT_TIMEOUT_MS)
 {
     ASSERT_ARE_EQUAL(int, 0, real_gballoc_hl_init(NULL, NULL));
 
@@ -129,7 +129,7 @@ TEST_SUITE_INITIALIZE(suite_init)
     REGISTER_UMOCKC_PAIRED_CREATE_DESTROY_CALLS(mocked_TlsAlloc, mocked_TlsFree);
 }
 
-TEST_SUITE_CLEANUP(suite_cleanup)
+TIMED_TEST_SUITE_CLEANUP(suite_cleanup)
 {
     TCALL_DISPATCHER_ASSIGN(real_THREAD_NOTIFICATION_CALL)(&g.thread_notification_call_dispatcher, NULL);
 
