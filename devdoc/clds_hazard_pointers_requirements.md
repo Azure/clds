@@ -42,7 +42,7 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_destroy, CLDS_HAZARD_POINTERS_HAN
 
 **SRS_CLDS_HAZARD_POINTERS_01_005: [** If `clds_hazard_pointers` is NULL, `clds_hazard_pointers_destroy` shall return. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_01_028: [** `clds_hazard_pointers_destroy` shall reclaim all entries remaining on the global pending reclaim list. **]**
+**SRS_CLDS_HAZARD_POINTERS_42_003: [** `clds_hazard_pointers_destroy` shall reclaim all entries remaining on the global pending reclaim list. **]**
 
 ### clds_hazard_pointers_register_thread
 
@@ -64,7 +64,7 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_unregister_thread, CLDS_HAZARD_PO
 
 **SRS_CLDS_HAZARD_POINTERS_01_009: [** `clds_hazard_pointers_unregister_thread` shall unregister the thread identified by `clds_hazard_pointers_thread` from its associated hazard pointers instance. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_01_025: [** `clds_hazard_pointers_unregister_thread` shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. **]**
+**SRS_CLDS_HAZARD_POINTERS_42_001: [** `clds_hazard_pointers_unregister_thread` shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. **]**
 
 **SRS_CLDS_HAZARD_POINTERS_01_010: [** If `clds_hazard_pointers_thread` is NULL, `clds_hazard_pointers_unregister_thread` shall return. **]**
 
@@ -106,7 +106,7 @@ MOCKABLE_FUNCTION(, void, clds_hazard_pointers_reclaim, CLDS_HAZARD_POINTERS_THR
 
 **SRS_CLDS_HAZARD_POINTERS_01_020: [** If no thread has acquired a hazard pointer for `node`, `reclaim_func` shall be called for `node` to reclaim it. **]**
 
-**SRS_CLDS_HAZARD_POINTERS_01_027: [** When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. **]**
+**SRS_CLDS_HAZARD_POINTERS_42_002: [** When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. **]**
 
 ### clds_hazard_pointers_set_reclaim_threshold
 
