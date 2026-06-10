@@ -85,6 +85,8 @@ TEST_FUNCTION(reclaim_runs_immediately_when_no_hazard_pointer_is_held)
 // unregisters, while another thread still holds a hazard pointer on it, must still be reclaimed.
 // Before the fix the retiring thread's reclaim list was dropped when its data was freed, so the
 // node (and its reclaim callback) leaked forever.
+/* Tests_SRS_CLDS_HAZARD_POINTERS_42_001: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
+/* Tests_SRS_CLDS_HAZARD_POINTERS_42_003: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
 TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed)
 {
     // arrange
@@ -108,7 +110,6 @@ TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed)
     ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&g_reclaim_count, 0), "node must not be reclaimed while a hazard pointer is held");
 
     // retiring_thread unregisters and is moved onto the inactive queue by the cleanup worker
-    /*Tests_SRS_CLDS_HAZARD_POINTERS_42_001*/
     clds_hazard_pointers_unregister_thread(retiring_thread);
     ThreadAPI_Sleep(CLEANUP_WORKER_GRACE_MS);
 
@@ -116,7 +117,6 @@ TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed)
     clds_hazard_pointers_release(holding_thread, held_record);
     clds_hazard_pointers_unregister_thread(holding_thread);
 
-    /*Tests_SRS_CLDS_HAZARD_POINTERS_42_003*/
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 
     // assert
@@ -128,6 +128,7 @@ TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed)
 // (because the thread that retired it unregistered while the node was still protected) must be
 // reclaimed by the next reclaim cycle that runs on any other live thread, once the node is no longer
 // protected - it must not have to wait for clds_hazard_pointers_destroy.
+/* Tests_SRS_CLDS_HAZARD_POINTERS_42_002: [ When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
 TEST_FUNCTION(pending_node_is_reclaimed_by_a_later_reclaim_cycle)
 {
     // arrange
@@ -160,7 +161,6 @@ TEST_FUNCTION(pending_node_is_reclaimed_by_a_later_reclaim_cycle)
     clds_hazard_pointers_release(holding_thread, held_record);
 
     // a reclaim cycle on a different live thread must sweep the pending list and reclaim node
-    /*Tests_SRS_CLDS_HAZARD_POINTERS_42_002*/
     clds_hazard_pointers_reclaim(sweeper_thread, dummy, test_reclaim);
 
     // assert
