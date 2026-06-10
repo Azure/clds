@@ -277,7 +277,7 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
             // unregistered while their retired node was still protected by another thread).
             // Detach the whole list atomically, reclaim every entry whose node is no longer
             // held and re-push the ones that are still protected.
-            /*Codes_SRS_CLDS_HAZARD_POINTERS_01_027: [ internal_reclaim shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
+            /*Codes_SRS_CLDS_HAZARD_POINTERS_42_002: [ When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
             CLDS_RECLAIM_LIST_ENTRY* pending_entry = interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL);
             CLDS_RECLAIM_LIST_ENTRY* still_held_first = NULL;
             CLDS_RECLAIM_LIST_ENTRY* still_held_last = NULL;
@@ -486,7 +486,7 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
             clds_hazard_pointers_thread = next_clds_hazard_pointers_thread;
         }
 
-        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_028: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_42_003: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
         // all threads are gone now, so no hazard pointer can be held: drain whatever was handed off
         // by unregistered threads and never reclaimed.
         CLDS_RECLAIM_LIST_ENTRY* pending_entry = interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL);
@@ -566,7 +566,7 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
         /*Codes_SRS_CLDS_HAZARD_POINTERS_01_009: [ clds_hazard_pointers_unregister_thread shall unregister the thread identified by clds_hazard_pointers_thread from its associated hazard pointers instance. ]*/
         CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
 
-        /*Codes_SRS_CLDS_HAZARD_POINTERS_01_025: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_42_001: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
         // Done before the thread is marked inactive (and thus eligible for cleanup/free) so that
         // nodes retired by this thread but still protected by another thread are not lost.
         CLDS_RECLAIM_LIST_ENTRY* first_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
