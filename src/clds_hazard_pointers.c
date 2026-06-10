@@ -71,10 +71,9 @@ typedef struct CLDS_HAZARD_POINTERS_TAG
     volatile_atomic int32_t pending_reclaim_calls;
     // This is the queue of inactive threads
     TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads;
-    // Single-linked list of reclaim entries handed off by threads that unregistered while another
-    // thread still held a hazard pointer on the retired node. Without this hand-off such entries
-    // (and their reclaim callbacks) would be lost when the thread's data is freed. Pushed lock-free
-    // with an interlocked CAS; drained by internal_reclaim and by clds_hazard_pointers_destroy.
+    // Single-linked list of reclaim entries handed off by threads that unregistered while another thread still held a hazard pointer on the retired node.
+    // Without this hand-off such entries (and their reclaim callbacks) would be lost when the thread's data is freed.
+    // Pushed lock-free with an interlocked CAS; drained by internal_reclaim and by clds_hazard_pointers_destroy.
     CLDS_RECLAIM_LIST_ENTRY* volatile_atomic pending_reclaim_list;
 } CLDS_HAZARD_POINTERS;
 
@@ -273,10 +272,8 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                 }
             }
 
-            // Sweep the global pending reclaim list (entries handed off by threads that
-            // unregistered while their retired node was still protected by another thread).
-            // Detach the whole list atomically, reclaim every entry whose node is no longer
-            // held and re-push the ones that are still protected.
+            // Sweep the global pending reclaim list (entries handed off by threads that unregistered while their retired node was still protected by another thread).
+            // Detach the whole list atomically, reclaim every entry whose node is no longer held and re-push the ones that are still protected.
             /*Codes_SRS_CLDS_HAZARD_POINTERS_42_002: [ When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
             CLDS_RECLAIM_LIST_ENTRY* pending_entry = interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL);
             CLDS_RECLAIM_LIST_ENTRY* still_held_first = NULL;
@@ -487,8 +484,7 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
         }
 
         /*Codes_SRS_CLDS_HAZARD_POINTERS_42_003: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
-        // all threads are gone now, so no hazard pointer can be held: drain whatever was handed off
-        // by unregistered threads and never reclaimed.
+        // all threads are gone now, so no hazard pointer can be held: drain whatever was handed off by unregistered threads and never reclaimed.
         CLDS_RECLAIM_LIST_ENTRY* pending_entry = interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL);
         while (pending_entry != NULL)
         {
@@ -567,8 +563,7 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
         CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
 
         /*Codes_SRS_CLDS_HAZARD_POINTERS_42_001: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
-        // Done before the thread is marked inactive (and thus eligible for cleanup/free) so that
-        // nodes retired by this thread but still protected by another thread are not lost.
+        // Done before the thread is marked inactive (and thus eligible for cleanup/free) so that nodes retired by this thread but still protected by another thread are not lost.
         CLDS_RECLAIM_LIST_ENTRY* first_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
         if (first_reclaim_entry != NULL)
         {
