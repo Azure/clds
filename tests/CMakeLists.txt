@@ -1,7 +1,9 @@
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #reals
-add_subdirectory(reals)
+if(${build_reals})
+    add_subdirectory(reals)
+endif()
 
 #unittests
 if(${run_unittests})
