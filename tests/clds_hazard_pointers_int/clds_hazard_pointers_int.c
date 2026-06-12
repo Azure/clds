@@ -81,12 +81,12 @@ TEST_FUNCTION(reclaim_runs_immediately_when_no_hazard_pointer_is_held)
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 }
 
-// Regression for the leak fixed by Task #36604983: a node retired by a thread that then
-// unregisters, while another thread still holds a hazard pointer on it, must still be reclaimed.
-// Before the fix the retiring thread's reclaim list was dropped when its data was freed, so the
-// node (and its reclaim callback) leaked forever.
-/* Tests_SRS_CLDS_HAZARD_POINTERS_42_001: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
-/* Tests_SRS_CLDS_HAZARD_POINTERS_42_003: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
+// Regression test (Task #36604983) for a leak in the reclaim list. Does the following:
+// - holding_thread acquires a hazard pointer on node
+// - retiring_thread retires node (stranded, since node is still protected) then unregisters
+// - holding_thread releases and unregisters, so node is now unprotected
+// - the instance is destroyed
+// Expect: node is reclaimed exactly once (before the fix it leaked when retiring_thread's data was freed).
 TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed)
 {
     // arrange
@@ -124,11 +124,12 @@ TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed)
     ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&g_reclaim_count, 0), "stranded node was never reclaimed (leak)");
 }
 
-// Regression for the live sweep path: a node handed off to the instance-wide pending reclaim list
-// (because the thread that retired it unregistered while the node was still protected) must be
-// reclaimed by the next reclaim cycle that runs on any other live thread, once the node is no longer
-// protected - it must not have to wait for clds_hazard_pointers_destroy.
-/* Tests_SRS_CLDS_HAZARD_POINTERS_42_002: [ When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
+// Regression test for the live sweep path. Does the following:
+// - holding_thread acquires a hazard pointer on node
+// - retiring_thread retires node (stranded) then unregisters, handing the entry to the instance pending list
+// - holding_thread releases, so node is now unprotected
+// - sweeper_thread runs a reclaim cycle (reclaiming an unrelated dummy node)
+// Expect: the sweeper's reclaim cycle also reclaims node from the pending list, before any destroy.
 TEST_FUNCTION(pending_node_is_reclaimed_by_a_later_reclaim_cycle)
 {
     // arrange
