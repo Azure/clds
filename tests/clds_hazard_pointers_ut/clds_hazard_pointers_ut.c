@@ -25,6 +25,18 @@ MOCK_FUNCTION_END()
 
 static WORKER_THREAD_HANDLE test_worker_thread = (WORKER_THREAD_HANDLE)0x4242;
 
+// Plain (non-mock) reclaim callback used by the global pending reclaim list tests below. Those tests
+// assert how many reclaims ran (and on which node) across the multi-thread hand-off and sweep paths,
+// which is clearer with a counter than with strict mock-call accounting over those paths. The node
+// pointers are never dereferenced, so this callback only records, it does not free.
+static int g_pending_reclaim_count;
+static void* g_last_reclaimed_node;
+static void count_reclaim(void* node)
+{
+    g_last_reclaimed_node = node;
+    g_pending_reclaim_count++;
+}
+
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
 
 TEST_SUITE_INITIALIZE(suite_init)
@@ -448,6 +460,70 @@ TEST_FUNCTION(clds_hazard_pointers_reclaim_with_a_pointer_that_is_not_acquired_r
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     // cleanup
+    clds_hazard_pointers_destroy(clds_hazard_pointers);
+}
+
+/*Tests_SRS_CLDS_HAZARD_POINTERS_42_001: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
+/*Tests_SRS_CLDS_HAZARD_POINTERS_42_003: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
+TEST_FUNCTION(node_retired_by_unregistering_thread_while_held_is_reclaimed_on_destroy)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    (void)clds_hazard_pointers_set_reclaim_threshold(clds_hazard_pointers, 1);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE retiring_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE holding_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    void* node = (void*)0x4242;
+    // holding_thread protects node so it cannot be reclaimed yet
+    CLDS_HAZARD_POINTER_RECORD_HANDLE held_record = clds_hazard_pointers_acquire(holding_thread, node);
+    // retiring_thread retires node while it is still protected, so node stays on retiring_thread's reclaim list
+    clds_hazard_pointers_reclaim(retiring_thread, node, count_reclaim);
+    g_pending_reclaim_count = 0;
+    g_last_reclaimed_node = NULL;
+
+    // act
+    // retiring_thread hands its reclaim list off to the instance pending list, then the holder releases and the instance is destroyed
+    clds_hazard_pointers_unregister_thread(retiring_thread);
+    clds_hazard_pointers_release(holding_thread, held_record);
+    clds_hazard_pointers_unregister_thread(holding_thread);
+    clds_hazard_pointers_destroy(clds_hazard_pointers);
+
+    // assert
+    ASSERT_ARE_EQUAL(int, 1, g_pending_reclaim_count);
+    ASSERT_ARE_EQUAL(void_ptr, node, g_last_reclaimed_node);
+}
+
+/*Tests_SRS_CLDS_HAZARD_POINTERS_42_002: [ When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
+TEST_FUNCTION(pending_node_is_reclaimed_by_a_later_reclaim_cycle)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_create();
+    (void)clds_hazard_pointers_set_reclaim_threshold(clds_hazard_pointers, 1);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE retiring_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE holding_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE sweeper_thread = clds_hazard_pointers_register_thread(clds_hazard_pointers);
+    void* node = (void*)0x4242;
+    void* dummy = (void*)0x4243;
+    // holding_thread protects node so it cannot be reclaimed yet
+    CLDS_HAZARD_POINTER_RECORD_HANDLE held_record = clds_hazard_pointers_acquire(holding_thread, node);
+    // retiring_thread retires node (stranded, since node is protected) then hands it off to the instance pending list
+    clds_hazard_pointers_reclaim(retiring_thread, node, count_reclaim);
+    clds_hazard_pointers_unregister_thread(retiring_thread);
+    // the holder releases so node is now unprotected, but no reclaim cycle has run yet
+    clds_hazard_pointers_release(holding_thread, held_record);
+    g_pending_reclaim_count = 0;
+    g_last_reclaimed_node = NULL;
+
+    // act
+    // a reclaim cycle on a different live thread must sweep the pending list and reclaim node, before any destroy
+    clds_hazard_pointers_reclaim(sweeper_thread, dummy, count_reclaim);
+
+    // assert
+    // both the dummy (reclaimed directly) and node (swept from the pending list) must have run
+    ASSERT_ARE_EQUAL(int, 2, g_pending_reclaim_count);
+
+    // cleanup
+    clds_hazard_pointers_unregister_thread(holding_thread);
+    clds_hazard_pointers_unregister_thread(sweeper_thread);
     clds_hazard_pointers_destroy(clds_hazard_pointers);
 }
 
