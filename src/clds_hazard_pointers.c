@@ -71,6 +71,10 @@ typedef struct CLDS_HAZARD_POINTERS_TAG
     volatile_atomic int32_t pending_reclaim_calls;
     // This is the queue of inactive threads
     TQUEUE(CLDS_HP_INACTIVE_THREAD) inactive_threads;
+    // Single-linked list of reclaim entries handed off by threads that unregistered while another thread still held a hazard pointer on the retired node.
+    // Without this hand-off such entries (and their reclaim callbacks) would be lost when the thread's data is freed.
+    // Pushed lock-free with an interlocked CAS; drained by internal_reclaim and by clds_hazard_pointers_destroy.
+    CLDS_RECLAIM_LIST_ENTRY* volatile_atomic pending_reclaim_list;
 } CLDS_HAZARD_POINTERS;
 
 static uint64_t hp_key_hash(void* key)
@@ -267,6 +271,48 @@ static void internal_reclaim(CLDS_HAZARD_POINTERS_THREAD_HANDLE clds_hazard_poin
                     current_reclaim_entry = current_reclaim_entry->next;
                 }
             }
+
+            // Sweep the global pending reclaim list (entries handed off by threads that unregistered while their retired node was still protected by another thread).
+            // Detach the whole list atomically, reclaim every entry whose node is no longer held and re-push the ones that are still protected.
+            /*Codes_SRS_CLDS_HAZARD_POINTERS_42_002: [ When a reclaim cycle is triggered, it shall also reclaim each entry on the global pending reclaim list whose node is no longer protected by any hazard pointer and re-park the rest. ]*/
+            CLDS_RECLAIM_LIST_ENTRY* pending_entry = interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL);
+            CLDS_RECLAIM_LIST_ENTRY* still_held_first = NULL;
+            CLDS_RECLAIM_LIST_ENTRY* still_held_last = NULL;
+            while (pending_entry != NULL)
+            {
+                CLDS_RECLAIM_LIST_ENTRY* next_pending_entry = pending_entry->next;
+
+                CLDS_ST_HASH_SET_FIND_RESULT pending_find_result = clds_st_hash_set_find(all_hps_set, pending_entry->node);
+                if (pending_find_result == CLDS_ST_HASH_SET_FIND_NOT_FOUND)
+                {
+                    // node is no longer protected, reclaim it
+                    pending_entry->reclaim(pending_entry->node);
+                    free(pending_entry);
+                }
+                else
+                {
+                    // still protected (or a lookup error): keep it for a later reclaim cycle
+                    pending_entry->next = still_held_first;
+                    still_held_first = pending_entry;
+                    if (still_held_last == NULL)
+                    {
+                        still_held_last = pending_entry;
+                    }
+                }
+
+                pending_entry = next_pending_entry;
+            }
+
+            if (still_held_first != NULL)
+            {
+                // re-push the still-held chain onto the global pending list
+                CLDS_RECLAIM_LIST_ENTRY* current_pending_head;
+                do
+                {
+                    current_pending_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL, NULL);
+                    still_held_last->next = current_pending_head;
+                } while (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, still_held_first, current_pending_head) != current_pending_head);
+            }
         }
 
         clds_st_hash_set_destroy(all_hps_set);
@@ -384,6 +430,7 @@ CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers_create(void)
                     TQUEUE_INITIALIZE_MOVE(CLDS_HP_INACTIVE_THREAD)(&result->inactive_threads, &inactive_threads);
                     result->reclaim_threshold = DEFAULT_RECLAIM_THRESHOLD;
                     (void)interlocked_exchange_pointer((void* volatile_atomic*) & result->head, NULL);
+                    (void)interlocked_exchange_pointer((void* volatile_atomic*) & result->pending_reclaim_list, NULL);
                     (void)interlocked_exchange_64(&result->epoch, 0);
                     (void)interlocked_exchange(&result->pending_reclaim_calls, 0);
 
@@ -434,6 +481,17 @@ void clds_hazard_pointers_destroy(CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointe
             free_thread_data(clds_hazard_pointers_thread);
 
             clds_hazard_pointers_thread = next_clds_hazard_pointers_thread;
+        }
+
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_42_003: [ clds_hazard_pointers_destroy shall reclaim all entries remaining on the global pending reclaim list. ]*/
+        // all threads are gone now, so no hazard pointer can be held: drain whatever was handed off by unregistered threads and never reclaimed.
+        CLDS_RECLAIM_LIST_ENTRY* pending_entry = interlocked_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL);
+        while (pending_entry != NULL)
+        {
+            CLDS_RECLAIM_LIST_ENTRY* next_pending_entry = pending_entry->next;
+            pending_entry->reclaim(pending_entry->node);
+            free(pending_entry);
+            pending_entry = next_pending_entry;
         }
 
         // free all inactive threads
@@ -503,6 +561,28 @@ void clds_hazard_pointers_unregister_thread(CLDS_HAZARD_POINTERS_THREAD_HANDLE c
     {
         /*Codes_SRS_CLDS_HAZARD_POINTERS_01_009: [ clds_hazard_pointers_unregister_thread shall unregister the thread identified by clds_hazard_pointers_thread from its associated hazard pointers instance. ]*/
         CLDS_HAZARD_POINTERS_HANDLE clds_hazard_pointers = clds_hazard_pointers_thread->clds_hazard_pointers;
+
+        /*Codes_SRS_CLDS_HAZARD_POINTERS_42_001: [ clds_hazard_pointers_unregister_thread shall hand off any entries still on the thread's reclaim list to the global pending reclaim list of the hazard pointers instance. ]*/
+        // Done before the thread is marked inactive (and thus eligible for cleanup/free) so that nodes retired by this thread but still protected by another thread are not lost.
+        CLDS_RECLAIM_LIST_ENTRY* first_reclaim_entry = clds_hazard_pointers_thread->reclaim_list;
+        if (first_reclaim_entry != NULL)
+        {
+            CLDS_RECLAIM_LIST_ENTRY* last_reclaim_entry = first_reclaim_entry;
+            while (last_reclaim_entry->next != NULL)
+            {
+                last_reclaim_entry = last_reclaim_entry->next;
+            }
+
+            CLDS_RECLAIM_LIST_ENTRY* current_pending_head;
+            do
+            {
+                current_pending_head = interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, NULL, NULL);
+                last_reclaim_entry->next = current_pending_head;
+            } while (interlocked_compare_exchange_pointer((void* volatile_atomic*)&clds_hazard_pointers->pending_reclaim_list, first_reclaim_entry, current_pending_head) != current_pending_head);
+
+            clds_hazard_pointers_thread->reclaim_list = NULL;
+            clds_hazard_pointers_thread->reclaim_list_entry_count = 0;
+        }
 
         // remove the thread from the thread list
         (void)interlocked_exchange(&clds_hazard_pointers_thread->active, 0);
