@@ -23,6 +23,7 @@ endif()
 
 #integration tests
 if(${run_int_tests})
+    build_test_folder(clds_hazard_pointers_int)
     build_test_folder(lock_free_set_int)
     build_test_folder(clds_singly_linked_list_int)
 if(WIN32)
