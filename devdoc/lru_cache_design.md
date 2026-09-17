@@ -143,6 +143,30 @@ sequenceDiagram
     Cache -->> Cache: Return the hash_table_item from LRU_NODE` 
 ```
 
+### Getting Items from the Cache and Taking Ownership of the Value
+
+`lru_cache_get` returns the raw `value` stored in the `LRU_NODE`. This is safe for copy-by-value users (where `value` is not a pointer to memory owned by the cache), but it is unsafe for refcounted values: once `lru_cache_get` releases the lock and the hash table node reference, a concurrent eviction (or a `put` that replaces the same key) can drop the last reference to the value and free it before the caller has taken its own reference.
+
+`lru_cache_get_with_acquire` closes that window. It performs the same lookup and LRU repositioning, but calls the caller-supplied `acquire_value_function` while the exclusive lock and the hash table node reference are still held. The callback takes ownership of the value (for example by incrementing a reference count) and returns the owned value, so the value is guaranteed to be alive for as long as the caller holds it. Because the cache lock is held when the callback runs, `acquire_value_function` must not call back into the LRU cache.
+
+```mermaid
+sequenceDiagram
+    participant Caller as "Caller"
+    participant Cache as "LRU Cache"
+    participant HashTable as "Hash Table (Cache)"
+    participant LRUList as "Doubly Linked List"
+    Caller ->> Cache: lru_cache_get_with_acquire(key, acquire_value_function, context)
+    Cache ->> LRUList: Acquire an exclusive lock
+    Cache ->> HashTable: Find the item in the hash table (key)
+    HashTable -->> Cache: Found the item (hash_table_item)
+    LRUList ->> LRUList: Move the item to the back (tail) if needed
+    Cache ->> Caller: acquire_value_function(context, value)
+    Caller -->> Cache: Owned value (for example, reference count incremented)
+    Cache ->> HashTable: Release the hash table node reference
+    Cache ->> LRUList: Release the exclusive lock
+    Cache -->> Caller: Return the owned value
+```
+
 
 ### Scope for Improvements
 

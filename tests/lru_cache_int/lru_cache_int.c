@@ -1437,4 +1437,379 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order_when_head_key_is_remove
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
+//
+// lru_cache_get_with_acquire
+//
+
+typedef struct REFCOUNTED_VALUE_TAG
+{
+    volatile_atomic int32_t ref_count;
+    volatile_atomic int32_t destroyed;
+    uint32_t payload;
+} REFCOUNTED_VALUE;
+
+// The backing memory is deliberately not released when the last reference is dropped, it is released explicitly by the
+// test. That way a test that reads a value it should still own reports a lifetime violation through destroyed/payload
+// instead of tripping over an actual use after free.
+static REFCOUNTED_VALUE* refcounted_value_create(uint32_t payload)
+{
+    REFCOUNTED_VALUE* result = malloc(sizeof(REFCOUNTED_VALUE));
+    ASSERT_IS_NOT_NULL(result);
+    (void)interlocked_exchange(&result->ref_count, 1);
+    (void)interlocked_exchange(&result->destroyed, 0);
+    result->payload = payload;
+    return result;
+}
+
+static void refcounted_value_inc_ref(REFCOUNTED_VALUE* value)
+{
+    (void)interlocked_increment(&value->ref_count);
+}
+
+static void refcounted_value_dec_ref(REFCOUNTED_VALUE* value)
+{
+    if (interlocked_decrement(&value->ref_count) == 0)
+    {
+        (void)interlocked_exchange(&value->destroyed, 1);
+        value->payload = 0xDEADBEEF;
+    }
+}
+
+static void refcounted_value_free(REFCOUNTED_VALUE* value)
+{
+    free(value);
+}
+
+static int refcounted_copy_key_value(void** key_destination, void* key_source, void** value_destination, void* value_source)
+{
+    ASSERT_IS_NOT_NULL(value_source);
+    *key_destination = key_source;
+    refcounted_value_inc_ref((REFCOUNTED_VALUE*)value_source);
+    *value_destination = value_source;
+    return 0;
+}
+
+static void refcounted_free_key_value(void* key, void* value)
+{
+    (void)key;
+    ASSERT_IS_NOT_NULL(value);
+    refcounted_value_dec_ref((REFCOUNTED_VALUE*)value);
+}
+
+static void on_evict_callback_do_nothing(void* context, void* evicted_value)
+{
+    (void)context;
+    (void)evicted_value;
+}
+
+static void* refcounted_acquire_value(void* context, void* value)
+{
+    (void)context;
+    ASSERT_IS_NOT_NULL(value);
+    refcounted_value_inc_ref((REFCOUNTED_VALUE*)value);
+    return value;
+}
+
+typedef struct ACQUIRE_RACE_CONTEXT_TAG
+{
+    LRU_CACHE_HANDLE lru_cache;
+    void* key;
+    volatile_atomic int32_t acquire_entered;
+    volatile_atomic int32_t racing_thread_about_to_run;
+    volatile_atomic int32_t racing_thread_result;
+    REFCOUNTED_VALUE* replacement_value;
+} ACQUIRE_RACE_CONTEXT;
+
+// Acquire callback that only takes its reference after a competing thread has been released to hammer the same key.
+// The competing thread cannot make progress until this callback returns because lru_cache_get_with_acquire calls it
+// while holding the cache lock in exclusive mode, so this deterministically exercises the lookup/acquire window.
+static void* refcounted_acquire_value_racing(void* context, void* value)
+{
+    ACQUIRE_RACE_CONTEXT* race_context = context;
+    ASSERT_IS_NOT_NULL(race_context);
+    ASSERT_IS_NOT_NULL(value);
+
+    (void)interlocked_exchange(&race_context->acquire_entered, 1);
+    wake_by_address_single(&race_context->acquire_entered);
+
+    ASSERT_ARE_EQUAL(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_OK, InterlockedHL_WaitForValue(&race_context->racing_thread_about_to_run, 1, UINT32_MAX));
+
+    // give the racing thread every chance to reach the cache lock before ownership is taken
+    ThreadAPI_Sleep(50);
+
+    refcounted_value_inc_ref((REFCOUNTED_VALUE*)value);
+    return value;
+}
+
+static int evict_racing_thread(void* arg)
+{
+    ACQUIRE_RACE_CONTEXT* race_context = arg;
+
+    ASSERT_ARE_EQUAL(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_OK, InterlockedHL_WaitForValue(&race_context->acquire_entered, 1, UINT32_MAX));
+
+    (void)interlocked_exchange(&race_context->racing_thread_about_to_run, 1);
+    wake_by_address_single(&race_context->racing_thread_about_to_run);
+
+    LRU_CACHE_EVICT_RESULT evict_result = lru_cache_evict(race_context->lru_cache, race_context->key);
+    (void)interlocked_exchange(&race_context->racing_thread_result, (int32_t)evict_result);
+
+    return 0;
+}
+
+static int put_same_key_racing_thread(void* arg)
+{
+    ACQUIRE_RACE_CONTEXT* race_context = arg;
+
+    ASSERT_ARE_EQUAL(INTERLOCKED_HL_RESULT, INTERLOCKED_HL_OK, InterlockedHL_WaitForValue(&race_context->acquire_entered, 1, UINT32_MAX));
+
+    (void)interlocked_exchange(&race_context->racing_thread_about_to_run, 1);
+    wake_by_address_single(&race_context->racing_thread_about_to_run);
+
+    REFCOUNTED_VALUE* replacement = refcounted_value_create(0x5678);
+    race_context->replacement_value = replacement;
+    LRU_CACHE_PUT_RESULT put_result = lru_cache_put(race_context->lru_cache, race_context->key, replacement, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value);
+    refcounted_value_dec_ref(replacement);
+    (void)interlocked_exchange(&race_context->racing_thread_result, (int32_t)put_result);
+
+    return 0;
+}
+
+/*Tests_SRS_LRU_CACHE_13_101: [ lru_cache_get_with_acquire shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+/*Tests_SRS_LRU_CACHE_13_103: [ lru_cache_get_with_acquire shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_107: [ If the key is found, lru_cache_get_with_acquire shall call acquire_value_function with acquire_value_context and the value of the key while the lock is held in exclusive mode and while the hash table node reference is still held. ]*/
+/*Tests_SRS_LRU_CACHE_13_109: [ On success, lru_cache_get_with_acquire shall return the value returned by acquire_value_function. ]*/
+TEST_FUNCTION(test_get_with_acquire_returns_an_owned_value)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    REFCOUNTED_VALUE* value = refcounted_value_create(0x1234);
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(value);
+
+    // act
+    REFCOUNTED_VALUE* acquired = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value, NULL);
+
+    // assert
+    ASSERT_IS_NOT_NULL(acquired);
+    ASSERT_ARE_EQUAL(void_ptr, value, acquired);
+    ASSERT_ARE_EQUAL(uint32_t, 0x1234, acquired->payload);
+    // one reference is held by the cache and one by this test
+    ASSERT_ARE_EQUAL(int32_t, 2, interlocked_add(&acquired->ref_count, 0));
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    refcounted_value_dec_ref(acquired);
+    refcounted_value_free(acquired);
+}
+
+/*Tests_SRS_LRU_CACHE_13_110: [ If the key is not found, lru_cache_get_with_acquire shall return NULL. ]*/
+TEST_FUNCTION(test_get_with_acquire_returns_NULL_when_key_is_not_in_the_cache)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    // act
+    REFCOUNTED_VALUE* acquired = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value, NULL);
+
+    // assert
+    ASSERT_IS_NULL(acquired);
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+/*Tests_SRS_LRU_CACHE_13_107: [ If the key is found, lru_cache_get_with_acquire shall call acquire_value_function with acquire_value_context and the value of the key while the lock is held in exclusive mode and while the hash table node reference is still held. ]*/
+TEST_FUNCTION(test_get_with_acquire_value_outlives_eviction_by_capacity)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 1, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    REFCOUNTED_VALUE* value = refcounted_value_create(0x1234);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(value);
+
+    REFCOUNTED_VALUE* acquired = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value, NULL);
+    ASSERT_IS_NOT_NULL(acquired);
+
+    REFCOUNTED_VALUE* other_value = refcounted_value_create(0x9999);
+
+    // act
+    // the cache has a capacity of 1, so this evicts the first value and drops the reference the cache held on it
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(2), other_value, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(other_value);
+
+    // destroying the cache guarantees every reference the cache still owned has been dropped
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+
+    // assert
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&acquired->destroyed, 0));
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->ref_count, 0));
+    ASSERT_ARE_EQUAL(uint32_t, 0x1234, acquired->payload);
+
+    refcounted_value_dec_ref(acquired);
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->destroyed, 0));
+
+    // cleanup
+    refcounted_value_free(acquired);
+    refcounted_value_free(other_value);
+}
+
+/*Tests_SRS_LRU_CACHE_13_107: [ If the key is found, lru_cache_get_with_acquire shall call acquire_value_function with acquire_value_context and the value of the key while the lock is held in exclusive mode and while the hash table node reference is still held. ]*/
+TEST_FUNCTION(test_get_with_acquire_value_outlives_same_key_replacement)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    REFCOUNTED_VALUE* value = refcounted_value_create(0x1234);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(value);
+
+    REFCOUNTED_VALUE* acquired = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value, NULL);
+    ASSERT_IS_NOT_NULL(acquired);
+
+    REFCOUNTED_VALUE* replacement = refcounted_value_create(0x5678);
+
+    // act
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), replacement, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(replacement);
+
+    // assert
+    REFCOUNTED_VALUE* acquired_replacement = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value, NULL);
+    ASSERT_IS_NOT_NULL(acquired_replacement);
+    ASSERT_ARE_EQUAL(void_ptr, replacement, acquired_replacement);
+    ASSERT_ARE_EQUAL(uint32_t, 0x5678, acquired_replacement->payload);
+
+    // destroying the cache guarantees every reference the cache still owned has been dropped
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&acquired->destroyed, 0));
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->ref_count, 0));
+    ASSERT_ARE_EQUAL(uint32_t, 0x1234, acquired->payload);
+
+    refcounted_value_dec_ref(acquired);
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->destroyed, 0));
+
+    // cleanup
+    refcounted_value_dec_ref(acquired_replacement);
+    refcounted_value_free(acquired_replacement);
+    refcounted_value_free(acquired);
+}
+
+/*Tests_SRS_LRU_CACHE_13_107: [ If the key is found, lru_cache_get_with_acquire shall call acquire_value_function with acquire_value_context and the value of the key while the lock is held in exclusive mode and while the hash table node reference is still held. ]*/
+TEST_FUNCTION(test_get_with_acquire_value_is_valid_when_eviction_races_the_acquire)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    REFCOUNTED_VALUE* value = refcounted_value_create(0x1234);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(value);
+
+    ACQUIRE_RACE_CONTEXT race_context;
+    race_context.lru_cache = lru_cache;
+    race_context.key = (void*)(uintptr_t)(1);
+    (void)interlocked_exchange(&race_context.acquire_entered, 0);
+    (void)interlocked_exchange(&race_context.racing_thread_about_to_run, 0);
+    (void)interlocked_exchange(&race_context.racing_thread_result, -1);
+    race_context.replacement_value = NULL;
+
+    THREAD_HANDLE thread_handle;
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&thread_handle, evict_racing_thread, &race_context));
+
+    // act
+    REFCOUNTED_VALUE* acquired = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value_racing, &race_context);
+
+    int dont_care;
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(thread_handle, &dont_care));
+
+    // assert
+    ASSERT_IS_NOT_NULL(acquired);
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, (LRU_CACHE_EVICT_RESULT)interlocked_add(&race_context.racing_thread_result, 0));
+
+    // destroying the cache guarantees every reference the cache still owned has been dropped
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&acquired->destroyed, 0));
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->ref_count, 0));
+    ASSERT_ARE_EQUAL(uint32_t, 0x1234, acquired->payload);
+
+    refcounted_value_dec_ref(acquired);
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->destroyed, 0));
+
+    // cleanup
+    refcounted_value_free(acquired);
+}
+
+/*Tests_SRS_LRU_CACHE_13_107: [ If the key is found, lru_cache_get_with_acquire shall call acquire_value_function with acquire_value_context and the value of the key while the lock is held in exclusive mode and while the hash table node reference is still held. ]*/
+TEST_FUNCTION(test_get_with_acquire_value_is_valid_when_same_key_replacement_races_the_acquire)
+{
+    // arrange
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    REFCOUNTED_VALUE* value = refcounted_value_create(0x1234);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback_do_nothing, NULL, refcounted_copy_key_value, refcounted_free_key_value));
+    refcounted_value_dec_ref(value);
+
+    ACQUIRE_RACE_CONTEXT race_context;
+    race_context.lru_cache = lru_cache;
+    race_context.key = (void*)(uintptr_t)(1);
+    (void)interlocked_exchange(&race_context.acquire_entered, 0);
+    (void)interlocked_exchange(&race_context.racing_thread_about_to_run, 0);
+    (void)interlocked_exchange(&race_context.racing_thread_result, -1);
+    race_context.replacement_value = NULL;
+
+    THREAD_HANDLE thread_handle;
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&thread_handle, put_same_key_racing_thread, &race_context));
+
+    // act
+    REFCOUNTED_VALUE* acquired = lru_cache_get_with_acquire(lru_cache, (void*)(uintptr_t)(1), refcounted_acquire_value_racing, &race_context);
+
+    int dont_care;
+    ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(thread_handle, &dont_care));
+
+    // assert
+    ASSERT_IS_NOT_NULL(acquired);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, (LRU_CACHE_PUT_RESULT)interlocked_add(&race_context.racing_thread_result, 0));
+
+    // destroying the cache guarantees every reference the cache still owned has been dropped
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&acquired->destroyed, 0));
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->ref_count, 0));
+    ASSERT_ARE_EQUAL(uint32_t, 0x1234, acquired->payload);
+
+    refcounted_value_dec_ref(acquired);
+    ASSERT_ARE_EQUAL(int32_t, 1, interlocked_add(&acquired->destroyed, 0));
+
+    // cleanup
+    refcounted_value_free(acquired);
+    refcounted_value_free(race_context.replacement_value);
+}
+
 END_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)

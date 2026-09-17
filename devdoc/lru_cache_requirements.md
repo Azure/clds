@@ -32,6 +32,8 @@ typedef int(*LRU_CACHE_KEY_VALUE_COPY)(void* key_destination, void* key_source, 
 
 typedef void(*LRU_CACHE_KEY_VALUE_FREE)(void* key, void* value);
 
+typedef void*(*LRU_CACHE_VALUE_ACQUIRE_FUNC)(void* context, void* value);
+
 MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity, LRU_CACHE_ON_ERROR_CALLBACK_FUNC, on_error_callback, void*, on_error_context);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
@@ -39,6 +41,8 @@ MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_VALUE_COPY, copy_key_value_function, LRU_CACHE_KEY_VALUE_FREE, free_key_value_function);
 
 MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
+
+MOCKABLE_FUNCTION(, void*, lru_cache_get_with_acquire, LRU_CACHE_HANDLE, lru_cache, void*, key, LRU_CACHE_VALUE_ACQUIRE_FUNC, acquire_value_function, void*, acquire_value_context);
 
 MOCKABLE_FUNCTION(, LRU_CACHE_EVICT_RESULT, lru_cache_evict, LRU_CACHE_HANDLE, lru_cache, void*, key);
 ```
@@ -207,6 +211,47 @@ Gets the `value` of the `key` from the cache. If the `key` is found, the node is
 **SRS_LRU_CACHE_13_060: [** On success, `lru_cache_get` shall return `CLDS_HASH_TABLE_ITEM` value of the `key`. **]**
 
 **SRS_LRU_CACHE_13_061: [** If there are any failures, `lru_cache_get` shall return `NULL`. **]**
+
+
+### lru_cache_get_with_acquire
+
+```c
+MOCKABLE_FUNCTION(, void*, lru_cache_get_with_acquire, LRU_CACHE_HANDLE, lru_cache, void*, key, LRU_CACHE_VALUE_ACQUIRE_FUNC, acquire_value_function, void*, acquire_value_context);
+```
+
+Gets the `value` of the `key` from the cache and hands ownership of it to the caller. If the `key` is found, the node is made as tail if it is not already, and `acquire_value_function` is called to take ownership of the stored value (for example by incrementing a reference count) while the cache lock and the hash table node reference are still held. This guarantees that the returned value cannot be evicted and freed between the lookup and the moment the caller owns it, which is not guaranteed by `lru_cache_get`.
+
+`acquire_value_function` must not call back into the LRU cache.
+
+**SRS_LRU_CACHE_13_097: [** If `lru_cache` is `NULL`, then `lru_cache_get_with_acquire` shall fail and return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_098: [** If `key` is `NULL`, then `lru_cache_get_with_acquire` shall fail and return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_099: [** If `acquire_value_function` is `NULL`, then `lru_cache_get_with_acquire` shall fail and return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_100: [** `acquire_value_context` may be `NULL`. **]**
+
+**SRS_LRU_CACHE_13_101: [** `lru_cache_get_with_acquire` shall get `CLDS_HAZARD_POINTERS_THREAD_HANDLE` by calling `clds_hazard_pointers_thread_helper_get_thread`. **]**
+
+**SRS_LRU_CACHE_13_102: [** `lru_cache_get_with_acquire` shall acquire the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_103: [** `lru_cache_get_with_acquire` shall check hash table for any existence of the value by calling `clds_hash_table_find` on the `key`. **]**
+
+**SRS_LRU_CACHE_13_104: [**  If the `key` is found and the node from the `key` is not recently used: **]**
+
+- **SRS_LRU_CACHE_13_105: [** `lru_cache_get_with_acquire` shall remove the old value node from `doubly_linked_list` by calling `DList_RemoveEntryList`. **]**
+
+- **SRS_LRU_CACHE_13_106: [** `lru_cache_get_with_acquire` shall make the node as the tail by calling `DList_InsertTailList`. **]**
+
+**SRS_LRU_CACHE_13_107: [** If the `key` is found, `lru_cache_get_with_acquire` shall call `acquire_value_function` with `acquire_value_context` and the `value` of the `key` while the lock is held in exclusive mode and while the hash table node reference is still held. **]**
+
+**SRS_LRU_CACHE_13_108: [** `lru_cache_get_with_acquire` shall release the lock in exclusive mode. **]**
+
+**SRS_LRU_CACHE_13_109: [** On success, `lru_cache_get_with_acquire` shall return the value returned by `acquire_value_function`. **]**
+
+**SRS_LRU_CACHE_13_110: [** If the `key` is not found, `lru_cache_get_with_acquire` shall return `NULL`. **]**
+
+**SRS_LRU_CACHE_13_111: [** If there are any failures, `lru_cache_get_with_acquire` shall return `NULL`. **]**
 
 
 ### lru_cache_evict

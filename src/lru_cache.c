@@ -419,9 +419,76 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
 }
 
 
+static void* lru_cache_get_internal(LRU_CACHE_HANDLE lru_cache, void* key, LRU_CACHE_VALUE_ACQUIRE_FUNC acquire_value_function, void* acquire_value_context)
+{
+    void* result = NULL;
+
+    /*Codes_SRS_LRU_CACHE_13_053: [ lru_cache_get shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+    /*Codes_SRS_LRU_CACHE_13_101: [ lru_cache_get_with_acquire shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
+    CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
+    if (hazard_pointers_thread == NULL)
+    {
+        /*Codes_SRS_LRU_CACHE_13_061: [ If there are any failures, lru_cache_get shall return NULL. ]*/
+        /*Codes_SRS_LRU_CACHE_13_111: [ If there are any failures, lru_cache_get_with_acquire shall return NULL. ]*/
+        LogError("clds_hazard_pointers_thread_helper_get_thread failed");
+        result = NULL;
+    }
+    else
+    {
+        /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
+        /*Codes_SRS_LRU_CACHE_13_102: [ lru_cache_get_with_acquire shall acquire the lock in exclusive mode. ]*/
+        srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
+
+        /*Codes_SRS_LRU_CACHE_13_054: [ lru_cache_get shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
+        /*Codes_SRS_LRU_CACHE_13_103: [ lru_cache_get_with_acquire shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
+        CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
+        if (hash_table_item != NULL)
+        {
+            LRU_NODE* current_item = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
+            PDLIST_ENTRY node = &(current_item->node);
+            /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
+            /*Codes_SRS_LRU_CACHE_13_104: [ If the key is found and the node from the key is not recently used: ]*/
+            if (lru_cache->head.Blink != node)
+            {
+                /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+                /*Codes_SRS_LRU_CACHE_13_105: [ lru_cache_get_with_acquire shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
+                DList_RemoveEntryList(node);
+                LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to reposition the node", current_item->key, current_item->size);
+                /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
+                /*Codes_SRS_LRU_CACHE_13_106: [ lru_cache_get_with_acquire shall make the node as the tail by calling DList_InsertTailList. ]*/
+                DList_InsertTailList(&lru_cache->head, node);
+            }
+
+            if (acquire_value_function == NULL)
+            {
+                result = current_item->value;
+            }
+            else
+            {
+                /*Codes_SRS_LRU_CACHE_13_107: [ If the key is found, lru_cache_get_with_acquire shall call acquire_value_function with acquire_value_context and the value of the key while the lock is held in exclusive mode and while the hash table node reference is still held. ]*/
+                result = acquire_value_function(acquire_value_context, current_item->value);
+                if (result == NULL)
+                {
+                    /*Codes_SRS_LRU_CACHE_13_111: [ If there are any failures, lru_cache_get_with_acquire shall return NULL. ]*/
+                    LogError("acquire_value_function failed for key=%p", key);
+                }
+            }
+
+            CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
+        }
+        /*Codes_SRS_LRU_CACHE_13_110: [ If the key is not found, lru_cache_get_with_acquire shall return NULL. ]*/
+
+        /*Codes_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
+        /*Codes_SRS_LRU_CACHE_13_108: [ lru_cache_get_with_acquire shall release the lock in exclusive mode. ]*/
+        srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
+    }
+
+    return result;
+}
+
 void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
 {
-    CLDS_HASH_TABLE_ITEM* result = NULL;
+    void* result;
 
     if (
         /*Codes_SRS_LRU_CACHE_13_051: [ If lru_cache is NULL, then lru_cache_get shall fail and return NULL. ]*/
@@ -434,43 +501,35 @@ void* lru_cache_get(LRU_CACHE_HANDLE lru_cache, void* key)
     }
     else
     {
-        /*Codes_SRS_LRU_CACHE_13_053: [ lru_cache_get shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
-        CLDS_HAZARD_POINTERS_THREAD_HANDLE hazard_pointers_thread = clds_hazard_pointers_thread_helper_get_thread(lru_cache->clds_hazard_pointers_thread_helper);
-        if (hazard_pointers_thread == NULL)
-        {
-            /*Codes_SRS_LRU_CACHE_13_061: [ If there are any failures, lru_cache_get shall return NULL. ]*/
-            LogError("clds_hazard_pointers_thread_helper_get_thread failed");
-            result = NULL;
-        }
-        else
-        {
-            /*Codes_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
-            srw_lock_ll_acquire_exclusive(&lru_cache->srw_lock);
-
-            /*Codes_SRS_LRU_CACHE_13_054: [ lru_cache_get shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
-            CLDS_HASH_TABLE_ITEM* hash_table_item = clds_hash_table_find(lru_cache->table, hazard_pointers_thread, key);
-            if (hash_table_item != NULL)
-            {
-                LRU_NODE* current_item = CLDS_HASH_TABLE_GET_VALUE(LRU_NODE, hash_table_item);
-                PDLIST_ENTRY node = &(current_item->node);
-                /*Codes_SRS_LRU_CACHE_13_055: [ If the key is found and the node from the key is not recently used: ]*/
-                if (lru_cache->head.Blink != node)
-                {
-                    /*Codes_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
-                    DList_RemoveEntryList(node);
-                    LogVerbose("Removed DList entry with key=%p and size=%" PRId64 " in order to reposition the node", current_item->key, current_item->size);
-                    /*Codes_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
-                    DList_InsertTailList(&lru_cache->head, node);
-                }
-                result = current_item->value;
-                CLDS_HASH_TABLE_NODE_RELEASE(LRU_NODE, hash_table_item);
-            }
-            /*Codes_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
-            srw_lock_ll_release_exclusive(&lru_cache->srw_lock);
-        }
+        result = lru_cache_get_internal(lru_cache, key, NULL, NULL);
     }
 
     /*Codes_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return CLDS_HASH_TABLE_ITEM value of the key. ]*/
+    return result;
+}
+
+void* lru_cache_get_with_acquire(LRU_CACHE_HANDLE lru_cache, void* key, LRU_CACHE_VALUE_ACQUIRE_FUNC acquire_value_function, void* acquire_value_context)
+{
+    void* result;
+
+    if (
+        /*Codes_SRS_LRU_CACHE_13_097: [ If lru_cache is NULL, then lru_cache_get_with_acquire shall fail and return NULL. ]*/
+        lru_cache == NULL ||
+        /*Codes_SRS_LRU_CACHE_13_098: [ If key is NULL, then lru_cache_get_with_acquire shall fail and return NULL. ]*/
+        key == NULL ||
+        /*Codes_SRS_LRU_CACHE_13_099: [ If acquire_value_function is NULL, then lru_cache_get_with_acquire shall fail and return NULL. ]*/
+        acquire_value_function == NULL)
+    {
+        LogError("Invalid arguments: LRU_CACHE_HANDLE lru_cache=%p, void* key=%p, LRU_CACHE_VALUE_ACQUIRE_FUNC acquire_value_function=%p, void* acquire_value_context=%p", lru_cache, key, acquire_value_function, acquire_value_context);
+        result = NULL;
+    }
+    else
+    {
+        /*Codes_SRS_LRU_CACHE_13_100: [ acquire_value_context may be NULL. ]*/
+        result = lru_cache_get_internal(lru_cache, key, acquire_value_function, acquire_value_context);
+    }
+
+    /*Codes_SRS_LRU_CACHE_13_109: [ On success, lru_cache_get_with_acquire shall return the value returned by acquire_value_function. ]*/
     return result;
 }
 
