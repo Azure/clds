@@ -107,8 +107,6 @@ MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_h
 
 The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache and performs eviction if necessary. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
 
-The key and the value are owned independently: `copy_key_function`/`free_key_function` control the lifetime of the key stored in the cache and `copy_value_function`/`free_value_function` control the lifetime of the value stored in the cache. All four functions are required. `lru_cache_get` uses `copy_value_function` to hand out a value that owns its own reference, so that a concurrent eviction or replacement cannot invalidate the value returned to the caller.
-
 Note: The `size` of the value needs to be precalculated in terms of the `capacity` mentioned at the creation of the cache.
 
 **SRS_LRU_CACHE_13_023: [** If `lru_handle` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
