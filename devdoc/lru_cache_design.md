@@ -125,6 +125,8 @@ sequenceDiagram
 
 This operation retrieves items from the cache and rearranges the order in the `doubly_linked_list` by moving the found item to its tail. It ensures that recently accessed items are placed at the tail of the list to maintain the LRU order.
 
+If the item was stored with a `copy_value_function`, the value is copied (for refcounted values this acquires a reference) while the hash table item is still protected by the hazard pointer and the exclusive lock is still held. This guarantees that a concurrent eviction or a same-key replacement cannot free the value between the lookup and the moment the caller takes ownership of it. The caller then owns the returned value and releases it with the matching `free_value_function`. When no `copy_value_function` was given (copy-by-value callers), the stored value is returned as is.
+
 ```mermaid
 sequenceDiagram
     participant Cache as "LRU Cache"
@@ -138,9 +140,11 @@ sequenceDiagram
     LRUList -->> Cache: Current item position
     LRUList ->> LRUList: Check the item's position in the list
     LRUList ->> LRUList: Move the item to the back (tail) if needed
+    Cache ->> Cache: Copy the value with copy_value_function (if one was given at put time)
+    Cache ->> HashTable: Release the hash_table_item
     Cache ->> LRUList: Release the exclusive lock
     LRUList -->> Cache: Released the lock successfully
-    Cache -->> Cache: Return the hash_table_item from LRU_NODE` 
+    Cache -->> Cache: Return the value from LRU_NODE` 
 ```
 
 

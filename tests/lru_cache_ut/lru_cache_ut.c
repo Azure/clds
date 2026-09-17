@@ -75,12 +75,18 @@ MOCK_FUNCTION_WITH_CODE(, void, test_on_error, void*, context)
 MOCK_FUNCTION_END()
 static void* test_error_context = (void*)13;
 
-MOCK_FUNCTION_WITH_CODE(, int, test_copy_function, void**, key_destination, void*, key_source, void**, value_destination, void*, value_source)
+MOCK_FUNCTION_WITH_CODE(, int, test_copy_key_function, void**, key_destination, void*, key_source)
     *key_destination = key_source;
+MOCK_FUNCTION_END(0)
+
+MOCK_FUNCTION_WITH_CODE(, void, test_free_key_function, void*, key)
+MOCK_FUNCTION_END()
+
+MOCK_FUNCTION_WITH_CODE(, int, test_copy_value_function, void**, value_destination, void*, value_source)
     *value_destination = value_source;
 MOCK_FUNCTION_END(0)
 
-MOCK_FUNCTION_WITH_CODE(, void, test_free_function, void*, key, void*, value)
+MOCK_FUNCTION_WITH_CODE(, void, test_free_value_function, void*, value)
 MOCK_FUNCTION_END()
 
 BEGIN_TEST_SUITE(TEST_SUITE_NAME_FROM_CMAKE)
@@ -204,7 +210,8 @@ static void set_lru_put_insert_with_copy_expectations(void* key, CLDS_HASH_TABLE
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(hash_table_item);
-    STRICT_EXPECTED_CALL(test_copy_function(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
@@ -477,8 +484,8 @@ TEST_FUNCTION(lru_cache_destroy_frees_the_resources)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_function or free_key_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_function on LRU Node item cleanup. ]*/
 /*Tests_SRS_LRU_CACHE_13_022: [ lru_cache_destroy shall free all resources associated with the LRU_CACHE_HANDLE. ]*/
 TEST_FUNCTION(lru_cache_destroy_calls_free_function_multiple_times)
 {
@@ -509,7 +516,7 @@ TEST_FUNCTION(lru_cache_destroy_calls_free_function_multiple_times)
     set_lru_put_insert_with_copy_expectations(&key1, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, test_copy_function, test_free_function);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
 
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -521,15 +528,17 @@ TEST_FUNCTION(lru_cache_destroy_calls_free_function_multiple_times)
     set_lru_put_insert_with_copy_expectations(&key2, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, test_copy_function, test_free_function);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
 
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     STRICT_EXPECTED_CALL(srw_lock_ll_deinit(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_destroy(hash_table));
-    STRICT_EXPECTED_CALL(test_free_function(IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(test_free_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_value_function(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_value_function(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_destroy(hazard_pointers_thread));
     STRICT_EXPECTED_CALL(free(IGNORED_ARG));
 
@@ -564,7 +573,7 @@ TEST_FUNCTION(lru_cache_put_with_null_handle_fails)
     int key1 = 10, value = 1000, size1 = 2;
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(NULL, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(NULL, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -589,7 +598,7 @@ TEST_FUNCTION(lru_cache_put_with_null_key_fails)
     umock_c_reset_all_calls();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, NULL, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, NULL, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -615,7 +624,7 @@ TEST_FUNCTION(lru_cache_put_with_null_value_fails)
     umock_c_reset_all_calls();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, NULL, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, NULL, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -641,7 +650,7 @@ TEST_FUNCTION(lru_cache_put_with_0_size_fails)
     umock_c_reset_all_calls();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, 0, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, 0, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -667,7 +676,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_callback_fails)
     umock_c_reset_all_calls();
 
     //act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, NULL, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, NULL, NULL, NULL, NULL, NULL, NULL);
 
     //assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -677,8 +686,8 @@ TEST_FUNCTION(lru_cache_put_with_NULL_callback_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
-TEST_FUNCTION(lru_cache_put_with_NULL_copy_function_fails)
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_function or free_key_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+TEST_FUNCTION(lru_cache_put_with_NULL_copy_key_function_fails)
 {
     // arrange
     LRU_CACHE_HANDLE lru_cache;
@@ -693,7 +702,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_function_fails)
     umock_c_reset_all_calls();
 
     //act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, test_free_function);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, test_free_key_function, NULL, NULL);
 
     //assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -703,8 +712,8 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_function_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
-TEST_FUNCTION(lru_cache_put_with_NULL_free_function_fails)
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_function or free_key_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+TEST_FUNCTION(lru_cache_put_with_NULL_free_key_function_fails)
 {
     // arrange
     LRU_CACHE_HANDLE lru_cache;
@@ -719,7 +728,59 @@ TEST_FUNCTION(lru_cache_put_with_NULL_free_function_fails)
     umock_c_reset_all_calls();
 
     //act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, test_copy_function, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, test_copy_key_function, NULL, NULL, NULL);
+
+    //assert
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    //cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_097: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+TEST_FUNCTION(lru_cache_put_with_NULL_copy_value_function_fails)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 2;
+    uint32_t bucket_size = 1024;
+    int key1 = 1, value = 1000, size1 = 2;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    //act
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, test_free_value_function);
+
+    //assert
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    //cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_097: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+TEST_FUNCTION(lru_cache_put_with_NULL_free_value_function_fails)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 2;
+    uint32_t bucket_size = 1024;
+    int key1 = 1, value = 1000, size1 = 2;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    //act
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL, test_copy_value_function, NULL);
 
     //assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -746,7 +807,7 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
     umock_c_reset_all_calls();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_INVALID_SIZE, result);
@@ -781,7 +842,7 @@ TEST_FUNCTION(lru_cache_put_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -792,10 +853,10 @@ TEST_FUNCTION(lru_cache_put_succeeds)
 }
 
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_function or free_key_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function if not NULL to copy the key, otherwise it shall assign key to the LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_function on LRU Node item cleanup. ]*/
 /*Tests_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
 /*Tests_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
@@ -819,7 +880,7 @@ TEST_FUNCTION(lru_cache_put_succeeds_with_copy_function_works)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_function, test_free_function);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -830,11 +891,11 @@ TEST_FUNCTION(lru_cache_put_succeeds_with_copy_function_works)
 }
 
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
-/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_value_function or free_value_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_13_081: [ If either of copy_key_function or free_key_function is NULL and the other is not NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function if not NULL to copy the key, otherwise it shall assign key to the LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_function on LRU Node item cleanup. ]*/
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
 TEST_FUNCTION(lru_cache_put_fails_with_copy_function_fail)
 {
     // arrange
@@ -855,13 +916,51 @@ TEST_FUNCTION(lru_cache_put_fails_with_copy_function_fail)
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
         .CaptureReturn(&hash_table_item);
-    STRICT_EXPECTED_CALL(test_copy_function(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).SetReturn(MU_FAILURE);
+    STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG)).SetReturn(MU_FAILURE);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(test_free_function(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_function, test_free_function);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
+
+    // assert
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_13_100: [ If copy_value_function fails after the key was copied, lru_cache_put shall free the copied key by calling free_key_function. ]*/
+TEST_FUNCTION(lru_cache_put_fails_with_value_copy_function_fail)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key = 10, value = 1000, size = 1;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
+        .CaptureReturn(&hash_table_item);
+    STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, IGNORED_ARG)).SetReturn(MU_FAILURE);
+    STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    // act
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED, result);
@@ -901,7 +1000,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -912,7 +1011,7 @@ TEST_FUNCTION(lru_cache_put_twice_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -952,7 +1051,7 @@ TEST_FUNCTION(lru_cache_put_twice_with_copy_function_succeeds)
     set_lru_put_insert_with_copy_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_function, test_free_function);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -962,13 +1061,15 @@ TEST_FUNCTION(lru_cache_put_twice_with_copy_function_succeeds)
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
-    STRICT_EXPECTED_CALL(test_copy_function(IGNORED_ARG, &key, IGNORED_ARG, &value));
+    STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, &key));
+    STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, &value));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
 
     STRICT_EXPECTED_CALL(DList_RemoveEntryList(IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(test_free_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_free_value_function(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
 
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
@@ -976,7 +1077,7 @@ TEST_FUNCTION(lru_cache_put_twice_with_copy_function_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_function, test_free_function);
+    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1006,7 +1107,7 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1019,7 +1120,7 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
 
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size + 100, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size + 100, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
@@ -1059,7 +1160,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1072,7 +1173,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1112,7 +1213,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key1, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1122,7 +1223,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_insert_expectations(&key2, &hash_table_item_2);
     set_lru_put_nothing_to_evict_expectations();
 
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1138,7 +1239,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     set_lru_put_nothing_to_evict_expectations();
 
     // act
-    result = lru_cache_put(lru_cache, &key3, &value, size3, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key3, &value, size3, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
@@ -1171,7 +1272,7 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1187,7 +1288,7 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
 
 
     // act
-    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -1223,7 +1324,7 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_ERROR, result);
@@ -1256,7 +1357,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1271,7 +1372,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     STRICT_EXPECTED_CALL(test_on_error(test_error_context));
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
@@ -1303,7 +1404,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1325,7 +1426,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
@@ -1356,7 +1457,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     set_lru_put_insert_expectations(&key, &hash_table_item_1);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size1, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1373,7 +1474,7 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
-    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value, size2, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
 
     // assert
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_EVICT_ERROR, result);
@@ -1435,7 +1536,7 @@ TEST_FUNCTION(lru_cache_get_with_null_key_fails)
 /*Tests_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
 /*Tests_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
 /*Tests_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
-/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return CLDS_HASH_TABLE_ITEM value of the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return the value of the key. ]*/
 TEST_FUNCTION(lru_cache_get_succeeds)
 {
     // arrange
@@ -1455,13 +1556,13 @@ TEST_FUNCTION(lru_cache_get_succeeds)
     set_lru_put_insert_expectations(&key1, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     set_lru_put_insert_expectations(&key2, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1487,7 +1588,8 @@ TEST_FUNCTION(lru_cache_get_succeeds)
 /*Tests_SRS_LRU_CACHE_13_054: [ lru_cache_get shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
 /*Tests_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
 /*Tests_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
-/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return CLDS_HASH_TABLE_ITEM value of the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return the value of the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_103: [ Otherwise, lru_cache_get shall return the value stored in the LRU Node item. ]*/
 TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succeeds)
 {
     // arrange
@@ -1507,7 +1609,7 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     set_lru_put_insert_expectations(&key1, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1534,6 +1636,99 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     lru_cache_destroy(lru_cache);
 }
 
+/*Tests_SRS_LRU_CACHE_13_101: [ If the value was stored with a copy_value_function, lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
+/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return the value of the key. ]*/
+TEST_FUNCTION(lru_cache_get_copies_the_value_when_a_copy_value_function_was_given)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key1 = 10, value1 = 1000, size = 1;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    set_lru_put_insert_with_copy_expectations(&key1, &hash_table_item);
+    set_lru_put_nothing_to_evict_expectations();
+
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    umock_c_reset_all_calls();
+    setup_ignore_hazard_pointers_calls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key1));
+    STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    /* the value is copied while the hash table item is still protected, i.e. before clds_hash_table_node_release */
+    STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, &value1));
+    STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    // act
+    void* get_value_ptr = lru_cache_get(lru_cache, &key1);
+
+    // assert
+    ASSERT_IS_NOT_NULL(get_value_ptr);
+    ASSERT_ARE_EQUAL(int, value1, *((int*)get_value_ptr));
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
+/*Tests_SRS_LRU_CACHE_13_102: [ If copy_value_function fails, lru_cache_get shall return NULL. ]*/
+TEST_FUNCTION(lru_cache_get_fails_when_the_copy_value_function_fails)
+{
+    // arrange
+    LRU_CACHE_HANDLE lru_cache;
+    int64_t capacity = 10;
+    uint32_t bucket_size = 1024;
+    int key1 = 10, value1 = 1000, size = 1;
+    CLDS_HASH_TABLE_ITEM* hash_table_item;
+
+    set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
+
+    lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
+    ASSERT_IS_NOT_NULL(lru_cache);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+    umock_c_reset_all_calls();
+
+    set_lru_put_insert_with_copy_expectations(&key1, &hash_table_item);
+    set_lru_put_nothing_to_evict_expectations();
+
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key1, &value1, size, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    umock_c_reset_all_calls();
+    setup_ignore_hazard_pointers_calls();
+    STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_find(IGNORED_ARG, IGNORED_ARG, &key1));
+    STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, &value1)).SetReturn(MU_FAILURE);
+    STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
+    STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
+
+    // act
+    void* get_value_ptr = lru_cache_get(lru_cache, &key1);
+
+    // assert
+    ASSERT_IS_NULL(get_value_ptr);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+}
+
 /*Tests_SRS_LRU_CACHE_13_053: [ lru_cache_get shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_054: [ lru_cache_get shall check hash table for any existence of the value by calling clds_hash_table_find on the key. ]*/
 /*Tests_SRS_LRU_CACHE_13_056: [ lru_cache_get shall acquire the lock in exclusive mode. ]*/
@@ -1541,7 +1736,7 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
 /*Tests_SRS_LRU_CACHE_13_057: [ lru_cache_get shall remove the old value node from doubly_linked_list by calling DList_RemoveEntryList. ]*/
 /*Tests_SRS_LRU_CACHE_13_058: [ lru_cache_get shall make the node as the tail by calling DList_InsertTailList. ]*/
 /*Tests_SRS_LRU_CACHE_13_059: [ lru_cache_get shall release the lock in exclusive mode. ]*/
-/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return CLDS_HASH_TABLE_ITEM value of the key. ]*/
+/*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return the value of the key. ]*/
 TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
 {
     // arrange
@@ -1561,7 +1756,7 @@ TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
     set_lru_put_insert_expectations(&key, &hash_table_item);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1837,9 +2032,9 @@ TEST_FUNCTION(lru_cache_evict_removes_recent_key_succeeds)
     set_lru_put_insert_expectations(&key2, &hash_table_item2);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
-    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     umock_c_reset_all_calls();
@@ -1898,9 +2093,9 @@ TEST_FUNCTION(lru_cache_evict_removes_old_key_succeeds)
     set_lru_put_insert_expectations(&key2, &hash_table_item2);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
-    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     umock_c_reset_all_calls();
@@ -1955,9 +2150,9 @@ TEST_FUNCTION(lru_cache_evict_updates_current_size_and_does_not_trigger_evict_su
     set_lru_put_insert_expectations(&key2, &hash_table_item2);
     set_lru_put_nothing_to_evict_expectations();
 
-    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL);
+    LRU_CACHE_PUT_RESULT result = lru_cache_put(lru_cache, &key, &value, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
-    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key2, &value2, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
@@ -1971,7 +2166,7 @@ TEST_FUNCTION(lru_cache_evict_updates_current_size_and_does_not_trigger_evict_su
     set_lru_put_insert_expectations(&key3, &hash_table_item3);
     set_lru_put_nothing_to_evict_expectations();
 
-    result = lru_cache_put(lru_cache, &key3, &value3, size, test_eviction_callback, NULL, NULL, NULL);
+    result = lru_cache_put(lru_cache, &key3, &value3, size, test_eviction_callback, NULL, NULL, NULL, NULL, NULL);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     umock_c_reset_all_calls();
