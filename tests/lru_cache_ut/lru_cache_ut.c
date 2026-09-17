@@ -830,9 +830,8 @@ TEST_FUNCTION(lru_cache_put_succeeds)
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function to copy the key into the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_098: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
-TEST_FUNCTION(lru_cache_put_fails_with_copy_function_fail)
+/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+TEST_FUNCTION(lru_cache_put_fails_with_key_copy_function_fail)
 {
     // arrange
     LRU_CACHE_HANDLE lru_cache;
@@ -867,7 +866,8 @@ TEST_FUNCTION(lru_cache_put_fails_with_copy_function_fail)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_13_098: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_13_106: [ If copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
 /*Tests_SRS_LRU_CACHE_13_100: [ If copy_value_function fails after the key was copied, lru_cache_put shall free the copied key by calling free_key_function. ]*/
 TEST_FUNCTION(lru_cache_put_fails_with_value_copy_function_fail)
 {

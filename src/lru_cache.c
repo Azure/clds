@@ -361,7 +361,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                     /*Codes_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function to copy the key into the LRU Node item. ]*/
                     if (copy_key_function(&(new_node->key), key) != 0)
                     {
-                        /*Codes_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+                        /*Codes_SRS_LRU_CACHE_13_084: [ If copy_key_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
                         LogError("copy_key_function failed. Returning with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED");
                         result = LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED;
                     }
@@ -372,7 +372,7 @@ LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* 
                         /*Codes_SRS_LRU_CACHE_13_098: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
                         if (copy_value_function(&(new_node->value), value) != 0)
                         {
-                            /*Codes_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+                            /*Codes_SRS_LRU_CACHE_13_106: [ If copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
                             LogError("copy_value_function failed. Returning with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED");
                             result = LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED;
                         }

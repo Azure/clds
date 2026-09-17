@@ -143,7 +143,9 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_098: [** `lru_cache_put` shall call `copy_value_function` to copy the value into the LRU Node item. **]**
 
-**SRS_LRU_CACHE_13_084: [** If `copy_key_function` or `copy_value_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
+**SRS_LRU_CACHE_13_084: [** If `copy_key_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
+
+**SRS_LRU_CACHE_13_106: [** If `copy_value_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
 
 **SRS_LRU_CACHE_13_100: [** If `copy_value_function` fails after the key was copied, `lru_cache_put` shall free the copied key by calling `free_key_function`. **]**
 
