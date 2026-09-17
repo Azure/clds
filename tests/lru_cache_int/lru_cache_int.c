@@ -1148,37 +1148,36 @@ TEST_FUNCTION(test_function_copy_fails)
 
 typedef struct TEST_REF_VALUE_TAG
 {
-    volatile_atomic int32_t ref_count;
     uint32_t payload;
     volatile_atomic int32_t* destroyed_flag;
 } TEST_REF_VALUE;
 
-static TEST_REF_VALUE* test_ref_value_create(uint32_t payload, volatile_atomic int32_t* destroyed_flag)
+THANDLE_TYPE_DECLARE(TEST_REF_VALUE);
+THANDLE_TYPE_DEFINE(TEST_REF_VALUE);
+
+static void test_ref_value_dispose(TEST_REF_VALUE* value)
 {
-    TEST_REF_VALUE* result = malloc(sizeof(TEST_REF_VALUE));
+    (void)interlocked_exchange(value->destroyed_flag, 1);
+}
+
+static THANDLE(TEST_REF_VALUE) test_ref_value_create(uint32_t payload, volatile_atomic int32_t* destroyed_flag)
+{
+    TEST_REF_VALUE* result = THANDLE_MALLOC(TEST_REF_VALUE)(test_ref_value_dispose);
     ASSERT_IS_NOT_NULL(result);
-    (void)interlocked_exchange(&result->ref_count, 1);
     result->payload = payload;
     result->destroyed_flag = destroyed_flag;
     return result;
 }
 
-static int test_ref_value_copy(void** value_destination, void* value_source)
+static int test_ref_value_copy(THANDLE(TEST_REF_VALUE)* value_destination, THANDLE(TEST_REF_VALUE) value_source)
 {
-    TEST_REF_VALUE* value = value_source;
-    (void)interlocked_increment(&value->ref_count);
-    *value_destination = value;
+    THANDLE_INITIALIZE(TEST_REF_VALUE)(value_destination, value_source);
     return 0;
 }
 
-static void test_ref_value_release(void* value)
+static void test_ref_value_free(THANDLE(TEST_REF_VALUE) value)
 {
-    TEST_REF_VALUE* ref_value = value;
-    if (interlocked_decrement(&ref_value->ref_count) == 0)
-    {
-        (void)interlocked_exchange(ref_value->destroyed_flag, 1);
-        free(ref_value);
-    }
+    THANDLE_ASSIGN(TEST_REF_VALUE)(&value, NULL);
 }
 
 static void test_ref_value_on_evict(void* context, void* evicted_value)
@@ -1200,16 +1199,16 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_explicit_eviction)
     LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
-    TEST_REF_VALUE* value = test_ref_value_create(42, &destroyed);
+    THANDLE(TEST_REF_VALUE) value = test_ref_value_create(42, &destroyed);
 
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, test_ref_value_copy, test_ref_value_release));
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
 
     // the cache is now the only owner of the value
-    test_ref_value_release(value);
+    test_ref_value_free(value);
     ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed, 0));
 
     // act
-    TEST_REF_VALUE* returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    THANDLE(TEST_REF_VALUE) returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
     ASSERT_IS_NOT_NULL(returned_value);
 
     ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, lru_cache_evict(lru_cache, (void*)(uintptr_t)(1)));
@@ -1217,9 +1216,8 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_explicit_eviction)
     // assert
     ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&destroyed, 0), "the value returned by lru_cache_get must still be alive after the entry was evicted");
     ASSERT_ARE_EQUAL(uint32_t, 42, returned_value->payload);
-    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&returned_value->ref_count, 0));
 
-    test_ref_value_release(returned_value);
+    test_ref_value_free(returned_value);
     ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed, 0));
 
     // cleanup
@@ -1242,25 +1240,25 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_capacity_eviction)
     LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 1, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
-    TEST_REF_VALUE* value_1 = test_ref_value_create(11, &destroyed_1);
-    TEST_REF_VALUE* value_2 = test_ref_value_create(22, &destroyed_2);
+    THANDLE(TEST_REF_VALUE) value_1 = test_ref_value_create(11, &destroyed_1);
+    THANDLE(TEST_REF_VALUE) value_2 = test_ref_value_create(22, &destroyed_2);
 
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_1, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, test_ref_value_copy, test_ref_value_release));
-    test_ref_value_release(value_1);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value_1, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_1);
 
-    TEST_REF_VALUE* returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    THANDLE(TEST_REF_VALUE) returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
     ASSERT_IS_NOT_NULL(returned_value);
 
     // act
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(2), value_2, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, test_ref_value_copy, test_ref_value_release));
-    test_ref_value_release(value_2);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(2), (void*)value_2, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_2);
 
     // assert
     ASSERT_ARE_EQUAL(uint32_t, 1, count_context.count);
     ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed_1, 0), "the value returned by lru_cache_get must still be alive after the entry was evicted due to capacity");
     ASSERT_ARE_EQUAL(uint32_t, 11, returned_value->payload);
 
-    test_ref_value_release(returned_value);
+    test_ref_value_free(returned_value);
     ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_1, 0));
 
     // cleanup
@@ -1283,31 +1281,31 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_same_key_replacement)
     LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
-    TEST_REF_VALUE* value_1 = test_ref_value_create(11, &destroyed_1);
-    TEST_REF_VALUE* value_2 = test_ref_value_create(22, &destroyed_2);
+    THANDLE(TEST_REF_VALUE) value_1 = test_ref_value_create(11, &destroyed_1);
+    THANDLE(TEST_REF_VALUE) value_2 = test_ref_value_create(22, &destroyed_2);
 
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_1, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, test_ref_value_copy, test_ref_value_release));
-    test_ref_value_release(value_1);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value_1, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_1);
 
-    TEST_REF_VALUE* returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    THANDLE(TEST_REF_VALUE) returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
     ASSERT_IS_NOT_NULL(returned_value);
 
     // act: replace the same key, which frees the value stored by the first put
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_2, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, test_ref_value_copy, test_ref_value_release));
-    test_ref_value_release(value_2);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value_2, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_2);
 
     // assert
     ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed_1, 0), "the value returned by lru_cache_get must still be alive after the key was replaced");
     ASSERT_ARE_EQUAL(uint32_t, 11, returned_value->payload);
 
-    TEST_REF_VALUE* returned_value_after_replace = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    THANDLE(TEST_REF_VALUE) returned_value_after_replace = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
     ASSERT_IS_NOT_NULL(returned_value_after_replace);
     ASSERT_ARE_EQUAL(uint32_t, 22, returned_value_after_replace->payload);
 
-    test_ref_value_release(returned_value);
+    test_ref_value_free(returned_value);
     ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_1, 0));
 
-    test_ref_value_release(returned_value_after_replace);
+    test_ref_value_free(returned_value_after_replace);
     ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed_2, 0));
 
     // cleanup
@@ -1318,7 +1316,7 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_same_key_replacement)
 
 static volatile_atomic int32_t g_test_ref_value_copy_should_fail;
 
-static int test_ref_value_copy_can_fail(void** value_destination, void* value_source)
+static int test_ref_value_copy_can_fail(THANDLE(TEST_REF_VALUE)* value_destination, THANDLE(TEST_REF_VALUE) value_source)
 {
     int result;
     if (interlocked_add(&g_test_ref_value_copy_should_fail, 0) != 0)
@@ -1345,10 +1343,10 @@ TEST_FUNCTION(lru_cache_get_returns_NULL_when_the_value_copy_function_fails)
     LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
     ASSERT_IS_NOT_NULL(lru_cache);
 
-    TEST_REF_VALUE* value = test_ref_value_create(42, &destroyed);
+    THANDLE(TEST_REF_VALUE) value = test_ref_value_create(42, &destroyed);
 
-    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, test_ref_value_copy_can_fail, test_ref_value_release));
-    test_ref_value_release(value);
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy_can_fail, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value);
 
     // the copy function fails only when called by lru_cache_get
     (void)interlocked_exchange(&g_test_ref_value_copy_should_fail, 1);
