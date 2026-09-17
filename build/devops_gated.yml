@@ -8,7 +8,7 @@ parameters:
   - name: pool_name_windows_arm64
     displayName: 'Windows ARM64 Pool'
     type: string
-    default: 'Azure-MessagingStore-Win-ARM64-Dpldsv6-v26'
+    default: 'Azure-MessagingStore-Win-ARM64-Dpldsv6-v30'
   - name: pool_name_linux
     displayName: 'Linux Pool'
     type: string
@@ -22,7 +22,7 @@ resources:
     type: github
     name: azure/c-build-tools
     endpoint: github.com_azure
-    ref: 642d8198ace54bb0c1609689c83cb56004ac23e5
+    ref: 089029c2a18bed7b6c47cb51fec3120ee6290c3c
 
 jobs:
 - template: /pipeline_templates/build_all_flavors.yml@c_build_tools
