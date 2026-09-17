@@ -970,8 +970,7 @@ static void string_key_free(void* key)
     ASSERT_IS_NOT_NULL(key);
     free(key);
 }
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function if not NULL to copy the key, otherwise it shall assign key to the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_function on LRU Node item cleanup. ]*/
+
 TEST_FUNCTION(test_function_key_copy_works)
 {
     // arrange
@@ -1028,9 +1027,7 @@ void string_value_destroy_func(void* value)
 {
     free(value);
 }
-/*Tests_SRS_LRU_CACHE_13_098: [ lru_cache_put shall call copy_value_function if not NULL to copy the value, otherwise it shall assign value to the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_099: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
-/*Tests_SRS_LRU_CACHE_13_101: [ If the value was stored with a copy_value_function, lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
+
 TEST_FUNCTION(test_function_copy_works)
 {
     // arrange
@@ -1066,8 +1063,6 @@ TEST_FUNCTION(test_function_copy_works)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function if not NULL to copy the key, otherwise it shall assign key to the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(test_function_copy_multiple_times_works)
 {
     // arrange
@@ -1124,7 +1119,7 @@ void dummy_free_error(void* value)
 {
     (void)value;
 }
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_function or copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+
 TEST_FUNCTION(test_function_copy_fails)
 {
     // arrange
@@ -1193,8 +1188,6 @@ static void test_ref_value_on_evict(void* context, void* evicted_value)
     ASSERT_IS_NOT_NULL(evicted_value);
 }
 
-/*Tests_SRS_LRU_CACHE_13_101: [ If the value was stored with a copy_value_function, lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
-/*Tests_SRS_LRU_CACHE_13_099: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(value_returned_by_lru_cache_get_survives_explicit_eviction)
 {
     // arrange
@@ -1234,8 +1227,6 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_explicit_eviction)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_101: [ If the value was stored with a copy_value_function, lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
-/*Tests_SRS_LRU_CACHE_13_099: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(value_returned_by_lru_cache_get_survives_capacity_eviction)
 {
     // arrange
@@ -1278,8 +1269,6 @@ TEST_FUNCTION(value_returned_by_lru_cache_get_survives_capacity_eviction)
     ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_2, 0));
 }
 
-/*Tests_SRS_LRU_CACHE_13_101: [ If the value was stored with a copy_value_function, lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
-/*Tests_SRS_LRU_CACHE_13_099: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(value_returned_by_lru_cache_get_survives_same_key_replacement)
 {
     // arrange
@@ -1343,7 +1332,6 @@ static int test_ref_value_copy_can_fail(void** value_destination, void* value_so
     return result;
 }
 
-/*Tests_SRS_LRU_CACHE_13_102: [ If copy_value_function fails, lru_cache_get shall return NULL. ]*/
 TEST_FUNCTION(lru_cache_get_returns_NULL_when_the_value_copy_function_fails)
 {
     // arrange
