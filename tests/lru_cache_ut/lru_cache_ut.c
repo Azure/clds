@@ -685,7 +685,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_key_function_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_097: [ If free_key_function is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_45_001: [ If free_key_function is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 TEST_FUNCTION(lru_cache_put_with_NULL_free_key_function_fails)
 {
     // arrange
@@ -711,7 +711,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_free_key_function_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_104: [ If copy_value_function is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_45_002: [ If copy_value_function is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 TEST_FUNCTION(lru_cache_put_with_NULL_copy_value_function_fails)
 {
     // arrange
@@ -737,7 +737,7 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_value_function_fails)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_105: [ If free_value_function is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
+/*Tests_SRS_LRU_CACHE_45_003: [ If free_value_function is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/
 TEST_FUNCTION(lru_cache_put_with_NULL_free_value_function_fails)
 {
     // arrange
@@ -793,7 +793,7 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
 /*Tests_SRS_LRU_CACHE_13_076: [ context may be NULL. ]*/
 /*Tests_SRS_LRU_CACHE_13_028: [ lru_cache_put shall get CLDS_HAZARD_POINTERS_THREAD_HANDLE by calling clds_hazard_pointers_thread_helper_get_thread. ]*/
 /*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_function to copy the key into the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_098: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_45_004: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
 /*Tests_SRS_LRU_CACHE_13_071: [ Otherwise, if the key is not found: ]*/
 /*Tests_SRS_LRU_CACHE_13_062: [ lru_cache_put shall add the item size to the current_size. ]*/
 /*Tests_SRS_LRU_CACHE_13_049: [ On success, lru_cache_put shall return LRU_CACHE_PUT_OK. ]*/
@@ -866,9 +866,9 @@ TEST_FUNCTION(lru_cache_put_fails_with_key_copy_function_fail)
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_098: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_106: [ If copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
-/*Tests_SRS_LRU_CACHE_13_100: [ If copy_value_function fails after the key was copied, lru_cache_put shall free the copied key by calling free_key_function. ]*/
+/*Tests_SRS_LRU_CACHE_45_004: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
+/*Tests_SRS_LRU_CACHE_45_005: [ If copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+/*Tests_SRS_LRU_CACHE_45_006: [ If copy_value_function fails after the key was copied, lru_cache_put shall free the copied key by calling free_key_function. ]*/
 TEST_FUNCTION(lru_cache_put_fails_with_value_copy_function_fail)
 {
     // arrange
@@ -918,7 +918,7 @@ TEST_FUNCTION(lru_cache_put_fails_with_value_copy_function_fail)
 /*Tests_SRS_LRU_CACHE_13_067: [ lru_cache_put shall free the old value. ]*/
 /*Tests_SRS_LRU_CACHE_13_068: [ lru_cache_put shall return with LRU_CACHE_PUT_OK. ]*/
 /*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_function on LRU Node item cleanup. ]*/
-/*Tests_SRS_LRU_CACHE_13_099: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
+/*Tests_SRS_LRU_CACHE_45_007: [ lru_cache_put shall call free_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(lru_cache_put_twice_with_copy_function_succeeds)
 {
     // arrange
@@ -1531,7 +1531,7 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_101: [ lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
+/*Tests_SRS_LRU_CACHE_45_008: [ lru_cache_get shall call copy_value_function to obtain its own copy of the value while the hash table item is still protected. ]*/
 /*Tests_SRS_LRU_CACHE_13_060: [ On success, lru_cache_get shall return the copy of the value. ]*/
 TEST_FUNCTION(lru_cache_get_copies_the_value_when_a_copy_value_function_was_given)
 {
@@ -1579,7 +1579,7 @@ TEST_FUNCTION(lru_cache_get_copies_the_value_when_a_copy_value_function_was_give
     lru_cache_destroy(lru_cache);
 }
 
-/*Tests_SRS_LRU_CACHE_13_102: [ If copy_value_function fails, lru_cache_get shall return NULL. ]*/
+/*Tests_SRS_LRU_CACHE_45_009: [ If copy_value_function fails, lru_cache_get shall return NULL. ]*/
 TEST_FUNCTION(lru_cache_get_fails_when_the_copy_value_function_fails)
 {
     // arrange

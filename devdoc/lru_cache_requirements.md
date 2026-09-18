@@ -123,11 +123,11 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_081: [** If `copy_key_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
-**SRS_LRU_CACHE_13_097: [** If `free_key_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+**SRS_LRU_CACHE_45_001: [** If `free_key_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
-**SRS_LRU_CACHE_13_104: [** If `copy_value_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+**SRS_LRU_CACHE_45_002: [** If `copy_value_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
-**SRS_LRU_CACHE_13_105: [** If `free_value_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+**SRS_LRU_CACHE_45_003: [** If `free_value_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
 **SRS_LRU_CACHE_13_027: [** If `size` is greater than `capacity` of lru cache, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_VALUE_INVALID_SIZE`. **]**
 
@@ -141,17 +141,17 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_082: [** `lru_cache_put` shall call `copy_key_function` to copy the key into the LRU Node item. **]**
 
-**SRS_LRU_CACHE_13_098: [** `lru_cache_put` shall call `copy_value_function` to copy the value into the LRU Node item. **]**
+**SRS_LRU_CACHE_45_004: [** `lru_cache_put` shall call `copy_value_function` to copy the value into the LRU Node item. **]**
 
 **SRS_LRU_CACHE_13_084: [** If `copy_key_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
 
-**SRS_LRU_CACHE_13_106: [** If `copy_value_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
+**SRS_LRU_CACHE_45_005: [** If `copy_value_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
 
-**SRS_LRU_CACHE_13_100: [** If `copy_value_function` fails after the key was copied, `lru_cache_put` shall free the copied key by calling `free_key_function`. **]**
+**SRS_LRU_CACHE_45_006: [** If `copy_value_function` fails after the key was copied, `lru_cache_put` shall free the copied key by calling `free_key_function`. **]**
 
 **SRS_LRU_CACHE_13_083: [** `lru_cache_put` shall call `free_key_function` on LRU Node item cleanup. **]**
 
-**SRS_LRU_CACHE_13_099: [** `lru_cache_put` shall call `free_value_function` on LRU Node item cleanup. **]**
+**SRS_LRU_CACHE_45_007: [** `lru_cache_put` shall call `free_value_function` on LRU Node item cleanup. **]**
 
 **SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
 
@@ -220,9 +220,9 @@ Gets the `value` of the `key` from the cache. If the `key` is found, the node is
 
 - **SRS_LRU_CACHE_13_058: [** `lru_cache_get` shall make the node as the tail by calling `DList_InsertTailList`. **]**
 
-**SRS_LRU_CACHE_13_101: [** `lru_cache_get` shall call `copy_value_function` to obtain its own copy of the value while the hash table item is still protected. **]**
+**SRS_LRU_CACHE_45_008: [** `lru_cache_get` shall call `copy_value_function` to obtain its own copy of the value while the hash table item is still protected. **]**
 
-**SRS_LRU_CACHE_13_102: [** If `copy_value_function` fails, `lru_cache_get` shall return `NULL`. **]**
+**SRS_LRU_CACHE_45_009: [** If `copy_value_function` fails, `lru_cache_get` shall return `NULL`. **]**
 
 **SRS_LRU_CACHE_13_059: [** `lru_cache_get` shall release the lock in exclusive mode. **]**
 
