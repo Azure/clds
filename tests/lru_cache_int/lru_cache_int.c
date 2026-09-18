@@ -150,6 +150,28 @@ static int test_key_compare(void* key1, void* key2)
 }
 
 
+static int test_noop_key_copy(void** key_destination, void* key_source)
+{
+    *key_destination = key_source;
+    return 0;
+}
+
+static void test_noop_key_free(void* key)
+{
+    (void)key;
+}
+
+static int test_noop_value_copy(void** value_destination, void* value_source)
+{
+    *value_destination = value_source;
+    return 0;
+}
+
+static void test_noop_value_free(void* value)
+{
+    (void)value;
+}
+
 static uint64_t key_hash(void* key)
 {
     size_t block_length = strlen((const char*)key);
@@ -258,10 +280,10 @@ TEST_FUNCTION(test_put_and_get)
     test_item2->appendix = 14;
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -316,14 +338,14 @@ TEST_FUNCTION(test_put_calls_evict)
     test_item3->key = 3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -359,10 +381,16 @@ TEST_FUNCTION(test_put_calls_evict)
 TEST_FUNCTION(test_put_calls_evict_with_correct_context)
 {
     // arrange
-    uint32_t key1 = 1, key2 = 2, key3 = 3;
+    uint32_t key1 = 1;
+    uint32_t key2 = 2;
+    uint32_t key3 = 3;
     int64_t capacity = 2;
-    EVICTION_TEST_CONTEXT key1_context, key2_context, key3_context;
-    key1_context.key = key1, key2_context.key = key2, key3_context.key = key3;
+    EVICTION_TEST_CONTEXT key1_context;
+    EVICTION_TEST_CONTEXT key2_context;
+    EVICTION_TEST_CONTEXT key3_context;
+    key1_context.key = key1;
+    key2_context.key = key2;
+    key3_context.key = key3;
     (void)interlocked_exchange(&key1_context.was_called, 0);
     (void)interlocked_exchange(&key2_context.was_called, 0);
     (void)interlocked_exchange(&key3_context.was_called, 0);
@@ -393,14 +421,14 @@ TEST_FUNCTION(test_put_calls_evict_with_correct_context)
     test_item3->key = key3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, test_success_eviction, &key1_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, test_success_eviction, &key1_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, test_success_eviction, &key2_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, test_success_eviction, &key2_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 2, test_success_eviction, &key3_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 2, test_success_eviction, &key3_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -460,22 +488,22 @@ TEST_FUNCTION(test_put_same_item_multiple_times_triggers_evict)
     test_item3->key = 3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
     for (int i = 0; i < call_times; i++)
     {
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -534,16 +562,16 @@ TEST_FUNCTION(test_put_multiple_times_on_same_item_does_not_trigger_evict)
     test_item2->appendix = 14;
 
     // Lets fill the capacity
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // act
     for (int i = 0; i < call_times; i++)
     {
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -596,7 +624,7 @@ TEST_FUNCTION(test_put_different_value_same_key_works)
     test_item2->key = 2;
     test_item2->appendix = 14;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     CLDS_HASH_TABLE_ITEM* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
@@ -607,7 +635,7 @@ TEST_FUNCTION(test_put_different_value_same_key_works)
     ASSERT_ARE_EQUAL(int, 13, return_test_item1->appendix);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -654,7 +682,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
         test_item1->key = i + 1;
         test_item1->appendix = i + 10;
 
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -664,7 +692,7 @@ TEST_FUNCTION(test_put_same_key_calls_evict_to_make_space)
     test_large_item->key = 100013;
     test_large_item->appendix = 110013;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 11, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), large_item, 11, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // assert
@@ -734,20 +762,17 @@ static bool get_item_and_change_state(CHAOS_TEST_ITEM_DATA* items, int item_coun
     return result;
 }
 
-int CLDS_HASH_TABLE_ITEM_copy_func(void** key_destination, void* key_source, void** value_destination, void* value_source)
+int CLDS_HASH_TABLE_ITEM_value_copy_func(void** value_destination, void* value_source)
 {
     ASSERT_IS_NOT_NULL(value_source);
     int res = CLDS_HASH_TABLE_NODE_INC_REF(TEST_ITEM, value_source);
     *value_destination = value_source;
 
-    // assigns key value as is
-    *key_destination = key_source;
     return res;
 }
 
-void CLDS_HASH_TABLE_ITEM_dec_ref_func(void* key, void* value)
+void CLDS_HASH_TABLE_ITEM_value_dec_ref_func(void* value)
 {
-    (void)key;
     CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, value);
 }
 static int chaos_thread(void* arg)
@@ -791,6 +816,9 @@ static int chaos_thread(void* arg)
                             ASSERT_IS_NOT_NULL(return_test_item);
                             ASSERT_ARE_EQUAL(int, item_index + 1, return_test_item->key);
                             ASSERT_ARE_EQUAL(int, item_index + 100, return_test_item->appendix);
+
+                            // lru_cache_get handed out its own reference, release it
+                            CLDS_HASH_TABLE_NODE_RELEASE(TEST_ITEM, return_val);
                         }
                     }
                 }
@@ -827,7 +855,7 @@ static int chaos_thread(void* arg)
                     item_payload->appendix = item_index + 100;
                     item_payload->item_size = item_size;
 
-                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, CLDS_HASH_TABLE_ITEM_copy_func, CLDS_HASH_TABLE_ITEM_dec_ref_func));
+                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, test_noop_key_copy, test_noop_key_free, CLDS_HASH_TABLE_ITEM_value_copy_func, CLDS_HASH_TABLE_ITEM_value_dec_ref_func));
                     (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
                     (void)interlocked_increment(&chaos_test_context->put_call_count);
                 }
@@ -844,7 +872,7 @@ static int chaos_thread(void* arg)
                     item_payload->appendix = item_index + 100;
                     item_payload->item_size = item_size;
 
-                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, CLDS_HASH_TABLE_ITEM_copy_func, CLDS_HASH_TABLE_ITEM_dec_ref_func));
+                    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(chaos_test_context->lru_cache, (void*)(uintptr_t)(item_index + 1), chaos_test_context->items[item_index].item, item_size, on_chaos_evict_callback, chaos_test_context, test_noop_key_copy, test_noop_key_free, CLDS_HASH_TABLE_ITEM_value_copy_func, CLDS_HASH_TABLE_ITEM_value_dec_ref_func));
                     (void)interlocked_exchange(&chaos_test_context->items[item_index].item_state, TEST_HASH_TABLE_ITEM_USED);
                     (void)interlocked_increment(&chaos_test_context->put_call_count);
                 }
@@ -933,26 +961,22 @@ TEST_FUNCTION(lru_cache_chaos_knight_test)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-static int string_key_and_value_int_copy(void** key_destination, void* key_source, void** value_destination, void* value_source)
+static int string_key_copy(void** key_destination, void* key_source)
 {
     ASSERT_IS_NOT_NULL(key_source);
-    ASSERT_IS_NOT_NULL(value_source);
 
     *key_destination = sprintf_char("%s", (char*)key_source);
-    ASSERT_IS_NOT_NULL(key_destination);
+    ASSERT_IS_NOT_NULL(*key_destination);
 
-    *value_destination = value_source;
     return 0;
 }
 
-static void string_key_free(void* key, void* value)
+static void string_key_free(void* key)
 {
-    (void)value;
     ASSERT_IS_NOT_NULL(key);
     free(key);
 }
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
+
 TEST_FUNCTION(test_function_key_copy_works)
 {
     // arrange
@@ -976,7 +1000,7 @@ TEST_FUNCTION(test_function_key_copy_works)
 
 
     // act
-    result = lru_cache_put(lru_cache, key, (void*)(uintptr_t)(100), 1, on_evict_callback, &count_context, string_key_and_value_int_copy, string_key_free);
+    result = lru_cache_put(lru_cache, key, (void*)(uintptr_t)(100), 1, on_evict_callback, &count_context, string_key_copy, string_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     free(key);
@@ -993,7 +1017,7 @@ TEST_FUNCTION(test_function_key_copy_works)
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-int string_value_copy_func(void** key_destination, void* key_source, void** value_destination, void* value_source)
+int string_value_copy_func(void** value_destination, void* value_source)
 {
     ASSERT_IS_NOT_NULL(value_source);
     size_t source_length = strlen(value_source);
@@ -1001,18 +1025,15 @@ int string_value_copy_func(void** key_destination, void* key_source, void** valu
     ASSERT_IS_NOT_NULL(*value_destination);
 
     strcpy(*value_destination, value_source);
-    *key_destination = key_source;
 
     return 0;
 }
 
-void string_value_destroy_func(void* key, void* value)
+void string_value_destroy_func(void* value)
 {
-    (void)key;
     free(value);
 }
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
+
 TEST_FUNCTION(test_function_copy_works)
 {
     // arrange
@@ -1032,7 +1053,7 @@ TEST_FUNCTION(test_function_copy_works)
 
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_value_copy_func, string_value_destroy_func);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, string_value_copy_func, string_value_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     free(value);
@@ -1043,12 +1064,11 @@ TEST_FUNCTION(test_function_copy_works)
 
 
     // cleanup
+    free(return_val1);
     lru_cache_destroy(lru_cache);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-/*Tests_SRS_LRU_CACHE_13_082: [ lru_cache_put shall call copy_key_value_function if not NULL to copy the value, otherwise assigns value to LRU Node item. ]*/
-/*Tests_SRS_LRU_CACHE_13_083: [ lru_cache_put shall call free_key_value_function on LRU Node item cleanup. ]*/
 TEST_FUNCTION(test_function_copy_multiple_times_works)
 {
     // arrange
@@ -1070,7 +1090,7 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_IS_NOT_NULL(value_second_time);
     (void)strcpy(value_second_time, "wxyz");
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, string_value_copy_func, string_value_destroy_func);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, string_value_copy_func, string_value_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     char* return_val1 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
@@ -1078,7 +1098,7 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
     ASSERT_ARE_EQUAL(char_ptr, "abc", return_val1);
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_second_time, 1, on_evict_callback, &count_context, string_value_copy_func, string_value_destroy_func);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value_second_time, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, string_value_copy_func, string_value_destroy_func);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     char* return_val2 = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
@@ -1087,26 +1107,25 @@ TEST_FUNCTION(test_function_copy_multiple_times_works)
 
 
     // cleanup
+    free(return_val1);
+    free(return_val2);
     free(value);
     free(value_second_time);
     lru_cache_destroy(lru_cache);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
-int dummy_copy_error(void** key_destination, void* key_source, void** value_destination, void* value_source)
+int dummy_copy_error(void** value_destination, void* value_source)
 {
-    (void)key_destination;
-    (void)key_source;
     (void)value_destination;
     (void)value_source;
     return 1;
 }
-void dummy_free_error(void* key, void* value)
+void dummy_free_error(void* value)
 {
-    (void)key;
     (void)value;
 }
-/*Tests_SRS_LRU_CACHE_13_084: [ If copy_key_value_function returns non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
+
 TEST_FUNCTION(test_function_copy_fails)
 {
     // arrange
@@ -1123,13 +1142,398 @@ TEST_FUNCTION(test_function_copy_fails)
     (void)strcpy(value, "abc");
 
     // act
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, dummy_copy_error, dummy_free_error);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), value, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, dummy_copy_error, dummy_free_error);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED, result);
 
 
     // cleanup
     free(value);
     lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+typedef struct TEST_REF_VALUE_TAG
+{
+    uint32_t payload;
+    volatile_atomic int32_t* destroyed_flag;
+} TEST_REF_VALUE;
+
+THANDLE_TYPE_DECLARE(TEST_REF_VALUE);
+THANDLE_TYPE_DEFINE(TEST_REF_VALUE);
+
+static void test_ref_value_dispose(TEST_REF_VALUE* value)
+{
+    (void)interlocked_exchange(value->destroyed_flag, 1);
+}
+
+static THANDLE(TEST_REF_VALUE) test_ref_value_create(uint32_t payload, volatile_atomic int32_t* destroyed_flag)
+{
+    TEST_REF_VALUE* result = THANDLE_MALLOC(TEST_REF_VALUE)(test_ref_value_dispose);
+    ASSERT_IS_NOT_NULL(result);
+    result->payload = payload;
+    result->destroyed_flag = destroyed_flag;
+    return result;
+}
+
+static int test_ref_value_copy(THANDLE(TEST_REF_VALUE)* value_destination, THANDLE(TEST_REF_VALUE) value_source)
+{
+    THANDLE_INITIALIZE(TEST_REF_VALUE)(value_destination, value_source);
+    return 0;
+}
+
+static void test_ref_value_free(THANDLE(TEST_REF_VALUE) value)
+{
+    THANDLE_ASSIGN(TEST_REF_VALUE)(&value, NULL);
+}
+
+static void test_ref_value_on_evict(void* context, void* evicted_value)
+{
+    EVICT_CONTEXT* count_context = context;
+    count_context->count++;
+    ASSERT_IS_NOT_NULL(evicted_value);
+}
+
+TEST_FUNCTION(value_returned_by_lru_cache_get_survives_explicit_eviction)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+    volatile_atomic int32_t destroyed;
+    (void)interlocked_exchange(&destroyed, 0);
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    THANDLE(TEST_REF_VALUE) value = test_ref_value_create(42, &destroyed);
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+
+    // the cache is now the only owner of the value
+    test_ref_value_free(value);
+    ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed, 0));
+
+    // act
+    THANDLE(TEST_REF_VALUE) returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    ASSERT_IS_NOT_NULL(returned_value);
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_EVICT_RESULT, LRU_CACHE_EVICT_OK, lru_cache_evict(lru_cache, (void*)(uintptr_t)(1)));
+
+    // assert
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&destroyed, 0), "the value returned by lru_cache_get must still be alive after the entry was evicted");
+    ASSERT_ARE_EQUAL(uint32_t, 42, returned_value->payload);
+
+    test_ref_value_free(returned_value);
+    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed, 0));
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
+TEST_FUNCTION(value_returned_by_lru_cache_get_survives_capacity_eviction)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+    volatile_atomic int32_t destroyed_1;
+    volatile_atomic int32_t destroyed_2;
+    (void)interlocked_exchange(&destroyed_1, 0);
+    (void)interlocked_exchange(&destroyed_2, 0);
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    // a capacity of 1 makes the second put evict the first entry
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 1, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    THANDLE(TEST_REF_VALUE) value_1 = test_ref_value_create(11, &destroyed_1);
+    THANDLE(TEST_REF_VALUE) value_2 = test_ref_value_create(22, &destroyed_2);
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value_1, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_1);
+
+    THANDLE(TEST_REF_VALUE) returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    ASSERT_IS_NOT_NULL(returned_value);
+
+    // act
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(2), (void*)value_2, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(uint32_t, 1, count_context.count);
+    ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed_1, 0), "the value returned by lru_cache_get must still be alive after the entry was evicted due to capacity");
+    ASSERT_ARE_EQUAL(uint32_t, 11, returned_value->payload);
+
+    test_ref_value_free(returned_value);
+    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_1, 0));
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_2, 0));
+}
+
+TEST_FUNCTION(value_returned_by_lru_cache_get_survives_same_key_replacement)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+    volatile_atomic int32_t destroyed_1;
+    volatile_atomic int32_t destroyed_2;
+    (void)interlocked_exchange(&destroyed_1, 0);
+    (void)interlocked_exchange(&destroyed_2, 0);
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    THANDLE(TEST_REF_VALUE) value_1 = test_ref_value_create(11, &destroyed_1);
+    THANDLE(TEST_REF_VALUE) value_2 = test_ref_value_create(22, &destroyed_2);
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value_1, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_1);
+
+    THANDLE(TEST_REF_VALUE) returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    ASSERT_IS_NOT_NULL(returned_value);
+
+    // act: replace the same key, which frees the value stored by the first put
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value_2, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value_2);
+
+    // assert
+    ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed_1, 0), "the value returned by lru_cache_get must still be alive after the key was replaced");
+    ASSERT_ARE_EQUAL(uint32_t, 11, returned_value->payload);
+
+    THANDLE(TEST_REF_VALUE) returned_value_after_replace = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+    ASSERT_IS_NOT_NULL(returned_value_after_replace);
+    ASSERT_ARE_EQUAL(uint32_t, 22, returned_value_after_replace->payload);
+
+    test_ref_value_free(returned_value);
+    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_1, 0));
+
+    test_ref_value_free(returned_value_after_replace);
+    ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed_2, 0));
+
+    // cleanup
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed_2, 0));
+}
+
+static volatile_atomic int32_t g_test_ref_value_copy_should_fail;
+
+static int test_ref_value_copy_can_fail(THANDLE(TEST_REF_VALUE)* value_destination, THANDLE(TEST_REF_VALUE) value_source)
+{
+    int result;
+    if (interlocked_add(&g_test_ref_value_copy_should_fail, 0) != 0)
+    {
+        result = 1;
+    }
+    else
+    {
+        result = test_ref_value_copy(value_destination, value_source);
+    }
+    return result;
+}
+
+TEST_FUNCTION(lru_cache_get_returns_NULL_when_the_value_copy_function_fails)
+{
+    // arrange
+    EVICT_CONTEXT count_context = { 0 };
+    volatile_atomic int32_t destroyed;
+    (void)interlocked_exchange(&destroyed, 0);
+    (void)interlocked_exchange(&g_test_ref_value_copy_should_fail, 0);
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+    LRU_CACHE_HANDLE lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, 3, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(lru_cache);
+
+    THANDLE(TEST_REF_VALUE) value = test_ref_value_create(42, &destroyed);
+
+    ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(lru_cache, (void*)(uintptr_t)(1), (void*)value, 1, test_ref_value_on_evict, &count_context, test_noop_key_copy, test_noop_key_free, (LRU_CACHE_VALUE_COPY)test_ref_value_copy_can_fail, (LRU_CACHE_VALUE_FREE)test_ref_value_free));
+    test_ref_value_free(value);
+
+    // the copy function fails only when called by lru_cache_get
+    (void)interlocked_exchange(&g_test_ref_value_copy_should_fail, 1);
+
+    // act
+    void* returned_value = lru_cache_get(lru_cache, (void*)(uintptr_t)(1));
+
+    // assert
+    ASSERT_IS_NULL(returned_value);
+    ASSERT_ARE_EQUAL(int, 0, (int)interlocked_add(&destroyed, 0));
+
+    // cleanup
+    (void)interlocked_exchange(&g_test_ref_value_copy_should_fail, 0);
+    lru_cache_destroy(lru_cache);
+    clds_hazard_pointers_destroy(hazard_pointers);
+    ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed, 0));
+}
+
+#define GET_EVICT_STRESS_THREAD_COUNT   8
+#define GET_EVICT_STRESS_KEY_COUNT      64
+// a capacity well below the number of keys keeps eviction running constantly
+#define GET_EVICT_STRESS_CAPACITY       8
+#define GET_EVICT_STRESS_SENTINEL       0xA5A5A5A5
+
+#ifdef USE_VALGRIND
+#define GET_EVICT_STRESS_RUNTIME    5000 // ms
+#else
+#define GET_EVICT_STRESS_RUNTIME    15000 // ms
+#endif
+
+typedef struct GET_EVICT_STRESS_CONTEXT_TAG
+{
+    LRU_CACHE_HANDLE lru_cache;
+    volatile_atomic int32_t done;
+    volatile_atomic int32_t live_value_count;
+    volatile_atomic int32_t get_hit_count;
+    volatile_atomic int32_t evict_count;
+} GET_EVICT_STRESS_CONTEXT;
+
+typedef struct GET_EVICT_STRESS_VALUE_TAG
+{
+    uint32_t key;
+    uint32_t sentinel;
+    GET_EVICT_STRESS_CONTEXT* context;
+} GET_EVICT_STRESS_VALUE;
+
+THANDLE_TYPE_DECLARE(GET_EVICT_STRESS_VALUE);
+THANDLE_TYPE_DEFINE(GET_EVICT_STRESS_VALUE);
+
+static void get_evict_stress_value_dispose(GET_EVICT_STRESS_VALUE* value)
+{
+    // poison the payload so that any use after free is visible to the getter threads
+    value->sentinel = 0;
+    value->key = 0;
+    (void)interlocked_decrement(&value->context->live_value_count);
+}
+
+static int get_evict_stress_value_copy(THANDLE(GET_EVICT_STRESS_VALUE)* value_destination, THANDLE(GET_EVICT_STRESS_VALUE) value_source)
+{
+    THANDLE_INITIALIZE(GET_EVICT_STRESS_VALUE)(value_destination, value_source);
+    return 0;
+}
+
+static void get_evict_stress_value_free(THANDLE(GET_EVICT_STRESS_VALUE) value)
+{
+    THANDLE_ASSIGN(GET_EVICT_STRESS_VALUE)(&value, NULL);
+}
+
+static void get_evict_stress_on_evict(void* context, void* evicted_value)
+{
+    GET_EVICT_STRESS_CONTEXT* stress_context = context;
+    ASSERT_IS_NOT_NULL(evicted_value);
+    (void)interlocked_increment(&stress_context->evict_count);
+}
+
+typedef struct GET_EVICT_STRESS_THREAD_DATA_TAG
+{
+    THREAD_HANDLE thread_handle;
+    GET_EVICT_STRESS_CONTEXT* stress_context;
+} GET_EVICT_STRESS_THREAD_DATA;
+
+static int get_evict_stress_thread(void* arg)
+{
+    GET_EVICT_STRESS_THREAD_DATA* thread_data = arg;
+    GET_EVICT_STRESS_CONTEXT* stress_context = thread_data->stress_context;
+
+    while (interlocked_add(&stress_context->done, 0) != 1)
+    {
+        uint32_t key = (uint32_t)((rand() * (GET_EVICT_STRESS_KEY_COUNT - 1)) / RAND_MAX) + 1;
+
+        if ((rand() % 2) == 0)
+        {
+            GET_EVICT_STRESS_VALUE* new_value = THANDLE_MALLOC(GET_EVICT_STRESS_VALUE)(get_evict_stress_value_dispose);
+            ASSERT_IS_NOT_NULL(new_value);
+            new_value->key = key;
+            new_value->sentinel = GET_EVICT_STRESS_SENTINEL;
+            new_value->context = stress_context;
+            (void)interlocked_increment(&stress_context->live_value_count);
+
+            THANDLE(GET_EVICT_STRESS_VALUE) value = new_value;
+            ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(stress_context->lru_cache, (void*)(uintptr_t)key, (void*)value, 1, get_evict_stress_on_evict, stress_context, lru_cache_assign_only_copy, lru_cache_assign_only_free, (LRU_CACHE_VALUE_COPY)get_evict_stress_value_copy, (LRU_CACHE_VALUE_FREE)get_evict_stress_value_free));
+            get_evict_stress_value_free(value);
+        }
+        else
+        {
+            THANDLE(GET_EVICT_STRESS_VALUE) value = lru_cache_get(stress_context->lru_cache, (void*)(uintptr_t)key);
+            if (value != NULL)
+            {
+                (void)interlocked_increment(&stress_context->get_hit_count);
+
+                ASSERT_ARE_EQUAL(uint32_t, GET_EVICT_STRESS_SENTINEL, value->sentinel, "the value returned by lru_cache_get must not have been freed");
+                ASSERT_ARE_EQUAL(uint32_t, key, value->key);
+
+                // give the other threads a chance to evict the entry while this reference is held
+                ThreadAPI_Sleep(0);
+
+                ASSERT_ARE_EQUAL(uint32_t, GET_EVICT_STRESS_SENTINEL, value->sentinel, "the value returned by lru_cache_get must stay alive while the caller holds it");
+                ASSERT_ARE_EQUAL(uint32_t, key, value->key);
+
+                get_evict_stress_value_free(value);
+            }
+        }
+    }
+
+    return 0;
+}
+
+TEST_FUNCTION(lru_cache_get_values_survive_concurrent_eviction_stress)
+{
+    // arrange
+    size_t i;
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+
+    GET_EVICT_STRESS_CONTEXT stress_context;
+    stress_context.lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, GET_EVICT_STRESS_CAPACITY, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(stress_context.lru_cache);
+
+    (void)interlocked_exchange(&stress_context.done, 0);
+    (void)interlocked_exchange(&stress_context.live_value_count, 0);
+    (void)interlocked_exchange(&stress_context.get_hit_count, 0);
+    (void)interlocked_exchange(&stress_context.evict_count, 0);
+
+    GET_EVICT_STRESS_THREAD_DATA* thread_data = malloc_2(GET_EVICT_STRESS_THREAD_COUNT, sizeof(GET_EVICT_STRESS_THREAD_DATA));
+    ASSERT_IS_NOT_NULL(thread_data);
+
+    // act
+    for (i = 0; i < GET_EVICT_STRESS_THREAD_COUNT; i++)
+    {
+        thread_data[i].stress_context = &stress_context;
+        ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&thread_data[i].thread_handle, get_evict_stress_thread, &thread_data[i]), "Error spawning test thread %zu", i);
+    }
+
+    LogInfo("Running lru_cache_get/evict stress test for %.02f seconds", (double)GET_EVICT_STRESS_RUNTIME / 1000);
+    double start_time = timer_global_get_elapsed_ms();
+    while (timer_global_get_elapsed_ms() - start_time < GET_EVICT_STRESS_RUNTIME)
+    {
+        ThreadAPI_Sleep(1000);
+    }
+
+    (void)interlocked_exchange(&stress_context.done, 1);
+
+    for (i = 0; i < GET_EVICT_STRESS_THREAD_COUNT; i++)
+    {
+        int dont_care;
+        ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(thread_data[i].thread_handle, &dont_care), "Thread %zu failed to join", i);
+    }
+
+    // assert
+    LogInfo("lru_cache_get hits: %" PRId32 ", evictions: %" PRId32 "", interlocked_add(&stress_context.get_hit_count, 0), interlocked_add(&stress_context.evict_count, 0));
+    ASSERT_IS_TRUE(interlocked_add(&stress_context.get_hit_count, 0) > 0, "the stress test must have observed at least one lru_cache_get hit");
+    ASSERT_IS_TRUE(interlocked_add(&stress_context.evict_count, 0) > 0, "the stress test must have observed at least one eviction");
+
+    lru_cache_destroy(stress_context.lru_cache);
+
+    // every value that was created must have been freed exactly once
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&stress_context.live_value_count, 0));
+
+    // cleanup
+    free(thread_data);
     clds_hazard_pointers_destroy(hazard_pointers);
 }
 
@@ -1164,13 +1568,13 @@ TEST_FUNCTION(test_lru_cache_evict_success)
     test_item3->key = 3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -1237,13 +1641,13 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_remove_evicted_key)
     test_item3->key = 3;
     test_item3->appendix = 15;
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(1), item1, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(2), item2, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(3), item3, 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
 
@@ -1286,7 +1690,8 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order)
 {
     // arrange
     EVICT_CONTEXT count_context = { 0 };
-    int capacity = 5, n = 7;
+    int capacity = 5;
+    int n = 7;
 
     CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
     LRU_CACHE_PUT_RESULT result;
@@ -1309,7 +1714,7 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order)
     // Lets fill the cache till the capacity of 5
     for(int i = 0; i < n-2; i++)
     {
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -1321,12 +1726,12 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order)
 
     // LRU keys order now : 5,4,2,1
     // Lets introduce new element with key: 6
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(6), items[5], 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(6), items[5], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // LRU keys order now : 6,5,4,2,1 (6 being recently used)
     // Lets trigger lru eviction to kick out 1
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(7), items[6], 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(7), items[6], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // LRU keys order now : 7,6,5,4,2
@@ -1364,7 +1769,8 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order_when_head_key_is_remove
 {
     // arrange
     EVICT_CONTEXT count_context = { 0 };
-    int capacity = 5, n = 7;
+    int capacity = 5;
+    int n = 7;
 
     CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
     LRU_CACHE_PUT_RESULT result;
@@ -1386,7 +1792,7 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order_when_head_key_is_remove
     // Lets fill the cache till the capacity of 5
     for (int i = 0; i < n - 2; i++)
     {
-        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, NULL, NULL);
+        result = lru_cache_put(lru_cache, (void*)(uintptr_t)(i + 1), items[i], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
         ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
     }
 
@@ -1398,12 +1804,12 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order_when_head_key_is_remove
 
     // LRU keys order now :4,3,2,1
     // Lets introduce new element with key: 6
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(6), items[5], 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(6), items[5], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // LRU keys order now : 6,4,3,2,1 (6 being recently used)
     // Lets trigger lru eviction to kick out 1
-    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(7), items[6], 1, on_evict_callback, &count_context, NULL, NULL);
+    result = lru_cache_put(lru_cache, (void*)(uintptr_t)(7), items[6], 1, on_evict_callback, &count_context, test_noop_key_copy, test_noop_key_free, test_noop_value_copy, test_noop_value_free);
     ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, result);
 
     // LRU keys order now : 7,6,4,3,2

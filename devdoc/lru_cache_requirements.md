@@ -28,15 +28,23 @@ typedef void(*LRU_CACHE_EVICT_CALLBACK_FUNC)(void* context, void* evicted_value)
 
 typedef void(*LRU_CACHE_ON_ERROR_CALLBACK_FUNC)(void* context);
 
-typedef int(*LRU_CACHE_KEY_VALUE_COPY)(void* key_destination, void* key_source, void* value_destination, void* value_source);
+typedef int(*LRU_CACHE_KEY_COPY)(void** key_destination, void* key_source);
 
-typedef void(*LRU_CACHE_KEY_VALUE_FREE)(void* key, void* value);
+typedef void(*LRU_CACHE_KEY_FREE)(void* key);
+
+typedef int(*LRU_CACHE_VALUE_COPY)(void** value_destination, void* value_source);
+
+typedef void(*LRU_CACHE_VALUE_FREE)(void* value);
+
+MOCKABLE_FUNCTION(, int, lru_cache_assign_only_copy, void**, destination, void*, source);
+
+MOCKABLE_FUNCTION(, void, lru_cache_assign_only_free, void*, value);
 
 MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity, LRU_CACHE_ON_ERROR_CALLBACK_FUNC, on_error_callback, void*, on_error_context);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
 
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_VALUE_COPY, copy_key_value_function, LRU_CACHE_KEY_VALUE_FREE, free_key_value_function);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_COPY, copy_key_function, LRU_CACHE_KEY_FREE, free_key_function, LRU_CACHE_VALUE_COPY, copy_value_function, LRU_CACHE_VALUE_FREE, free_value_function);
 
 MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, key);
 
@@ -95,10 +103,32 @@ Frees up `LRU_CACHE_HANDLE`.
 **SRS_LRU_CACHE_13_022: [** `lru_cache_destroy` shall free all resources associated with the `LRU_CACHE_HANDLE`. **]**
 
 
+### lru_cache_assign_only_copy
+
+```c
+MOCKABLE_FUNCTION(, int, lru_cache_assign_only_copy, void**, destination, void*, source);
+```
+
+`lru_cache_assign_only_copy` is the default copy function for keys or values that are stored by value (such as primitive types) and therefore need no ownership management. It is meant to be paired with `lru_cache_assign_only_free`.
+
+**SRS_LRU_CACHE_45_010: [** `lru_cache_assign_only_copy` shall store `source` in `destination` and return 0. **]**
+
+
+### lru_cache_assign_only_free
+
+```c
+MOCKABLE_FUNCTION(, void, lru_cache_assign_only_free, void*, value);
+```
+
+`lru_cache_assign_only_free` is the default free function for keys or values that are stored by value (such as primitive types) and therefore need no ownership management. It is meant to be paired with `lru_cache_assign_only_copy`.
+
+**SRS_LRU_CACHE_45_011: [** `lru_cache_assign_only_free` shall return without doing anything. **]**
+
+
 ### lru_cache_put
 
 ```c
-MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_VALUE_COPY, copy_key_value_function, LRU_CACHE_KEY_VALUE_FREE, free_key_value_function);
+MOCKABLE_FUNCTION(, LRU_CACHE_PUT_RESULT, lru_cache_put, LRU_CACHE_HANDLE, lru_handle, void*, key, void*, value, int64_t, size, LRU_CACHE_EVICT_CALLBACK_FUNC, evict_callback, void*, evict_context, LRU_CACHE_KEY_COPY, copy_key_function, LRU_CACHE_KEY_FREE, free_key_function, LRU_CACHE_VALUE_COPY, copy_value_function, LRU_CACHE_VALUE_FREE, free_value_function);
 ```
 
 The `lru_cache_put` function is utilized for inserting or updating an item in the Least Recently Used (LRU) cache. If the item already exists in the cache, the `current_size` is updated first, and then the value is reinserted into the cache to maintain the LRU order and triggers eviction if needed. In case the item is not found, it adds the item to the cache and performs eviction if necessary. The eviction process involves updating the cache's current size, removing the least recently used item, and invoking an eviction callback. All the latest items are inserted at the tail of the `doubly_linked_list`. During eviction, the node next to the head (i.e., the least recently used item) is selected and removed from the `clds_hash_table`. It's important to note that the `current_size` may temporarily increase during this process, but eviction ensures the `current_size` is normalized.
@@ -117,7 +147,13 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_076: [** `context` may be `NULL`. **]**
 
-**SRS_LRU_CACHE_13_081: [** If either of `copy_value_function` or `free_value_function` is `NULL` and the other is not `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+**SRS_LRU_CACHE_13_081: [** If `copy_key_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_45_001: [** If `free_key_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_45_002: [** If `copy_value_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
+
+**SRS_LRU_CACHE_45_003: [** If `free_value_function` is `NULL`, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_ERROR`. **]**
 
 **SRS_LRU_CACHE_13_027: [** If `size` is greater than `capacity` of lru cache, then `lru_cache_put` shall fail and return `LRU_CACHE_PUT_VALUE_INVALID_SIZE`. **]**
 
@@ -127,13 +163,21 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
 
+**SRS_LRU_CACHE_13_082: [** `lru_cache_put` shall call `copy_key_function` to copy the key into the LRU Node item. **]**
+
+**SRS_LRU_CACHE_45_004: [** `lru_cache_put` shall call `copy_value_function` to copy the value into the LRU Node item. **]**
+
+**SRS_LRU_CACHE_13_084: [** If `copy_key_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
+
+**SRS_LRU_CACHE_45_005: [** If `copy_value_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
+
+**SRS_LRU_CACHE_45_006: [** If `copy_value_function` fails, `lru_cache_put` shall free the copied key by calling `free_key_function`. **]**
+
 **SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
 
-**SRS_LRU_CACHE_13_082: [** `lru_cache_put` shall call `copy_key_value_function` if not `NULL` to copy the value, otherwise assigns `value` to LRU Node item. **]**
+**SRS_LRU_CACHE_13_083: [** `lru_cache_put` shall call `free_key_function` on LRU Node item cleanup. **]**
 
-**SRS_LRU_CACHE_13_084: [** If `copy_key_value_function` returns non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
-
-**SRS_LRU_CACHE_13_083: [** `lru_cache_put` shall call `free_key_value_function` on LRU Node item cleanup. **]**
+**SRS_LRU_CACHE_45_007: [** `lru_cache_put` shall call `free_value_function` on LRU Node item cleanup. **]**
 
 **SRS_LRU_CACHE_13_065: [** `lru_cache_put` shall update the LRU Node item in the hash table by calling `clds_hash_table_set_value`. **]**
 
@@ -202,9 +246,13 @@ Gets the `value` of the `key` from the cache. If the `key` is found, the node is
 
 - **SRS_LRU_CACHE_13_058: [** `lru_cache_get` shall make the node as the tail by calling `DList_InsertTailList`. **]**
 
+**SRS_LRU_CACHE_45_008: [** `lru_cache_get` shall call `copy_value_function` to obtain its own copy of the value while the hash table item is still protected. **]**
+
+**SRS_LRU_CACHE_45_009: [** If `copy_value_function` fails, `lru_cache_get` shall return `NULL`. **]**
+
 **SRS_LRU_CACHE_13_059: [** `lru_cache_get` shall release the lock in exclusive mode. **]**
 
-**SRS_LRU_CACHE_13_060: [** On success, `lru_cache_get` shall return `CLDS_HASH_TABLE_ITEM` value of the `key`. **]**
+**SRS_LRU_CACHE_13_060: [** On success, `lru_cache_get` shall return the copy of the value. **]**
 
 **SRS_LRU_CACHE_13_061: [** If there are any failures, `lru_cache_get` shall return `NULL`. **]**
 
