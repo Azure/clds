@@ -204,8 +204,6 @@ MOCKABLE_FUNCTION(, void*, lru_cache_get, LRU_CACHE_HANDLE, lru_cache, void*, ke
 
 Gets the `value` of the `key` from the cache. If the `key` is found, the node is made as tail if it is not already.
 
-`lru_cache_get` copies the value with `copy_value_function` (for refcounted values this acquires a reference) while the hash table item is still protected, so the returned value stays valid even if the entry is concurrently evicted or replaced. The caller owns the returned value and is responsible for releasing it with the matching `free_value_function`.
-
 **SRS_LRU_CACHE_13_051: [** If `lru_cache` is `NULL`, then `lru_cache_get` shall fail and return `NULL`. **]**
 
 **SRS_LRU_CACHE_13_052: [** If `key` is `NULL`, then `lru_cache_get` shall fail and return `NULL`. **]**
