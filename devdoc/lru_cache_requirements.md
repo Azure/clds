@@ -137,8 +137,6 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_13_033: [** `lru_cache_put` shall acquire the lock in exclusive mode. **]**
 
-**SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
-
 **SRS_LRU_CACHE_13_082: [** `lru_cache_put` shall call `copy_key_function` to copy the key into the LRU Node item. **]**
 
 **SRS_LRU_CACHE_45_004: [** `lru_cache_put` shall call `copy_value_function` to copy the value into the LRU Node item. **]**
@@ -147,7 +145,9 @@ Note: The `size` of the value needs to be precalculated in terms of the `capacit
 
 **SRS_LRU_CACHE_45_005: [** If `copy_value_function` returns a non zero value, then `lru_cache_put` shall release the exclusive lock and fail with `LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED`. **]**
 
-**SRS_LRU_CACHE_45_006: [** If `copy_value_function` fails after the key was copied, `lru_cache_put` shall free the copied key by calling `free_key_function`. **]**
+**SRS_LRU_CACHE_45_006: [** If `copy_value_function` fails, `lru_cache_put` shall free the copied key by calling `free_key_function`. **]**
+
+**SRS_LRU_CACHE_13_064: [** `lru_cache_put` shall create LRU Node item to be updated in the hash table. **]**
 
 **SRS_LRU_CACHE_13_083: [** `lru_cache_put` shall call `free_key_function` on LRU Node item cleanup. **]**
 

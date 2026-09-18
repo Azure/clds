@@ -381,10 +381,16 @@ TEST_FUNCTION(test_put_calls_evict)
 TEST_FUNCTION(test_put_calls_evict_with_correct_context)
 {
     // arrange
-    uint32_t key1 = 1, key2 = 2, key3 = 3;
+    uint32_t key1 = 1;
+    uint32_t key2 = 2;
+    uint32_t key3 = 3;
     int64_t capacity = 2;
-    EVICTION_TEST_CONTEXT key1_context, key2_context, key3_context;
-    key1_context.key = key1, key2_context.key = key2, key3_context.key = key3;
+    EVICTION_TEST_CONTEXT key1_context;
+    EVICTION_TEST_CONTEXT key2_context;
+    EVICTION_TEST_CONTEXT key3_context;
+    key1_context.key = key1;
+    key2_context.key = key2;
+    key3_context.key = key3;
     (void)interlocked_exchange(&key1_context.was_called, 0);
     (void)interlocked_exchange(&key2_context.was_called, 0);
     (void)interlocked_exchange(&key3_context.was_called, 0);
@@ -1518,7 +1524,8 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order)
 {
     // arrange
     EVICT_CONTEXT count_context = { 0 };
-    int capacity = 5, n = 7;
+    int capacity = 5;
+    int n = 7;
 
     CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
     LRU_CACHE_PUT_RESULT result;
@@ -1596,7 +1603,8 @@ TEST_FUNCTION(test_lru_cache_evict_does_not_change_order_when_head_key_is_remove
 {
     // arrange
     EVICT_CONTEXT count_context = { 0 };
-    int capacity = 5, n = 7;
+    int capacity = 5;
+    int n = 7;
 
     CLDS_HASH_TABLE_ITEM** items = malloc_2(n, sizeof(CLDS_HASH_TABLE_ITEM*));
     LRU_CACHE_PUT_RESULT result;

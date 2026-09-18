@@ -189,10 +189,10 @@ static void set_lru_put_insert_expectations(void* key, CLDS_HASH_TABLE_ITEM** ha
 {
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
-        .CaptureReturn(hash_table_item);
     STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
+        .CaptureReturn(hash_table_item);
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
     STRICT_EXPECTED_CALL(DList_InsertTailList(IGNORED_ARG, IGNORED_ARG));
@@ -469,7 +469,11 @@ TEST_FUNCTION(lru_cache_destroy_calls_free_function_multiple_times)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value1 = 1000, size = 2, key2 = 2, value2 = 2000;
+    int key1 = 1;
+    int value1 = 1000;
+    int size = 2;
+    int key2 = 2;
+    int value2 = 2000;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     umock_c_reset_all_calls();
@@ -543,7 +547,9 @@ TEST_FUNCTION(lru_cache_destroy_with_NULL_handle_returns)
 TEST_FUNCTION(lru_cache_put_with_null_handle_fails)
 {
     // arrange
-    int key1 = 10, value = 1000, size1 = 2;
+    int key1 = 10;
+    int value = 1000;
+    int size1 = 2;
 
     // act
     LRU_CACHE_PUT_RESULT result = lru_cache_put(NULL, &key1, &value, size1, test_eviction_callback, NULL, test_copy_key_function, test_free_key_function, test_copy_value_function, test_free_value_function);
@@ -562,7 +568,8 @@ TEST_FUNCTION(lru_cache_put_with_null_key_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int value = 1000, size1 = 2;
+    int value = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -588,7 +595,8 @@ TEST_FUNCTION(lru_cache_put_with_null_value_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1000, size1 = 2;
+    int key1 = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -614,7 +622,8 @@ TEST_FUNCTION(lru_cache_put_with_0_size_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000;
+    int key1 = 1;
+    int value = 1000;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -640,7 +649,9 @@ TEST_FUNCTION(lru_cache_put_with_NULL_callback_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000, size1 = 2;
+    int key1 = 1;
+    int value = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -666,7 +677,9 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_key_function_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000, size1 = 2;
+    int key1 = 1;
+    int value = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -692,7 +705,9 @@ TEST_FUNCTION(lru_cache_put_with_NULL_free_key_function_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000, size1 = 2;
+    int key1 = 1;
+    int value = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -718,7 +733,9 @@ TEST_FUNCTION(lru_cache_put_with_NULL_copy_value_function_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000, size1 = 2;
+    int key1 = 1;
+    int value = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -744,7 +761,9 @@ TEST_FUNCTION(lru_cache_put_with_NULL_free_value_function_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000, size1 = 2;
+    int key1 = 1;
+    int value = 1000;
+    int size1 = 2;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -771,7 +790,8 @@ TEST_FUNCTION(lru_cache_put_with_size_bigger_than_capacity_fails)
     int64_t capacity = 2;
     int64_t size1 = capacity + 1;
     uint32_t bucket_size = 1024;
-    int key1 = 1, value = 1000;
+    int key1 = 1;
+    int value = 1000;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
     lru_cache = lru_cache_create(test_compute_hash, test_key_compare_func, bucket_size, test_clds_hazard_pointers, capacity, test_on_error, test_error_context);
@@ -803,7 +823,9 @@ TEST_FUNCTION(lru_cache_put_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -837,8 +859,9 @@ TEST_FUNCTION(lru_cache_put_fails_with_key_copy_function_fail)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1;
-    CLDS_HASH_TABLE_ITEM* hash_table_item;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
 
@@ -849,10 +872,7 @@ TEST_FUNCTION(lru_cache_put_fails_with_key_copy_function_fail)
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
-        .CaptureReturn(&hash_table_item);
     STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG)).SetReturn(MU_FAILURE);
-    STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
     // act
@@ -868,15 +888,16 @@ TEST_FUNCTION(lru_cache_put_fails_with_key_copy_function_fail)
 
 /*Tests_SRS_LRU_CACHE_45_004: [ lru_cache_put shall call copy_value_function to copy the value into the LRU Node item. ]*/
 /*Tests_SRS_LRU_CACHE_45_005: [ If copy_value_function returns a non zero value, then lru_cache_put shall release the exclusive lock and fail with LRU_CACHE_PUT_VALUE_COPY_FUNCTION_FAILED. ]*/
-/*Tests_SRS_LRU_CACHE_45_006: [ If copy_value_function fails after the key was copied, lru_cache_put shall free the copied key by calling free_key_function. ]*/
+/*Tests_SRS_LRU_CACHE_45_006: [ If copy_value_function fails, lru_cache_put shall free the copied key by calling free_key_function. ]*/
 TEST_FUNCTION(lru_cache_put_fails_with_value_copy_function_fail)
 {
     // arrange
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1;
-    CLDS_HASH_TABLE_ITEM* hash_table_item;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
 
@@ -887,11 +908,8 @@ TEST_FUNCTION(lru_cache_put_fails_with_value_copy_function_fail)
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
-        .CaptureReturn(&hash_table_item);
     STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, IGNORED_ARG)).SetReturn(MU_FAILURE);
-    STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_release_exclusive(IGNORED_ARG));
 
@@ -925,7 +943,9 @@ TEST_FUNCTION(lru_cache_put_twice_with_copy_function_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -947,9 +967,9 @@ TEST_FUNCTION(lru_cache_put_twice_with_copy_function_succeeds)
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, &key));
     STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, &value));
+    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_compute_hash(IGNORED_ARG));
 
@@ -981,7 +1001,10 @@ TEST_FUNCTION(lru_cache_put_overflows_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = INT64_MAX - 10;
     uint32_t bucket_size = 1024;
-    int64_t key = 10, key2 = 11, value = 1000, size = INT64_MAX / 2;
+    int64_t key = 10;
+    int64_t key2 = 11;
+    int64_t value = 1000;
+    int64_t size = INT64_MAX / 2;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1033,7 +1056,11 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_when_capacity_full_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
+    int key = 10;
+    int value = 1000;
+    int key2 = 11;
+    int size1 = 2;
+    int size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
 
@@ -1085,7 +1112,13 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_twice_when_capacity_full_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key1 = 10, value = 1000, key2 = 11, key3 = 12, size1 = 1, size2 = 1, size3 = 2;
+    int key1 = 10;
+    int value = 1000;
+    int key2 = 11;
+    int key3 = 12;
+    int size1 = 1;
+    int size2 = 1;
+    int size3 = 2;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
     CLDS_HASH_TABLE_ITEM* hash_table_item_3;
@@ -1146,7 +1179,9 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1168,9 +1203,9 @@ TEST_FUNCTION(lru_cache_put_set_value_fails)
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_SET_VALUE_ERROR);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
@@ -1196,7 +1231,9 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1208,10 +1245,10 @@ TEST_FUNCTION(lru_cache_put_insert_fails)
 
     STRICT_EXPECTED_CALL(clds_hazard_pointers_thread_helper_get_thread(IGNORED_ARG));
     STRICT_EXPECTED_CALL(srw_lock_ll_acquire_exclusive(IGNORED_ARG));
-    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
-        .CaptureReturn(&hash_table_item);
     STRICT_EXPECTED_CALL(test_copy_key_function(IGNORED_ARG, IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_copy_value_function(IGNORED_ARG, IGNORED_ARG));
+    STRICT_EXPECTED_CALL(clds_hash_table_node_create(IGNORED_ARG, IGNORED_ARG, IGNORED_ARG))
+        .CaptureReturn(&hash_table_item);
     STRICT_EXPECTED_CALL(clds_hash_table_set_value(IGNORED_ARG, IGNORED_ARG, &key, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG, IGNORED_ARG)).SetReturn(CLDS_HASH_TABLE_INSERT_ERROR);
     STRICT_EXPECTED_CALL(clds_hash_table_node_release(IGNORED_ARG));
     STRICT_EXPECTED_CALL(test_free_key_function(IGNORED_ARG));
@@ -1238,7 +1275,11 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_and_fails_with_release_and_callbac
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
+    int key = 10;
+    int value = 1000;
+    int key2 = 11;
+    int size1 = 2;
+    int size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
 
@@ -1285,7 +1326,11 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_triggers_loop_when_not_found)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
+    int key = 10;
+    int value = 1000;
+    int key2 = 11;
+    int size1 = 2;
+    int size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
 
@@ -1338,7 +1383,11 @@ TEST_FUNCTION(lru_cache_put_triggers_eviction_calls_callback_when_remove_error)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 2;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, key2 = 11, size1 = 2, size2 = 1;
+    int key = 10;
+    int value = 1000;
+    int key2 = 11;
+    int size1 = 2;
+    int size2 = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_1;
     CLDS_HASH_TABLE_ITEM* hash_table_item_2;
 
@@ -1438,7 +1487,11 @@ TEST_FUNCTION(lru_cache_get_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key1 = 10, key2 = 11, value1 = 1000, value2 = 1001, size = 1;
+    int key1 = 10;
+    int key2 = 11;
+    int value1 = 1000;
+    int value2 = 1001;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1490,7 +1543,9 @@ TEST_FUNCTION(lru_cache_get_does_not_change_order_when_Blink_is_current_key_succ
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key1 = 10, value1 = 1000, size = 1;
+    int key1 = 10;
+    int value1 = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1539,7 +1594,9 @@ TEST_FUNCTION(lru_cache_get_copies_the_value_when_a_copy_value_function_was_give
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key1 = 10, value1 = 1000, size = 1;
+    int key1 = 10;
+    int value1 = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1586,7 +1643,9 @@ TEST_FUNCTION(lru_cache_get_fails_when_the_copy_value_function_fails)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key1 = 10, value1 = 1000, size = 1;
+    int key1 = 10;
+    int value1 = 1000;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1638,7 +1697,10 @@ TEST_FUNCTION(lru_cache_get_calls_same_key_multiple_times_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, value = 1000, size = 1, times = 10;
+    int key = 10;
+    int value = 1000;
+    int size = 1;
+    int times = 10;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
 
     set_lru_create_expectations(bucket_size, test_clds_hazard_pointers);
@@ -1910,7 +1972,11 @@ TEST_FUNCTION(lru_cache_evict_removes_recent_key_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, key2 = 11, value = 1000, value2 = 1500, size = 1;
+    int key = 10;
+    int key2 = 11;
+    int value = 1000;
+    int value2 = 1500;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
     CLDS_HASH_TABLE_ITEM* hash_table_item2;
 
@@ -1971,7 +2037,11 @@ TEST_FUNCTION(lru_cache_evict_removes_old_key_succeeds)
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, key2 = 11, value = 1000, value2 = 1500, size = 1;
+    int key = 10;
+    int key2 = 11;
+    int value = 1000;
+    int value2 = 1500;
+    int size = 1;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
     CLDS_HASH_TABLE_ITEM* hash_table_item2;
 
@@ -2027,7 +2097,13 @@ TEST_FUNCTION(lru_cache_evict_updates_current_size_and_does_not_trigger_evict_su
     LRU_CACHE_HANDLE lru_cache;
     int64_t capacity = 10;
     uint32_t bucket_size = 1024;
-    int key = 10, key2 = 11, key3 = 12, value = 1000, value2 = 1500, value3 = 2000, size = 5;
+    int key = 10;
+    int key2 = 11;
+    int key3 = 12;
+    int value = 1000;
+    int value2 = 1500;
+    int value3 = 2000;
+    int size = 5;
     CLDS_HASH_TABLE_ITEM* hash_table_item;
     CLDS_HASH_TABLE_ITEM* hash_table_item2;
     CLDS_HASH_TABLE_ITEM* hash_table_item3;
