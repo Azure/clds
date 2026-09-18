@@ -275,6 +275,19 @@ static void lru_node_cleanup(void* context, struct CLDS_HASH_TABLE_ITEM_TAG* has
     node->free_value_func(node->value);
 }
 
+int lru_cache_assign_only_copy(void** destination, void* source)
+{
+    /*Codes_SRS_LRU_CACHE_45_010: [ lru_cache_assign_only_copy shall store source in destination and return 0. ]*/
+    *destination = source;
+    return 0;
+}
+
+void lru_cache_assign_only_free(void* value)
+{
+    /*Codes_SRS_LRU_CACHE_45_011: [ lru_cache_assign_only_free shall return without doing anything. ]*/
+    (void)value;
+}
+
 LRU_CACHE_PUT_RESULT lru_cache_put(LRU_CACHE_HANDLE lru_cache, void* key, void* value, int64_t size, LRU_CACHE_EVICT_CALLBACK_FUNC evict_callback, void* context, LRU_CACHE_KEY_COPY copy_key_function, LRU_CACHE_KEY_FREE free_key_function, LRU_CACHE_VALUE_COPY copy_value_function, LRU_CACHE_VALUE_FREE free_value_function)
 {
     LRU_CACHE_PUT_RESULT result = LRU_CACHE_PUT_OK;

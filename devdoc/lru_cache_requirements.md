@@ -36,6 +36,10 @@ typedef int(*LRU_CACHE_VALUE_COPY)(void** value_destination, void* value_source)
 
 typedef void(*LRU_CACHE_VALUE_FREE)(void* value);
 
+MOCKABLE_FUNCTION(, int, lru_cache_assign_only_copy, void**, destination, void*, source);
+
+MOCKABLE_FUNCTION(, void, lru_cache_assign_only_free, void*, value);
+
 MOCKABLE_FUNCTION(, LRU_CACHE_HANDLE, lru_cache_create, COMPUTE_HASH_FUNC, compute_hash, KEY_COMPARE_FUNC, key_compare_func, uint32_t, initial_bucket_size, CLDS_HAZARD_POINTERS_HANDLE, clds_hazard_pointers, int64_t, capacity, LRU_CACHE_ON_ERROR_CALLBACK_FUNC, on_error_callback, void*, on_error_context);
 
 MOCKABLE_FUNCTION(, void, lru_cache_destroy, LRU_CACHE_HANDLE, lru_cache);
@@ -97,6 +101,28 @@ Frees up `LRU_CACHE_HANDLE`.
 **SRS_LRU_CACHE_13_021: [** If `lru_cache` is `NULL`, then `lru_cache_destroy` shall return. **]**
 
 **SRS_LRU_CACHE_13_022: [** `lru_cache_destroy` shall free all resources associated with the `LRU_CACHE_HANDLE`. **]**
+
+
+### lru_cache_assign_only_copy
+
+```c
+MOCKABLE_FUNCTION(, int, lru_cache_assign_only_copy, void**, destination, void*, source);
+```
+
+`lru_cache_assign_only_copy` is the default copy function for keys or values that are stored by value (such as primitive types) and therefore need no ownership management. It is meant to be paired with `lru_cache_assign_only_free`.
+
+**SRS_LRU_CACHE_45_010: [** `lru_cache_assign_only_copy` shall store `source` in `destination` and return 0. **]**
+
+
+### lru_cache_assign_only_free
+
+```c
+MOCKABLE_FUNCTION(, void, lru_cache_assign_only_free, void*, value);
+```
+
+`lru_cache_assign_only_free` is the default free function for keys or values that are stored by value (such as primitive types) and therefore need no ownership management. It is meant to be paired with `lru_cache_assign_only_copy`.
+
+**SRS_LRU_CACHE_45_011: [** `lru_cache_assign_only_free` shall return without doing anything. **]**
 
 
 ### lru_cache_put

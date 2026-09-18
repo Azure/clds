@@ -541,6 +541,40 @@ TEST_FUNCTION(lru_cache_destroy_with_NULL_handle_returns)
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
+/* lru_cache_assign_only_copy */
+
+/*Tests_SRS_LRU_CACHE_45_010: [ lru_cache_assign_only_copy shall store source in destination and return 0. ]*/
+TEST_FUNCTION(lru_cache_assign_only_copy_assigns_the_source_and_succeeds)
+{
+    // arrange
+    int source = 42;
+    void* destination = NULL;
+
+    // act
+    int result = lru_cache_assign_only_copy(&destination, &source);
+
+    // assert
+    ASSERT_ARE_EQUAL(int, 0, result);
+    ASSERT_ARE_EQUAL(void_ptr, &source, destination);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
+/* lru_cache_assign_only_free */
+
+/*Tests_SRS_LRU_CACHE_45_011: [ lru_cache_assign_only_free shall return without doing anything. ]*/
+TEST_FUNCTION(lru_cache_assign_only_free_does_nothing)
+{
+    // arrange
+    int value = 42;
+
+    // act
+    lru_cache_assign_only_free(&value);
+
+    // assert
+    ASSERT_ARE_EQUAL(int, 42, value);
+    ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+}
+
 /* lru_cache_put */
 
 /*Tests_SRS_LRU_CACHE_13_023: [ If lru_handle is NULL, then lru_cache_put shall fail and return LRU_CACHE_PUT_ERROR. ]*/

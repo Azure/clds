@@ -1371,6 +1371,172 @@ TEST_FUNCTION(lru_cache_get_returns_NULL_when_the_value_copy_function_fails)
     ASSERT_ARE_EQUAL(int, 1, (int)interlocked_add(&destroyed, 0));
 }
 
+#define GET_EVICT_STRESS_THREAD_COUNT   8
+#define GET_EVICT_STRESS_KEY_COUNT      64
+// a capacity well below the number of keys keeps eviction running constantly
+#define GET_EVICT_STRESS_CAPACITY       8
+#define GET_EVICT_STRESS_SENTINEL       0xA5A5A5A5
+
+#ifdef USE_VALGRIND
+#define GET_EVICT_STRESS_RUNTIME    5000 // ms
+#else
+#define GET_EVICT_STRESS_RUNTIME    15000 // ms
+#endif
+
+typedef struct GET_EVICT_STRESS_CONTEXT_TAG
+{
+    LRU_CACHE_HANDLE lru_cache;
+    volatile_atomic int32_t done;
+    volatile_atomic int32_t live_value_count;
+    volatile_atomic int32_t get_hit_count;
+    volatile_atomic int32_t evict_count;
+} GET_EVICT_STRESS_CONTEXT;
+
+typedef struct GET_EVICT_STRESS_VALUE_TAG
+{
+    uint32_t key;
+    uint32_t sentinel;
+    GET_EVICT_STRESS_CONTEXT* context;
+} GET_EVICT_STRESS_VALUE;
+
+THANDLE_TYPE_DECLARE(GET_EVICT_STRESS_VALUE);
+THANDLE_TYPE_DEFINE(GET_EVICT_STRESS_VALUE);
+
+static void get_evict_stress_value_dispose(GET_EVICT_STRESS_VALUE* value)
+{
+    // poison the payload so that any use after free is visible to the getter threads
+    value->sentinel = 0;
+    value->key = 0;
+    (void)interlocked_decrement(&value->context->live_value_count);
+}
+
+static int get_evict_stress_value_copy(THANDLE(GET_EVICT_STRESS_VALUE)* value_destination, THANDLE(GET_EVICT_STRESS_VALUE) value_source)
+{
+    THANDLE_INITIALIZE(GET_EVICT_STRESS_VALUE)(value_destination, value_source);
+    return 0;
+}
+
+static void get_evict_stress_value_free(THANDLE(GET_EVICT_STRESS_VALUE) value)
+{
+    THANDLE_ASSIGN(GET_EVICT_STRESS_VALUE)(&value, NULL);
+}
+
+static void get_evict_stress_on_evict(void* context, void* evicted_value)
+{
+    GET_EVICT_STRESS_CONTEXT* stress_context = context;
+    ASSERT_IS_NOT_NULL(evicted_value);
+    (void)interlocked_increment(&stress_context->evict_count);
+}
+
+typedef struct GET_EVICT_STRESS_THREAD_DATA_TAG
+{
+    THREAD_HANDLE thread_handle;
+    GET_EVICT_STRESS_CONTEXT* stress_context;
+} GET_EVICT_STRESS_THREAD_DATA;
+
+static int get_evict_stress_thread(void* arg)
+{
+    GET_EVICT_STRESS_THREAD_DATA* thread_data = arg;
+    GET_EVICT_STRESS_CONTEXT* stress_context = thread_data->stress_context;
+
+    while (interlocked_add(&stress_context->done, 0) != 1)
+    {
+        uint32_t key = (uint32_t)((rand() * (GET_EVICT_STRESS_KEY_COUNT - 1)) / RAND_MAX) + 1;
+
+        if ((rand() % 2) == 0)
+        {
+            GET_EVICT_STRESS_VALUE* new_value = THANDLE_MALLOC(GET_EVICT_STRESS_VALUE)(get_evict_stress_value_dispose);
+            ASSERT_IS_NOT_NULL(new_value);
+            new_value->key = key;
+            new_value->sentinel = GET_EVICT_STRESS_SENTINEL;
+            new_value->context = stress_context;
+            (void)interlocked_increment(&stress_context->live_value_count);
+
+            THANDLE(GET_EVICT_STRESS_VALUE) value = new_value;
+            ASSERT_ARE_EQUAL(LRU_CACHE_PUT_RESULT, LRU_CACHE_PUT_OK, lru_cache_put(stress_context->lru_cache, (void*)(uintptr_t)key, (void*)value, 1, get_evict_stress_on_evict, stress_context, lru_cache_assign_only_copy, lru_cache_assign_only_free, (LRU_CACHE_VALUE_COPY)get_evict_stress_value_copy, (LRU_CACHE_VALUE_FREE)get_evict_stress_value_free));
+            get_evict_stress_value_free(value);
+        }
+        else
+        {
+            THANDLE(GET_EVICT_STRESS_VALUE) value = lru_cache_get(stress_context->lru_cache, (void*)(uintptr_t)key);
+            if (value != NULL)
+            {
+                (void)interlocked_increment(&stress_context->get_hit_count);
+
+                ASSERT_ARE_EQUAL(uint32_t, GET_EVICT_STRESS_SENTINEL, value->sentinel, "the value returned by lru_cache_get must not have been freed");
+                ASSERT_ARE_EQUAL(uint32_t, key, value->key);
+
+                // give the other threads a chance to evict the entry while this reference is held
+                ThreadAPI_Sleep(0);
+
+                ASSERT_ARE_EQUAL(uint32_t, GET_EVICT_STRESS_SENTINEL, value->sentinel, "the value returned by lru_cache_get must stay alive while the caller holds it");
+                ASSERT_ARE_EQUAL(uint32_t, key, value->key);
+
+                get_evict_stress_value_free(value);
+            }
+        }
+    }
+
+    return 0;
+}
+
+TEST_FUNCTION(lru_cache_get_values_survive_concurrent_eviction_stress)
+{
+    // arrange
+    size_t i;
+
+    CLDS_HAZARD_POINTERS_HANDLE hazard_pointers = clds_hazard_pointers_create();
+    ASSERT_IS_NOT_NULL(hazard_pointers);
+
+    GET_EVICT_STRESS_CONTEXT stress_context;
+    stress_context.lru_cache = lru_cache_create(test_compute_hash, test_key_compare, 1, hazard_pointers, GET_EVICT_STRESS_CAPACITY, on_lru_cache_error_callback, NULL);
+    ASSERT_IS_NOT_NULL(stress_context.lru_cache);
+
+    (void)interlocked_exchange(&stress_context.done, 0);
+    (void)interlocked_exchange(&stress_context.live_value_count, 0);
+    (void)interlocked_exchange(&stress_context.get_hit_count, 0);
+    (void)interlocked_exchange(&stress_context.evict_count, 0);
+
+    GET_EVICT_STRESS_THREAD_DATA* thread_data = malloc_2(GET_EVICT_STRESS_THREAD_COUNT, sizeof(GET_EVICT_STRESS_THREAD_DATA));
+    ASSERT_IS_NOT_NULL(thread_data);
+
+    // act
+    for (i = 0; i < GET_EVICT_STRESS_THREAD_COUNT; i++)
+    {
+        thread_data[i].stress_context = &stress_context;
+        ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Create(&thread_data[i].thread_handle, get_evict_stress_thread, &thread_data[i]), "Error spawning test thread %zu", i);
+    }
+
+    LogInfo("Running lru_cache_get/evict stress test for %.02f seconds", (double)GET_EVICT_STRESS_RUNTIME / 1000);
+    double start_time = timer_global_get_elapsed_ms();
+    while (timer_global_get_elapsed_ms() - start_time < GET_EVICT_STRESS_RUNTIME)
+    {
+        ThreadAPI_Sleep(1000);
+    }
+
+    (void)interlocked_exchange(&stress_context.done, 1);
+
+    for (i = 0; i < GET_EVICT_STRESS_THREAD_COUNT; i++)
+    {
+        int dont_care;
+        ASSERT_ARE_EQUAL(THREADAPI_RESULT, THREADAPI_OK, ThreadAPI_Join(thread_data[i].thread_handle, &dont_care), "Thread %zu failed to join", i);
+    }
+
+    // assert
+    LogInfo("lru_cache_get hits: %" PRId32 ", evictions: %" PRId32 "", interlocked_add(&stress_context.get_hit_count, 0), interlocked_add(&stress_context.evict_count, 0));
+    ASSERT_IS_TRUE(interlocked_add(&stress_context.get_hit_count, 0) > 0, "the stress test must have observed at least one lru_cache_get hit");
+    ASSERT_IS_TRUE(interlocked_add(&stress_context.evict_count, 0) > 0, "the stress test must have observed at least one eviction");
+
+    lru_cache_destroy(stress_context.lru_cache);
+
+    // every value that was created must have been freed exactly once
+    ASSERT_ARE_EQUAL(int32_t, 0, interlocked_add(&stress_context.live_value_count, 0));
+
+    // cleanup
+    free(thread_data);
+    clds_hazard_pointers_destroy(hazard_pointers);
+}
+
 
 TEST_FUNCTION(test_lru_cache_evict_success)
 {
