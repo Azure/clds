@@ -597,12 +597,8 @@ Replace stable-count enumeration requirements such as
 Preserve public validation/output requirements where still applicable. Update
 the source and tests with matching traceability text in that same PR.
 
-List operations already call this API. The intended EBS
-production change is a dependency update only. Retain the caller's checkpoint
-`index_lock`: it coordinates multiple tables, committed state, and maximum
-address, not merely one hash-table enumeration. Combined local/offload results
-remain separate per-table cuts. Shared-domain snapshots and checkpoint-lock
-removal are not included.
+Snapshot consistency covers one hash table. Coordination across tables or with
+application state outside the table remains the caller's responsibility.
 
 ## Validation and acceptance
 
@@ -669,13 +665,10 @@ resize chaos, and downstream caller regressions. VLD is part of definition-of-do
 | 39570734 / 39570735 | Collector specs, then code/tests |
 | 39570736 | Legacy correctness/stress/performance baselines and reusable scheduling infrastructure |
 | 39570738 | Integrate all pieces, update live SRS/code/tests together, and activate the complete protocol |
-| 39570739 | EBS write workload with key-list, block-list, and mixed list storms; capture legacy baseline |
-| 39570740 | Update EBS dependency and rerun caller/copy/checkpoint/list and perf qualification |
 
 Module specs follow architecture approval. Their implementations can land
 independently while unused. Baselines can proceed in parallel. Integration
-depends on all four module implementations and the CLDS baseline. EBS adoption
-depends on integrated/released CLDS and its list-storm baseline.
+depends on all four module implementations and the CLDS baseline.
 
 Every preceding PR keeps master shippable without a partially enabled protocol.
 No opt-in caller API migration or v2 table is planned. If representation or
