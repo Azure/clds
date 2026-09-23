@@ -18,6 +18,8 @@ This hash table supports taking a snapshot of the current state by blocking all 
 
 The snapshot functionality will be extended in the future so that concurrent operations are possible. This will be done by storing changes during snapshots in a separate structure and then merging after the snapshot completes.
 
+The proposed architecture and top-level specification are described in [Nonblocking hash-table snapshot design](clds_hash_table_snapshot_design.md). That design does not change the implemented requirements below; the complete protocol will be activated by a separate integration change.
+
 ## Exposed API
 
 ```c
