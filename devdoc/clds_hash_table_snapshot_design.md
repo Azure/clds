@@ -1,13 +1,10 @@
 # Nonblocking hash-table snapshot design
 
-## Status and scope
+## Scope
 
-This is the proposed architecture and top-level specification for
-[task 39570726](https://msazure.visualstudio.com/One/_workitems/edit/39570726),
-under [PBI 5766647](https://msazure.visualstudio.com/One/_workitems/edit/5766647).
-It does not change production behavior. The existing
-[hash-table requirements](clds_hash_table_requirements.md) remain the
-specification of the implemented API until the final integration PR.
+This document specifies nonblocking snapshots for `clds_hash_table`.
+The [hash-table requirements](clds_hash_table_requirements.md) describe the
+existing public API.
 
 The objective is to replace the write suspension in
 `clds_hash_table_snapshot` with a transient copy-before-change journal and
@@ -16,15 +13,11 @@ node ownership, sequence-number behavior, and per-table snapshot semantics.
 Do not introduce a second hash-table implementation or require caller API
 changes.
 
-**Progress decision, September 2026:** a snapshot may wait indefinitely for a
+**Progress contract:** a snapshot may wait indefinitely for a
 writer-quiescent cut. It must not close writer admission to obtain that cut.
 After the cut, writers continue during enumeration and merging. Cancellation
-is supported; a new `BUSY` result and an automatic fallback to the old write
+is supported; a `BUSY` result and an automatic fallback to a write
 lock are not.
-
-This decision replaces the earlier proposal to advance a phase while old-phase
-writers are still executing. The distinction is necessary for correctness,
-not just performance.
 
 ## Current implementation
 
@@ -562,7 +555,7 @@ resize chaos, and downstream caller regressions. VLD is part of definition-of-do
 | ADO task | Deliverable |
 |---|---|
 | 39570726 | This architecture and proposed top-level specification |
-| 39570727 / 39570728 | Generation-domain specs, then code/tests; use the atomic quiescent cut, not the superseded three-phase drain |
+| 39570727 / 39570728 | Generation-domain specs, then code/tests for the atomic quiescent cut |
 | 39570729 / 39570730 | Journal specs, then code/tests, including stable registration and detached cleanup |
 | 39570731 / 39570733 | Concurrent enumeration specs, then code/tests; existing callers unchanged |
 | 39570734 / 39570735 | Collector specs, then code/tests |
@@ -575,10 +568,6 @@ Module specs follow architecture approval. Their implementations can land
 independently while unused. Baselines can proceed in parallel. Integration
 depends on all four module implementations and the CLDS baseline. EBS adoption
 depends on integrated/released CLDS and its list-storm baseline.
-
-The old ADO generation-domain and integration descriptions mention advancing
-before old-phase drain. This design supersedes that mechanism; update those task
-descriptions when taking them up rather than implementing the obsolete wording.
 
 Every preceding PR keeps master shippable without a partially enabled protocol.
 No opt-in caller API migration or v2 table is planned. If representation or
@@ -599,8 +588,8 @@ production activation, reviewers require:
 - Preserved sequence/resize behavior and measured no-snapshot overhead.
 - Documented budgets/performance acceptance and baseline comparisons.
 
-The earlier 8-12 engineer-week implementation/qualification estimate plus
-2-4 calendar weeks of soak is provisional, not a result of this design PR.
+The implementation/qualification estimate is 8-12 engineer-weeks plus
+2-4 calendar weeks of soak.
 Snapshot starvation under representative caller workloads must be measured. If it is
 unacceptable, revisit the progress contract: writer pausing, helping descriptors,
 or persistent versioned structures are different designs, not an optimization
