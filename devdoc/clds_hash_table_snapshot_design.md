@@ -76,8 +76,8 @@ hash tables or make concurrent table destruction legal.
 
 ## Architecture
 
-Four independently testable pieces remain unused by the production hash table
-until the integration PR:
+Four components coordinate the snapshot boundary, preserve removed items, and
+assemble the result:
 
 | Piece | Responsibility | Boundary |
 |---|---|---|
