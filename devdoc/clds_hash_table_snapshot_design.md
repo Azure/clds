@@ -246,10 +246,10 @@ destruction releases it. CAS retries within one operation retain the same epoch.
 An unchanged same-item set must not retag its epoch as N: doing so would hide a
 cut-visible node.
 
-Move epoch/key preparation to paths that distinguish a fresh publication
-from same-item set; do not unconditionally overwrite a linked node's internal
-metadata in the hash-table wrapper before the sorted-list call. Preserve the
-existing special-case reference behavior for same-item set.
+Epoch/key preparation distinguishes a fresh publication from same-item set.
+It does not overwrite a linked node's internal metadata in the hash-table
+wrapper before the sorted-list call. The special-case reference behavior for
+same-item set is unchanged.
 
 The proof requires a membership incarnation to retain a stable key and
 epoch while any traversal or snapshot can observe it. Holding a reference
@@ -267,15 +267,11 @@ does not make arbitrary reinsertion of the same intrusive node safe:
   item is used by the snapshot. Copying a `void*` into a journal does not clone
   the key or preserve externally freed memory.
 
-**Compatibility gate:** the current public requirements do not fully specify
-these reuse/lifetime rules. Module/integration review must make them explicit
-and audit supported consumers. Do not silently
-classify a supported reuse pattern as invalid to make the proof work. If a
-consumer requires republishing a node while its old incarnation is retained,
-revise the representation to use immutable internal membership records before
-activation. That is additional scope, not something a captured raw pointer
-solves. Caller adoption remains dependency-only unless that audit finds a concrete
-compatibility issue requiring separate approval.
+The current public requirements do not fully specify reuse/lifetime rules.
+Compatibility with supported callers requires that the rules above hold; this
+representation does not make premature reuse safe. Supporting republication
+while the old incarnation is retained requires separate immutable membership
+records. Capturing a raw key pointer cannot provide that separation.
 
 ### Journal registration and payload
 
@@ -361,9 +357,10 @@ protection independently.
 Use append-only segments/lists with fully initialized entry publication.
 Segment allocation and append ownership belong to the journal module, not to
 undocumented fields in the HP implementation. Per-thread or sharded segments
-should avoid a single global append bottleneck; their exact allocation policy
-and memory budget belong in that module's specification and perf qualification.
-Thread registration/unregistration and segment teardown require tests.
+avoid a single global append bottleneck. The allocation policy and memory budget
+control the number of retained entries; exhaustion poisons the snapshot.
+Segment lifetime includes writers joining or unregistering while a snapshot
+is active.
 
 On allocation, capacity, or reference-acquisition failure:
 
@@ -494,8 +491,8 @@ Do not claim this design makes arbitrary recursive callbacks safe.
 
 ### Memory ordering and lifetime
 
-Initially use the repository's interlocked primitives with full ordering;
-weakening to acquire/release is separate reviewed work. Required edges are:
+The control words use the repository's interlocked primitives with full
+ordering. The required visibility edges are:
 
 | Publication | Required observer |
 |---|---|
@@ -564,7 +561,7 @@ claim to fix all existing stalled-thread dependencies.
 
 A snapshot can starve before T under continuously overlapping writers, or
 during traversal under sustained interference. A stalled writer can prevent
-the cut; a stalled journal user can delay cleanup. This is the accepted tradeoff.
+the cut; a stalled journal user can delay cleanup.
 No finite snapshot latency or successful completion under perpetual writes is
 promised. Measure cut wait separately from materialization.
 
@@ -577,30 +574,20 @@ Snapshot memory is output storage plus
 deduplication and journal entries; repeated failed mutation attempts can increase
 journal volume. Capacity limits must fail the snapshot, not block writers.
 
-## Compatibility and implementation surfaces
+## Compatibility
 
 Keep the public snapshot declaration and OK/ERROR/ABANDONED values. Preserve
 insert transfer, find/remove/set returned ownership, skipped-sequence callbacks,
 same-item set behavior, existing count maintenance, and resize duplicate checks.
 
-Integration changes include hash-table writer entry/exit; insert and replacement
-metadata preparation; destructive sorted-list hooks; new enumeration; snapshot
-materialization and teardown; the public node layout; reals/mocking surfaces;
-and corresponding requirements and tests. Existing generic sorted-list callers
-must not pay for hash-table journaling or have `get_all` semantics changed.
-
-At integration, retire the active write-gate requirements, including snapshot
-requirements `SRS_CLDS_HASH_TABLE_42_017`, `SRS_CLDS_HASH_TABLE_42_018`, and
-`SRS_CLDS_HASH_TABLE_42_030`, plus the mutator admission/wait requirements.
-Replace stable-count enumeration requirements such as
-`SRS_CLDS_HASH_TABLE_01_114` and `SRS_CLDS_HASH_TABLE_42_026` with new identifiers.
-Preserve public validation/output requirements where still applicable. Update
-the source and tests with matching traceability text in that same PR.
+Hash-table mutations use epoch participation and the destructive-change journal
+hooks. Generic sorted-list callers do not incur hash-table journal work, and
+`get_all` retains its stable-list contract.
 
 Snapshot consistency covers one hash table. Coordination across tables or with
 application state outside the table remains the caller's responsibility.
 
-## Validation and acceptance
+## Correctness and performance scenarios
 
 Tests use deterministic synchronization points, not sleeps to infer ordering.
 The model oracle records successful publication/unlink events, invocation and
@@ -636,11 +623,6 @@ being tested.
 | Final reference invokes reentrant cleanup | Leadership released and payload detached before callback |
 | Threshold-1 reclamation and thread unregister | No UAF, double release, or retained orphan journal segments |
 
-Before integration, baseline tests must pass against the legacy implementation.
-Scenarios that specifically require nonblocking materialization become active
-with integration; do not check in disabled tests or permanently failing future
-expectations.
-
 Retain the existing 1,500,000-item snapshot performance test's under-1,000-ms
 requirement for its quiescent workload. Record writer throughput and
 P50/P99/P99.9 latency, cut wait, materialization, cancellation latency, traversal
@@ -648,53 +630,10 @@ restarts, journal bytes, and retained-node high-water marks with 1/8/32/64 write
 Hold a snapshot deliberately inside enumeration and require concurrent mutations
 to complete before releasing it; total throughput alone is not proof of progress.
 
-Measure the no-snapshot regression separately. Performance tolerances and journal
-budgets need recorded baseline data and reviewer agreement before activation;
-this document does not invent an unmeasured percentage or default cap. Run the
-normal leak checks, sanitizer/verification configurations, sequence-number tests,
-resize chaos, and downstream caller regressions. VLD is part of definition-of-done.
-
-## PR-sized delivery plan
-
-| ADO task | Deliverable |
-|---|---|
-| 39570726 | This architecture and proposed top-level specification |
-| 39570727 / 39570728 | Generation-domain specs, then code/tests for the atomic quiescent cut |
-| 39570729 / 39570730 | Journal specs, then code/tests, including stable registration and detached cleanup |
-| 39570731 / 39570733 | Concurrent enumeration specs, then code/tests; existing callers unchanged |
-| 39570734 / 39570735 | Collector specs, then code/tests |
-| 39570736 | Legacy correctness/stress/performance baselines and reusable scheduling infrastructure |
-| 39570738 | Integrate all pieces, update live SRS/code/tests together, and activate the complete protocol |
-
-Module specs follow architecture approval. Their implementations can land
-independently while unused. Baselines can proceed in parallel. Integration
-depends on all four module implementations and the CLDS baseline.
-
-Every preceding PR keeps master shippable without a partially enabled protocol.
-No opt-in caller API migration or v2 table is planned. If representation or
-compatibility review invalidates these boundaries, revise the design before
-changing production behavior. Reverting final integration restores the old
-snapshot without removing the already-unused standalone modules.
-
-## Review gates and remaining specification work
-
-Architecture approval must include the accepted starvation tradeoff and the
-node/key-lifetime compatibility gate. Module specs must make exact APIs, capacity
-policy, allocation ownership, counter arithmetic, and ordering testable. Before
-production activation, reviewers require:
-
-- Consumer evidence for lifetime/reuse assumptions, including same-item set.
-- Deterministic and model-based evidence for the cut and snapshot contents.
-- Safe descriptor closure/reentrancy and HP traversal under aggressive reclamation.
-- Preserved sequence/resize behavior and measured no-snapshot overhead.
-- Documented budgets/performance acceptance and baseline comparisons.
-
-The implementation/qualification estimate is 8-12 engineer-weeks plus
-2-4 calendar weeks of soak.
-Snapshot starvation under representative caller workloads must be measured. If it is
-unacceptable, revisit the progress contract: writer pausing, helping descriptors,
-or persistent versioned structures are different designs, not an optimization
-that can be added to the cut without a new correctness argument.
+Measure the no-snapshot cost separately from snapshot costs. Journal budgets
+balance retained memory against snapshot failure rate. Leak checks,
+sanitizer/verification configurations, sequence-number tests, and resize chaos
+exercise ownership and existing operation semantics as well as snapshot contents.
 
 ## Integration boundary
 
