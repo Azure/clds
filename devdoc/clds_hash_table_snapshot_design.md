@@ -81,14 +81,36 @@ assemble the result:
 
 | Piece | Responsibility | Boundary |
 |---|---|---|
-| Snapshot epoch domain | Writer entry/exit, atomic quiescent cut, snapshot leadership, epoch ownership | No list traversal or ownership of item references |
-| Transient snapshot journal | Stable registration slot, append ownership, poisoning, close/drain, detached cleanup | No mutation or key lookup |
+| Snapshot epoch domain | An admission word counts writers and selects one of two owning epoch-reference slots; switching slots at zero writers establishes the cut | Controls membership epochs, not journal append registration |
+| Transient snapshot journal | A table-lifetime registration control word protects a per-snapshot payload containing the target epoch and retained old items | Controls who can append and when that payload can be consumed or freed |
 | Concurrent sorted-list enumeration | Validated HP traversal and reference delivery | No claim of point-in-time consistency by itself |
 | Snapshot collector | Dynamic storage, deduplication, journal merge, output transfer | No coordination of writers |
 
-The hash table associates each published node with an epoch. Its mutation
-paths use the journal to retain cut-visible items; the snapshot uses enumeration
-and the collector to combine linked and retained items.
+The hash table coordinates these components. Snapshot leadership serializes
+snapshot callers only; it is not a lock acquired by mutators. An epoch identifies
+a period of publication. Nodes retain their publication epoch so the collector
+can distinguish items present at the cut from later insertions.
+
+The snapshot lifecycle is:
+
+1. The snapshot caller acquires leadership, prepares a fresh epoch N in the
+   inactive epoch slot, and opens a journal payload for N.
+2. At a writer-free instant, the epoch domain atomically switches the selected
+   slot to N. This is the cut. Writers continue attempting admission throughout;
+   writers admitted afterward publish nodes tagged N.
+3. The snapshot captures the bucket-array root and enumerates it. Concurrent
+   writers copy cut-visible old items into the journal before removing or
+   replacing them. The enumerator supplies references to cut-visible items
+   still linked in the table; it excludes new items tagged N.
+4. After traversal, the snapshot closes journal append registration and drains
+   writers already using that payload. The collector combines direct
+   observations and journal entries into one result.
+5. The snapshot detaches result and cleanup ownership, releases leadership, and
+   releases non-result references.
+
+The two epoch-reference slots belong to writer admission. The journal's
+registration control word is separate: it protects append/payload lifetime,
+not the table's writer count. Closing it does not stop mutations.
 
 ### Epoch domain and quiescent cut
 
@@ -255,11 +277,16 @@ activation. That is additional scope, not something a captured raw pointer
 solves. Caller adoption remains dependency-only unless that audit finds a concrete
 compatibility issue requiring separate approval.
 
-### Stable journal registration slot
+### Journal registration and payload
 
-Keep the registration control word embedded in the table-owned journal handle,
-alive until table destruction. Do not load a removable descriptor pointer and
-then increment its refcount: it might already be freed.
+The journal has a table-lifetime registration control word and a separate
+per-snapshot payload. The payload owns the target epoch and appended item
+references. Writers register through the control word before accessing that
+payload; closure prevents new registrations and waits for existing users.
+
+Embedding the control word in the table-owned journal handle keeps registration
+safe even when no payload is active. Loading a removable descriptor pointer
+and then incrementing its refcount would instead race descriptor reclamation.
 
 The control word has checked fields:
 
@@ -308,7 +335,7 @@ unprotected payload storage on that path.
 For a writer in N and an old node whose publication epoch differs from N:
 
 1. Obtain and validate normal HP protection for the old node.
-2. Join the matching OPEN journal slot.
+2. Join the matching OPEN journal.
 3. Take an extra reference and capture `{item, key, publication_epoch}`.
 4. Publish a fully initialized journal entry.
 5. Leave journal registration.
@@ -394,10 +421,10 @@ prepare fresh epoch N in inactive slot 1-S and arm its journal
 retry CAS admission {S, 0} -> {1-S, 0}, checking cancellation
 capture current bucket-array root
 enumerate every bucket in that root chain
-close slot OPEN -> CLOSING, preserving failed and users
+close journal OPEN -> CLOSING, preserving failed and users
 drain registered users
 if successful, merge journal entries and collected observations
-detach result and all cleanup ownership; mark slot CLOSED
+detach result and all cleanup ownership; mark journal CLOSED
 release snapshot leadership
 release detached non-result references and storage
 return OK / ERROR / ABANDONED
@@ -542,7 +569,7 @@ No finite snapshot latency or successful completion under perpetual writes is
 promised. Measure cut wait separately from materialization.
 
 Steady-state additions are a packed participant word, two epoch-reference slots,
-a stable per-table journal slot/leadership state, and one owning epoch reference
+a journal control word and leadership state, and one owning epoch reference
 per node. Publication and node destruction acquire/release epoch references.
 A snapshot attempt allocates one fresh epoch; epochs are reclaimed when no slot,
 payload, or node retains them. There are no per-key MVCC chains or history scans.
