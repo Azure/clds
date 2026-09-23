@@ -44,25 +44,6 @@ An item returned by find, remove, replacement, or snapshot can outlive its
 membership in the table. An item reference preserves allocation lifetime; it
 does not freeze payload bytes or make its old `next` a safe traversal source.
 
-### Why advancing a phase and draining afterward is incorrect
-
-Consider an initially empty table:
-
-1. Writer A registers in generation G, intending to insert X, then pauses.
-2. Snapshot S advances to G+1 without waiting for A.
-3. Writer B inserts Y in G+1 and returns.
-4. A subsequent find of X returns not-found.
-5. A inserts X in G and returns.
-6. S drains G and filters out G+1 items, returning X but not Y.
-
-The find forces X's insertion after the observation that followed Y's
-insertion. A snapshot containing X but not Y cannot be linearized in that
-history. Adding more rotating counters, or journaling only according to a
-writer's registration phase, does not fix it.
-
-The corrected design advances the generation only in an atomic state with
-zero registered writers. No old-generation publication can cross that CAS.
-
 ## Top-level proposed requirements
 
 `SNAP-*` identifiers are design-level requirements, not active `SRS_*` tags.
@@ -159,6 +140,24 @@ At generation exhaustion, log and fail future snapshots before arming a new
 cut. Normal mutations remain possible in the last generation. Do not reset the
 generation while the table is alive. Count exhaustion is a checked structural
 limit, not the handling for journal allocation failure.
+
+#### Why the cut requires zero writers
+
+The cut advances the generation only in an atomic state with zero registered
+writers. No old-generation publication can cross that CAS. Advancing first
+and draining old writers afterward would permit the following history:
+
+1. Writer A registers in generation G, intending to insert X, then pauses.
+2. Snapshot S advances to G+1 without waiting for A.
+3. Writer B inserts Y in G+1 and returns.
+4. A subsequent find of X returns not-found.
+5. A inserts X in G and returns.
+6. S drains G and filters out G+1 items, returning X but not Y.
+
+The find forces X's insertion after the observation that followed Y's
+insertion. A snapshot containing X but not Y cannot be linearized in that
+history. Registering writers in phases cannot substitute for a publication
+boundary at the cut.
 
 ### Publication metadata and node lifetime
 
