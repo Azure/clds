@@ -44,39 +44,32 @@ An item returned by find, remove, replacement, or snapshot can outlive its
 membership in the table. An item reference preserves allocation lifetime; it
 does not freeze payload bytes or make its old `next` a safe traversal source.
 
-## Top-level proposed requirements
+## Requirements
 
-`SNAP-*` identifiers are design-level requirements, not active `SRS_*` tags.
-The module-specification PRs will allocate traceable SRS identifiers. The
-integration PR will retire superseded requirements rather than rewriting their
-meaning or pretending unimplemented requirements have code/test coverage.
-
-| ID | Requirement |
-|---|---|
-| SNAP-001 | A successful snapshot shall return the complete key-to-item mapping at one instant between its invocation and response. |
-| SNAP-002 | The result shall contain at most one item for each logical key. |
-| SNAP-003 | The result shall own one reference to each returned item. |
-| SNAP-004 | A successful empty result shall set `items` to `NULL` and `item_count` to zero. |
-| SNAP-005 | The public snapshot signature and existing result enumeration shall remain unchanged. |
-| SNAP-006 | Snapshot execution shall not close admission of hash-table writers. |
-| SNAP-007 | Snapshot bookkeeping failure shall not by itself fail an otherwise valid mutation. |
-| SNAP-008 | A failed or abandoned snapshot shall not publish a partial successful result. |
-| SNAP-009 | Snapshot order shall remain unspecified. |
-| SNAP-010 | Snapshot consistency shall concern membership and item identity, not historical copies of mutable payload bytes. |
-| SNAP-011 | Snapshot generation shall be independent of optional operation sequence numbers. |
-| SNAP-012 | Cancellation shall be checked while waiting for snapshot leadership or a cut. |
-| SNAP-013 | Cancellation shall be checked during enumeration and merge. |
-| SNAP-014 | Snapshot cleanup shall release every reference not transferred to the caller. |
-| SNAP-015 | Concurrent snapshot callers shall be serialized without introducing `BUSY`. |
-| SNAP-016 | A successful cut shall exclude every subsequently published membership. |
-| SNAP-017 | An item removed or replaced after the cut shall remain available to that snapshot. |
-| SNAP-018 | Resize after the cut shall not hide a cut-visible item. |
-| SNAP-019 | Same-item set shall preserve the publication generation of unchanged membership. |
-| SNAP-020 | Snapshot generation shall not wrap or be reused after a successful cut. |
-| SNAP-021 | No successor shall be followed through an invalidated or marked predecessor. |
-| SNAP-022 | Cancellation shall not bypass safe retirement of journal users. |
-| SNAP-023 | A snapshot shall not invoke item cleanup while retaining snapshot leadership. |
-| SNAP-024 | Existing resize-level duplicate prevention shall remain intact. |
+- A successful snapshot shall return the complete key-to-item mapping at one instant between its invocation and response.
+- The result shall contain at most one item for each logical key.
+- The result shall own one reference to each returned item.
+- A successful empty result shall set `items` to `NULL` and `item_count` to zero.
+- The public snapshot signature and existing result enumeration shall remain unchanged.
+- Snapshot execution shall not close admission of hash-table writers.
+- Snapshot bookkeeping failure shall not by itself fail an otherwise valid mutation.
+- A failed or abandoned snapshot shall not publish a partial successful result.
+- Snapshot order shall remain unspecified.
+- Snapshot consistency shall concern membership and item identity, not historical copies of mutable payload bytes.
+- Snapshot generation shall be independent of optional operation sequence numbers.
+- Cancellation shall be checked while waiting for snapshot leadership or a cut.
+- Cancellation shall be checked during enumeration and merge.
+- Snapshot cleanup shall release every reference not transferred to the caller.
+- Concurrent snapshot callers shall be serialized without introducing `BUSY`.
+- A successful cut shall exclude every subsequently published membership.
+- An item removed or replaced after the cut shall remain available to that snapshot.
+- Resize after the cut shall not hide a cut-visible item.
+- Same-item set shall preserve the publication generation of unchanged membership.
+- Snapshot generation shall not wrap or be reused after a successful cut.
+- No successor shall be followed through an invalidated or marked predecessor.
+- Cancellation shall not bypass safe retirement of journal users.
+- A snapshot shall not invoke item cleanup while retaining snapshot leadership.
+- Existing resize-level duplicate prevention shall remain intact.
 
 The guarantee is per table. It does not provide one atomic cut across several
 hash tables or make concurrent table destruction legal.
