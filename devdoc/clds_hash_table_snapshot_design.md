@@ -255,10 +255,6 @@ activation. That is additional scope, not something a captured raw pointer
 solves. Caller adoption remains dependency-only unless that audit finds a concrete
 compatibility issue requiring separate approval.
 
-Adding internal metadata to macro-defined nodes changes their layout. Preserve
-source-level API compatibility and rebuild consumers with the dependency.
-Do not claim binary compatibility between differently compiled node layouts.
-
 ### Stable journal registration slot
 
 Keep the registration control word embedded in the table-owned journal handle,
