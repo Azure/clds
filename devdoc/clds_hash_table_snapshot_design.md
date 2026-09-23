@@ -56,7 +56,7 @@ does not freeze payload bytes or make its old `next` a safe traversal source.
 - A failed or abandoned snapshot shall not publish a partial successful result.
 - Snapshot order shall remain unspecified.
 - Snapshot consistency shall concern membership and item identity, not historical copies of mutable payload bytes.
-- Snapshot generation shall be independent of optional operation sequence numbers.
+- Snapshot epochs shall be independent of optional operation sequence numbers.
 - Cancellation shall be checked while waiting for snapshot leadership or a cut.
 - Cancellation shall be checked during enumeration and merge.
 - Snapshot cleanup shall release every reference not transferred to the caller.
@@ -64,8 +64,8 @@ does not freeze payload bytes or make its old `next` a safe traversal source.
 - A successful cut shall exclude every subsequently published membership.
 - An item removed or replaced after the cut shall remain available to that snapshot.
 - Resize after the cut shall not hide a cut-visible item.
-- Same-item set shall preserve the publication generation of unchanged membership.
-- Snapshot generation shall not wrap or be reused after a successful cut.
+- Same-item set shall preserve the publication epoch of unchanged membership.
+- An epoch identity shall not be reused while referenced by a node or operation.
 - No successor shall be followed through an invalidated or marked predecessor.
 - Cancellation shall not bypass safe retirement of journal users.
 - A snapshot shall not invoke item cleanup while retaining snapshot leadership.
@@ -81,37 +81,67 @@ assemble the result:
 
 | Piece | Responsibility | Boundary |
 |---|---|---|
-| Snapshot generation domain | Writer entry/exit, atomic quiescent cut, snapshot leadership, counter exhaustion | No list traversal or ownership of item references |
+| Snapshot epoch domain | Writer entry/exit, atomic quiescent cut, snapshot leadership, epoch ownership | No list traversal or ownership of item references |
 | Transient snapshot journal | Stable registration slot, append ownership, poisoning, close/drain, detached cleanup | No mutation or key lookup |
 | Concurrent sorted-list enumeration | Validated HP traversal and reference delivery | No claim of point-in-time consistency by itself |
 | Snapshot collector | Dynamic storage, deduplication, journal merge, output transfer | No coordination of writers |
 
-The hash table associates each published node with a generation. Its mutation
+The hash table associates each published node with an epoch. Its mutation
 paths use the journal to retain cut-visible items; the snapshot uses enumeration
 and the collector to combine linked and retained items.
 
-### Generation domain
+### Epoch domain and quiescent cut
 
-Use one atomic 64-bit word encoding a nonnegative 31-bit generation and a
-32-bit active-writer count; leave the sign bit unused. Pseudocode below uses
-field notation, not C arithmetic on packed bitfields. Use existing c-pal
-interlocked operations, with checked field arithmetic.
+An epoch is a reference-counted record whose address supplies identity. It has
+no increasing generation number. Every published node owns a reference to its
+`publication_epoch`. A snapshot introduces a fresh epoch N; publications made
+after its cut use N. While that snapshot owns leadership, no other cut occurs,
+so a node is cut-visible exactly when its publication epoch differs from N
+and its membership is observed directly or retained in the journal.
+
+The table owns two epoch-reference slots and one atomic 64-bit admission word:
+
+```text
+epoch_slots[2]: owning references; the selected slot is always initialized
+admission: {selected_slot: 1 bit, active_writers: 32 bits}
+```
+
+Unused bits, including the sign bit, remain zero. The selector identifies the
+current slot; it is not an epoch identity stored on nodes. It alternates on
+every successful cut without exhausting a lifetime snapshot counter.
+
+A writer first registers through the admission word and only then reads the
+selected epoch reference. Its active-writer participation prevents a cut and
+keeps that selected slot unchanged until it leaves. The writer borrows the
+slot's epoch reference for its operation; any node it publishes acquires its
+own reference before the linking CAS.
 
 ```text
 writer_enter:
     repeat:
-        old = atomic_load(domain)
+        old = atomic_load(admission)
         if old.count is exhausted:
             log and return the operation's existing ERROR before side effects
-        if CAS(domain, old, {old.generation, old.count + 1}) succeeds:
-            return old.generation
+        if CAS(admission, old, {old.slot, old.count + 1}) succeeds:
+            return {slot = old.slot, epoch = epoch_slots[old.slot]}
 
 writer_leave:
-    CAS-loop decrement of count, preserving generation
+    CAS-loop decrement of count, preserving selected_slot
 
-try_cut(G):
-    return CAS(domain, {G, 0}, {G + 1, 0})
+prepare_cut:  // snapshot leader only
+    S = atomic_load(admission).slot
+    allocate fresh epoch N
+    replace epoch_slots[1-S] with an owning reference to N
+    initialize and open the journal for target_slot = 1-S and epoch N
+
+try_cut(S):
+    return CAS(admission, {S, 0}, {1-S, 0})
 ```
+
+Use existing c-pal interlocked operations and checked field arithmetic.
+Publishing the new slot reference precedes the cut CAS. A writer that registers
+after that CAS therefore reads the initialized N. Only the snapshot leader
+replaces slots, and it writes only the inactive slot.
 
 Every insert, delete, delete-key-value, remove, and set enters before any
 membership/resize mutation and leaves on every exit path, after publication,
@@ -119,32 +149,64 @@ count maintenance, and sequence-number bookkeeping. Conditional failure,
 allocation failure, and CAS retries do not leak participants. The outer hash
 operation registers once, not once per bucket attempt. Find remains ungated.
 
-A writer that loaded `{G, 0}` but loses to the cut retries registration in G+1.
+A writer that loses admission to the cut retries against the current word.
 A writer that wins admission first makes the cut CAS fail. There is no
-check-zero-then-increment-generation interval using separate atomics.
+check-zero-then-switch-slot interval using separate atomics.
+
+A thread paused before admission may see the same selector/count after two or
+more cuts. That ABA is harmless: its CAS registers against the current state,
+and it then loads the current slot reference. It must not cache an epoch pointer
+before successful registration. Once registered, a writer prevents another cut,
+so neither its slot nor its borrowed epoch can change.
 
 Only the snapshot caller backs off when the cut fails. It may use finite waits
 to avoid spinning, but cannot depend on a missed wakeup or an infinite wait
 that prevents cancellation checks. Writer completion is not conditional on
 snapshot completion.
 
-At generation exhaustion, log and fail future snapshots before arming a new
-cut. Normal mutations remain possible in the last generation. Do not reset the
-generation while the table is alive. Count exhaustion is a checked structural
-limit, not the handling for journal allocation failure.
+#### Epoch ownership and reclamation
+
+The current slot owns its epoch. The inactive slot can hold a previous epoch
+until the leader replaces it; replacement releases that slot's old reference.
+Nodes retain their publication epoch through removal and through all retained
+snapshot/item references. Node destruction releases the epoch after its last
+use. Journal payloads own their target epoch until detached cleanup finishes.
+These references use checked reference-count arithmetic.
+
+An epoch record is freed when its final reference is released. A newly allocated
+record may reuse its address only then: no node or active operation can still
+compare against the old identity. Epoch release frees only internal metadata,
+not application items, and invokes no application callback.
+
+There is no scan to retag long-lived nodes and no eventual "snapshots disabled"
+state. An old node keeps its old epoch alive and differs from every fresh N.
+Records are retained only by the two slots, an active or detached snapshot
+payload, and live or externally retained nodes, not by the total number of cuts.
+Repeated snapshots without publications do not accumulate epoch history.
+
+If epoch allocation fails, the snapshot returns ERROR without changing the
+selected slot; a later snapshot can retry. Cancellation before the cut clears
+the prepared inactive slot and releases its N references after journal closure.
+After a successful cut, N remains the current epoch even if the snapshot fails.
+Table destruction releases both slot references; retained result nodes continue
+to own any epochs they need.
+
+Active-writer count exhaustion is a checked simultaneous-participant limit.
+Unlike a cumulative generation count, it becomes available again when writers
+leave and cannot permanently disable snapshots through repeated use.
 
 #### Why the cut requires zero writers
 
-The cut advances the generation only in an atomic state with zero registered
-writers. No old-generation publication can cross that CAS. Advancing first
+The cut switches the selected epoch only in an atomic state with zero registered
+writers. No old-epoch publication can cross that CAS. Switching first
 and draining old writers afterward would permit the following history:
 
-1. Writer A registers in generation G, intending to insert X, then pauses.
-2. Snapshot S advances to G+1 without waiting for A.
-3. Writer B inserts Y in G+1 and returns.
+1. Writer A registers in epoch E, intending to insert X, then pauses.
+2. Snapshot S switches to N without waiting for A.
+3. Writer B inserts Y in N and returns.
 4. A subsequent find of X returns not-found.
-5. A inserts X in G and returns.
-6. S drains G and filters out G+1 items, returning X but not Y.
+5. A inserts X in E and returns.
+6. S drains E and filters out N items, returning X but not Y.
 
 The find forces X's insertion after the observation that followed Y's
 insertion. A snapshot containing X but not Y cannot be linearized in that
@@ -153,18 +215,22 @@ boundary at the cut.
 
 ### Publication metadata and node lifetime
 
-An actual insertion or replacement initializes the incoming node's internal
-`publication_generation` before its linking CAS. Failed publication transfers
-no item ownership. An unchanged same-item set must not rewrite its generation
-as G+1: doing so would hide a cut-visible node.
+Node creation initializes `publication_epoch` to `NULL`. Before an actual
+insertion or replacement linking CAS, the unpublished node acquires an owning
+reference to its writer's epoch, releasing any previous unpublished epoch
+reference. Failed publication transfers no item ownership: that epoch reference
+stays with the caller-owned node until another attempt replaces it or node
+destruction releases it. CAS retries within one operation retain the same epoch.
+An unchanged same-item set must not retag its epoch as N: doing so would hide a
+cut-visible node.
 
-Move generation/key preparation to paths that distinguish a fresh publication
+Move epoch/key preparation to paths that distinguish a fresh publication
 from same-item set; do not unconditionally overwrite a linked node's internal
 metadata in the hash-table wrapper before the sorted-list call. Preserve the
 existing special-case reference behavior for same-item set.
 
 The proof requires a membership incarnation to retain a stable key and
-generation while any traversal or snapshot can observe it. Holding a reference
+epoch while any traversal or snapshot can observe it. Holding a reference
 does not make arbitrary reinsertion of the same intrusive node safe:
 
 - A fresh node may be inserted for the same logical key after deletion.
@@ -173,7 +239,7 @@ does not make arbitrary reinsertion of the same intrusive node safe:
 - A removed physical node may be republished only after previous traversals,
   HP retirement ownership, and all other references to its old incarnation
   have ended, with the republishing caller retaining exclusive ownership.
-  Otherwise rewriting `next`, key, or generation can cause ABA, stale-link
+  Otherwise rewriting `next`, key, or epoch can cause ABA, stale-link
   validation, or loss of historical identity.
 - Raw key storage must remain valid and comparison-stable while its retained
   item is used by the snapshot. Copying a `void*` into a journal does not clone
@@ -202,43 +268,52 @@ then increment its refcount: it might already be freed.
 The control word has checked fields:
 
 ```text
-{epoch: 31 bits, state: 2 bits, failed: 1 bit, users: 29 bits}
+{target_slot: 1 bit, state: 2 bits, failed: 1 bit, users: 32 bits}
 ```
 
-The sign bit is unused. States are `CLOSED`, `OPEN`, and `CLOSING`, with one
+Unused bits, including the sign bit, remain zero.
+States are `CLOSED`, `OPEN`, and `CLOSING`, with one
 reserved encoding. `failed` is orthogonal to state so poisoning cannot reopen
-registration. `epoch` is the post-cut writer generation G+1. The separate
-journal payload is readable only after a successful registration.
+registration. `target_slot` is the slot selected by this snapshot's cut.
+The separate journal payload owns N and is readable only after a successful
+registration.
 
 The snapshot leader initializes payload storage while the slot is closed with
-zero users, then release-publishes `OPEN(G+1, false, 0)` **before** attempting
-the generation cut. Before a successful cut, all writers still belong to G and
-therefore ignore the armed slot. After the cut, every eligible writer sees an
+zero users, then release-publishes OPEN with target slot `1-S` **before**
+attempting the cut. Before a successful cut, all writers hold slot S and
+therefore ignore the armed journal. After the cut, every eligible writer sees an
 already initialized slot.
 
-A writer joins by CAS on the whole control word only if state is OPEN and epoch
-matches its writer generation. It preserves state/epoch/failed when changing
-the user count. A stale CAS cannot join a later successful cut. An attempt
-canceled before cutting can reuse its proposed epoch because no writer could
-have registered in that epoch.
+A writer joins by CAS on the whole control word only if state is OPEN and its
+target slot matches the writer's registered slot. It preserves state, target,
+and failed when changing the user count. It loads no payload pointer before
+joining and finishes all payload access before leaving.
+
+Writer participation keeps the selected slot fixed. During that participation,
+the matching journal can close, but the next snapshot can only arm the opposite
+slot; it cannot cut. Thus a stale matching registration CAS cannot join a
+different snapshot. The single target bit is sufficient for registration,
+whereas node visibility uses retained epoch identities, not this bit.
+Before-cut cancellations may reuse the inactive selector but cannot have
+matching registered writers.
 
 On CLOSING/CLOSED, the writer proceeds without journaling. Normal closure starts
 only after traversal is finished; premature closure means the snapshot has
 already been abandoned or failed. Neither case requires later unlinks in its
 result.
 
-The embedded slot also allows poisoning through a stamped CAS without touching
+The embedded slot also allows poisoning through a target-checked CAS without touching
 the payload if journal-user capacity is exhausted. If closure wins that CAS,
 no new journal obligation remains. Do not fail the mutation or dereference
 unprotected payload storage on that path.
 
 ### Copy before destructive change
 
-For a writer in G+1 and an old node published at or before G:
+For a writer in N and an old node whose publication epoch differs from N:
 
 1. Obtain and validate normal HP protection for the old node.
 2. Join the matching OPEN journal slot.
-3. Take an extra reference and capture `{item, key, publication_generation}`.
+3. Take an extra reference and capture `{item, key, publication_epoch}`.
 4. Publish a fully initialized journal entry.
 5. Leave journal registration.
 6. Only then attempt the node mark and incoming-link unlink/replacement CAS.
@@ -319,8 +394,8 @@ pending slot and abort through the common detach/cleanup path.
 
 ```text
 acquire snapshot leadership (cancelable; writers do not participate)
-initialize payload and arm OPEN slot for G+1
-retry CAS {G, 0} -> {G+1, 0}, checking cancellation
+prepare fresh epoch N in inactive slot 1-S and arm its journal
+retry CAS admission {S, 0} -> {1-S, 0}, checking cancellation
 capture current bucket-array root
 enumerate every bucket in that root chain
 close slot OPEN -> CLOSING, preserving failed and users
@@ -332,13 +407,13 @@ release detached non-result references and storage
 return OK / ERROR / ABANDONED
 ```
 
-The successful generation CAS is the snapshot linearization point. Capturing
+The successful admission CAS is the snapshot linearization point. Capturing
 the root after that CAS includes all pre-cut levels. Extra levels published in
 the intervening interval contain only post-cut publications and are harmless.
 Arrays prepended afterward cannot hide old nodes. Do not skip buckets or levels
 based on changing `item_count`.
 
-The collector filters on publication generation at or before G and merges by
+The collector excludes nodes whose publication epoch is N and merges by
 the table's logical key comparison, not raw key-pointer equality. Different key
 objects may compare equal. Snapshot deduplication must hold the owning item
 reference that keeps each comparison key valid.
@@ -362,18 +437,18 @@ consumed only on OK.
 
 ### Closure, failure, cancellation, and reentrancy
 
-Close registration with a CAS on the stamped state/user word. An already joined
+Close registration with a CAS on the target/state/user word. An already joined
 writer either publishes its entry or poisons the descriptor before leaving.
 Drain users with acquire ordering, then inspect failed and consume the journal.
 No registration may reopen the slot.
 
 The fail flag is authoritative even if most of the output has been built.
 No partial success, silent truncation, write-lock fallback, or retry disguised
-as success is allowed. Diagnostic paths distinguish cut exhaustion, allocation,
+as success is allowed. Diagnostic paths distinguish epoch allocation,
 HP acquisition, size overflow, and invariant failures.
 
-Cancellation before the cut closes the armed slot without advancing the
-generation. Cancellation after the cut does not roll the generation back.
+Cancellation before the cut closes the armed journal without changing the
+selected epoch. Cancellation after the cut does not switch back to the old epoch.
 Both paths detach all references and close/drain before reclamation.
 Cancellation cannot force reclamation beneath a stalled registered journal
 writer; post-cut cleanup therefore has no hard latency bound.
@@ -402,7 +477,9 @@ weakening to acquire/release is separate reviewed work. Required edges are:
 | Publication | Required observer |
 |---|---|
 | Payload initialization before OPEN publication | Successfully registered journal writer |
-| Node key/generation initialization before linking CAS | Validated enumerator or subsequent mutation |
+| Inactive epoch-slot initialization before the cut CAS | Writer registering in the newly selected slot |
+| Successful writer admission before loading its epoch reference | Slot remains pinned for that writer |
+| Node key/epoch initialization before linking CAS | Validated enumerator or subsequent mutation |
 | Journal entry initialization/ref ownership before append publication | Snapshot after user drain |
 | Append or failed flag before destructive mutation | Snapshot decision and retained old-item lifetime |
 | Final mutation bookkeeping before writer count decrement | Successful zero-writer cut |
@@ -415,13 +492,18 @@ Destruction still requires external exclusion of all table operations.
 
 ## Correctness argument
 
-Let T be the successful CAS from `{G, 0}` to `{G+1, 0}`.
+Let T be the successful admission CAS from `{S, 0}` to `{1-S, 0}`, selecting N.
 
-**Cut:** every G writer has finished before T, and no later writer can register
-in G. In particular, no delayed old-generation insert or resize can publish
-after T. Existing mutation/find ordering is not replaced by registration order.
+**Cut:** every writer in the preceding epoch has finished before T. Every
+subsequent writer loads N after admission, including a thread whose admission
+word read was delayed across multiple selector cycles. No delayed old-epoch
+insert or resize can publish after T. Existing mutation/find ordering is not
+replaced by registration order.
 
-**Soundness:** every accepted node was published no later than G. A validated
+**Soundness:** every accepted node has a publication epoch other than N. No node
+could have owned the newly allocated N before T, and every publication after T
+uses N until snapshot leadership is released. Retained epoch references prevent
+address reuse from confusing these identities. A validated
 post-T observation of that incarnation, or a journal entry made before its
 post-T removal, therefore refers to membership present at T. Pre-T removals
 are no longer reachable through validated live links and were not journaled
@@ -463,9 +545,12 @@ the cut; a stalled journal user can delay cleanup. This is the accepted tradeoff
 No finite snapshot latency or successful completion under perpetual writes is
 promised. Measure cut wait separately from materialization.
 
-Steady-state additions are a packed participant word, a stable per-table journal
-slot/leadership state, and per-node generation metadata. There are no permanent
-per-key MVCC chains or history scans. Snapshot memory is output storage plus
+Steady-state additions are a packed participant word, two epoch-reference slots,
+a stable per-table journal slot/leadership state, and one owning epoch reference
+per node. Publication and node destruction acquire/release epoch references.
+A snapshot attempt allocates one fresh epoch; epochs are reclaimed when no slot,
+payload, or node retains them. There are no per-key MVCC chains or history scans.
+Snapshot memory is output storage plus
 deduplication and journal entries; repeated failed mutation attempts can increase
 journal volume. Capacity limits must fail the snapshot, not block writers.
 
@@ -501,20 +586,21 @@ removal are not included.
 Tests use deterministic synchronization points, not sleeps to infer ordering.
 The model oracle records successful publication/unlink events, invocation and
 response ordering, find observations, and the successful cut. It must compare
-against the actual map at T, not merely replay generation tags from the algorithm
+against the actual map at T, not merely replay epoch tags from the algorithm
 being tested.
 
 | Scenario | Required outcome |
 |---|---|
 | Old writer paused before publication; another writer/find interleave | No cut until old writer leaves; reject the phase-only counterexample |
-| Writer loads old packed state; cut wins its CAS | Writer retries in the new generation |
+| Writer loads old packed state; cut wins its CAS | Writer retries and loads the selected epoch after admission |
+| Writer paused before admission across repeated selector cycles | Even if its CAS succeeds on a reused bit pattern, it loads the current epoch |
 | Writer admission wins before cut | Cut retries without delaying writer |
 | Continuous overlapping writers | Writers keep progressing; cancelable snapshot is allowed to remain pending |
 | Armed snapshot canceled before cut | No epoch advance, no registered future-epoch users, no leaked payload |
 | Post-cut insert/set-absent | New membership is absent from the result |
 | Delete/remove/replace before scanner reaches old item | Old item is retained in journal and returned |
 | Lost mark/unlink CAS after append | No duplicate output or lost reference |
-| Same-item set after cut | Existing membership remains visible; generation is not retagged |
+| Same-item set after cut | Existing membership remains visible; epoch is not retagged |
 | Same key deleted and reinserted using a new item | Snapshot sees old item, find sees current item |
 | Physical-node reuse and externally owned keys | Lifetime contract is validated; supported consumers are not silently broken |
 | Current node or successor removed; marked null tail | Restart safely; no stale-successor dereference or false completed pass |
@@ -524,7 +610,10 @@ being tested.
 | Journal allocation/capacity failure | Mutation proceeds, snapshot fails, all acquired refs eventually released |
 | Collector/HP failure and cancellation at each stage | No partial success, no leaked refs/users/leadership |
 | Back-to-back snapshots and delayed registration CAS | No stale descriptor access or epoch ABA |
-| Generation/count boundary values | No wrap, carry into another field, or silent overflow |
+| Repeated selector cycles with a long-lived node | Old node stays visible; epoch identity remains pinned without counter exhaustion |
+| Epoch address reuse after final release | No node, writer, or snapshot still compares the retired identity |
+| Epoch allocation failure or before-cut cancellation | Selected epoch unchanged; later snapshot attempts can succeed |
+| Writer/user/reference count boundary values | No carry into another field or silent overflow |
 | Final reference invokes reentrant cleanup | Leadership released and payload detached before callback |
 | Threshold-1 reclamation and thread unregister | No UAF, double release, or retained orphan journal segments |
 
