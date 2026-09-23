@@ -86,10 +86,9 @@ assemble the result:
 | Concurrent sorted-list enumeration | Validated HP traversal and reference delivery | No claim of point-in-time consistency by itself |
 | Snapshot collector | Dynamic storage, deduplication, journal merge, output transfer | No coordination of writers |
 
-The hash-table integration owns publication-generation metadata and connects
-destructive sorted-list publication sites to the journal. Merely adding a
-callback around a hash-table API call is insufficient: the old item must be
-retained before its mark/unlink/replacement inside the sorted-list algorithm.
+The hash table associates each published node with a generation. Its mutation
+paths use the journal to retain cut-visible items; the snapshot uses enumeration
+and the collector to combine linked and retained items.
 
 ### Generation domain
 
@@ -243,6 +242,11 @@ For a writer in G+1 and an old node published at or before G:
 4. Publish a fully initialized journal entry.
 5. Leave journal registration.
 6. Only then attempt the node mark and incoming-link unlink/replacement CAS.
+
+The sorted-list mutation invokes the journal hook while it has validated HP
+protection for the old node, before marking or changing its incoming link.
+That placement keeps the old item available throughout the transition from
+linked membership to journal ownership.
 
 If the node is post-cut, no cut-visible membership needs retaining. If the
 mutation loses a later CAS, the conservative entry is harmless: it still
