@@ -378,8 +378,8 @@ or silent entry loss is allowed.
 
 ### Concurrent enumeration
 
-Leave `clds_sorted_list_get_all` and its existing callers unchanged until
-integration. The new enumerator needs the following protocol:
+The enumerator walks mutable bucket lists with validated hazard-pointer
+protection:
 
 1. Start at the bucket head.
 2. Load the incoming pointer, retaining the predecessor's HP when applicable.
@@ -702,3 +702,10 @@ Snapshot starvation under representative caller workloads must be measured. If i
 unacceptable, revisit the progress contract: writer pausing, helping descriptors,
 or persistent versioned structures are different designs, not an optimization
 that can be added to the cut without a new correctness argument.
+
+## Integration boundary
+
+The concurrent enumerator can be added independently of
+`clds_sorted_list_get_all`, leaving that API and its callers unchanged.
+Switching the hash-table snapshot path requires the epoch domain, journal,
+concurrent enumerator, and collector together.
