@@ -13,7 +13,7 @@ The objective is to replace the write suspension in
 `clds_hash_table_snapshot` with a transient copy-before-change journal and
 hazard-safe enumeration. Preserve the existing public API, result values,
 node ownership, sequence-number behavior, and per-table snapshot semantics.
-Do not introduce a second hash-table implementation or require BSI call-site
+Do not introduce a second hash-table implementation or require caller API
 changes.
 
 **Progress decision, September 2026:** a snapshot may wait indefinitely for a
@@ -197,12 +197,12 @@ does not make arbitrary reinsertion of the same intrusive node safe:
 
 **Compatibility gate:** the current public requirements do not fully specify
 these reuse/lifetime rules. Module/integration review must make them explicit
-and audit supported consumers, including BSI and LRU cache. Do not silently
+and audit supported consumers. Do not silently
 classify a supported reuse pattern as invalid to make the proof work. If a
 consumer requires republishing a node while its old incarnation is retained,
 revise the representation to use immutable internal membership records before
 activation. That is additional scope, not something a captured raw pointer
-solves. BSI adoption remains dependency-only unless that audit finds a concrete
+solves. Caller adoption remains dependency-only unless that audit finds a concrete
 compatibility issue requiring separate approval.
 
 Adding internal metadata to macro-defined nodes changes their layout. Preserve
@@ -500,8 +500,8 @@ Replace stable-count enumeration requirements such as
 Preserve public validation/output requirements where still applicable. Update
 the source and tests with matching traceability text in that same PR.
 
-BSI's get-key-list/get-block-list paths already call this API. The intended EBS
-production change is a dependency update only. Retain BSI checkpoint
+List operations already call this API. The intended EBS
+production change is a dependency update only. Retain the caller's checkpoint
 `index_lock`: it coordinates multiple tables, committed state, and maximum
 address, not merely one hash-table enumeration. Combined local/offload results
 remain separate per-table cuts. Shared-domain snapshots and checkpoint-lock
@@ -555,7 +555,7 @@ Measure the no-snapshot regression separately. Performance tolerances and journa
 budgets need recorded baseline data and reviewer agreement before activation;
 this document does not invent an unmeasured percentage or default cap. Run the
 normal leak checks, sanitizer/verification configurations, sequence-number tests,
-resize chaos, and downstream BSI regressions. VLD is part of definition-of-done.
+resize chaos, and downstream caller regressions. VLD is part of definition-of-done.
 
 ## PR-sized delivery plan
 
@@ -569,7 +569,7 @@ resize chaos, and downstream BSI regressions. VLD is part of definition-of-done.
 | 39570736 | Legacy correctness/stress/performance baselines and reusable scheduling infrastructure |
 | 39570738 | Integrate all pieces, update live SRS/code/tests together, and activate the complete protocol |
 | 39570739 | EBS write workload with key-list, block-list, and mixed list storms; capture legacy baseline |
-| 39570740 | Update EBS dependency and rerun BSI/copy/checkpoint/list and perf qualification |
+| 39570740 | Update EBS dependency and rerun caller/copy/checkpoint/list and perf qualification |
 
 Module specs follow architecture approval. Their implementations can land
 independently while unused. Baselines can proceed in parallel. Integration
@@ -581,7 +581,7 @@ before old-phase drain. This design supersedes that mechanism; update those task
 descriptions when taking them up rather than implementing the obsolete wording.
 
 Every preceding PR keeps master shippable without a partially enabled protocol.
-No opt-in BSI call-site migration or v2 table is planned. If representation or
+No opt-in caller API migration or v2 table is planned. If representation or
 compatibility review invalidates these boundaries, revise the design before
 changing production behavior. Reverting final integration restores the old
 snapshot without removing the already-unused standalone modules.
@@ -601,7 +601,7 @@ production activation, reviewers require:
 
 The earlier 8-12 engineer-week implementation/qualification estimate plus
 2-4 calendar weeks of soak is provisional, not a result of this design PR.
-Snapshot starvation under the actual BSI workload must be measured. If it is
+Snapshot starvation under representative caller workloads must be measured. If it is
 unacceptable, revisit the progress contract: writer pausing, helping descriptors,
 or persistent versioned structures are different designs, not an optimization
 that can be added to the cut without a new correctness argument.
