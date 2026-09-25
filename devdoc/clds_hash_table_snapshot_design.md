@@ -13,6 +13,8 @@ node ownership, sequence-number behavior, and per-table snapshot semantics.
 Do not introduce a second hash-table implementation or require caller API
 changes.
 
+The **cut** is the single instant whose table membership the snapshot returns.
+
 **Progress contract:** a snapshot may wait indefinitely for a
 writer-quiescent cut. It must not close writer admission to obtain that cut.
 After the cut, writers continue during enumeration and merging. Cancellation
@@ -44,7 +46,7 @@ An item returned by find, remove, replacement, or snapshot can outlive its
 membership in the table. An item reference preserves allocation lifetime; it
 does not freeze payload bytes or make its old `next` a safe traversal source.
 
-## Requirements
+## Public contract
 
 - A successful snapshot shall return the complete key-to-item mapping at one instant between its invocation and response.
 - The result shall contain at most one item for each logical key.
@@ -56,20 +58,13 @@ does not freeze payload bytes or make its old `next` a safe traversal source.
 - A failed or abandoned snapshot shall not publish a partial successful result.
 - Snapshot order shall remain unspecified.
 - Snapshot consistency shall concern membership and item identity, not historical copies of mutable payload bytes.
-- Snapshot epochs shall be independent of optional operation sequence numbers.
-- Cancellation shall be checked while waiting for snapshot leadership or a cut.
-- Cancellation shall be checked during enumeration and merge.
+- Cancellation shall be honored while waiting to begin or capture a snapshot.
+- Cancellation shall be honored while collecting and assembling the result.
 - Snapshot cleanup shall release every reference not transferred to the caller.
 - Concurrent snapshot callers shall be serialized without introducing `BUSY`.
 - A successful cut shall exclude every subsequently published membership.
 - An item removed or replaced after the cut shall remain available to that snapshot.
 - Resize after the cut shall not hide a cut-visible item.
-- Same-item set shall preserve the publication epoch of unchanged membership.
-- An epoch identity shall not be reused while referenced by a node or operation.
-- No successor shall be followed through an invalidated or marked predecessor.
-- Cancellation shall not bypass safe retirement of journal users.
-- A snapshot shall not invoke item cleanup while retaining snapshot leadership.
-- Existing resize-level duplicate prevention shall remain intact.
 
 The guarantee is per table. It does not provide one atomic cut across several
 hash tables or make concurrent table destruction legal.
@@ -111,6 +106,16 @@ The snapshot lifecycle is:
 The two epoch-reference slots belong to writer admission. The journal's
 registration control word is separate: it protects append/payload lifetime,
 not the table's writer count. Closing it does not stop mutations.
+
+### Protocol invariants
+
+- Publication epochs are independent of optional operation sequence numbers.
+- Same-item set preserves the publication epoch of unchanged membership.
+- An epoch identity is not reused while referenced by a node or operation.
+- Traversal never follows a successor through an invalidated or marked predecessor.
+- Cancellation does not bypass safe retirement of journal users.
+- Snapshot cleanup releases leadership before invoking application-item cleanup.
+- Resize-level duplicate prevention remains intact.
 
 ### Epoch domain and quiescent cut
 
