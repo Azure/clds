@@ -77,14 +77,17 @@ assemble the result:
 | Piece | Responsibility | Boundary |
 |---|---|---|
 | Snapshot epoch domain | An admission word counts writers and selects one of two owning epoch-reference slots; switching slots at zero writers establishes the cut | Controls membership epochs, not journal append registration |
-| Transient snapshot journal | A table-lifetime registration control word protects a per-snapshot payload containing the target epoch and retained old items | Controls who can append and when that payload can be consumed or freed |
-| Concurrent sorted-list enumeration | Validated HP traversal and reference delivery | No claim of point-in-time consistency by itself |
-| Snapshot collector | Dynamic storage, deduplication, journal merge, output transfer | No coordination of writers |
+| Transient snapshot journal | A table-lifetime registration control word protects a per-snapshot payload containing the target epoch and retained membership records | Controls who can append and when that payload can be consumed or freed |
+| Concurrent sorted-list enumeration | Validated HP traversal of membership records and reference delivery | No claim of point-in-time consistency by itself |
+| Snapshot collector | Dynamic storage, membership-identity deduplication, journal merge, application-item output transfer | No coordination of writers or comparison-key access |
 
 The hash table coordinates these components. Snapshot leadership serializes
 snapshot callers only; it is not a lock acquired by mutators. An epoch identifies
-a period of publication. Nodes retain their publication epoch so the collector
-can distinguish items present at the cut from later insertions.
+a period of publication. Each actual insertion or replacement publishes a fresh
+internal membership record that refers to an application item and retains its
+publication epoch. Bucket lists link these records, not the application items.
+The same application item can be removed and republished through a different
+membership without rewriting an old traversal link or snapshot identity.
 
 The snapshot lifecycle is:
 
@@ -92,14 +95,15 @@ The snapshot lifecycle is:
    inactive epoch slot, and opens a journal payload for N.
 2. At a writer-free instant, the epoch domain atomically switches the selected
    slot to N. This is the cut. Writers continue attempting admission throughout;
-   writers admitted afterward publish nodes tagged N.
+   writers admitted afterward publish memberships tagged N.
 3. The snapshot captures the bucket-array root and enumerates it. Concurrent
-   writers copy cut-visible old items into the journal before removing or
-   replacing them. The enumerator supplies references to cut-visible items
-   still linked in the table; it excludes new items tagged N.
+   writers retain cut-visible old memberships in the journal before removing or
+   replacing them. The enumerator supplies references to cut-visible memberships
+   still linked in the table; it excludes new memberships tagged N.
 4. After traversal, the snapshot closes journal append registration and drains
    writers already using that payload. The collector combines direct
-   observations and journal entries into one result.
+   observations and journal entries by membership identity, then obtains
+   application-item references for the result.
 5. The snapshot detaches result and cleanup ownership, releases leadership, and
    releases non-result references.
 
@@ -110,8 +114,11 @@ not the table's writer count. Closing it does not stop mutations.
 ### Protocol invariants
 
 - Publication epochs are independent of optional operation sequence numbers.
-- Same-item set preserves the publication epoch of unchanged membership.
-- An epoch identity is not reused while referenced by a node or operation.
+- Same-item set preserves the identity and publication epoch of unchanged membership.
+- Every actual publication has its own membership identity, even when the application item is reused.
+- An epoch identity is not reused while referenced by a membership or operation.
+- A retained membership is not republished or reused for another incarnation.
+- Snapshot enumeration and merging do not dereference, hash, or compare keys.
 - Traversal never follows a successor through an invalidated or marked predecessor.
 - Cancellation does not bypass safe retirement of journal users.
 - Snapshot cleanup releases leadership before invoking application-item cleanup.
@@ -120,10 +127,10 @@ not the table's writer count. Closing it does not stop mutations.
 ### Epoch domain and quiescent cut
 
 An epoch is a reference-counted record whose address supplies identity. It has
-no increasing generation number. Every published node owns a reference to its
-`publication_epoch`. A snapshot introduces a fresh epoch N; publications made
+no increasing generation number. Every published membership owns a reference
+to its `publication_epoch`. A snapshot introduces a fresh epoch N; publications made
 after its cut use N. While that snapshot owns leadership, no other cut occurs,
-so a node is cut-visible exactly when its publication epoch differs from N
+so a membership is cut-visible exactly when its publication epoch differs from N
 and its membership is observed directly or retained in the journal.
 
 The table owns two epoch-reference slots and one atomic 64-bit admission word:
@@ -134,13 +141,13 @@ admission: {selected_slot: 1 bit, active_writers: 32 bits}
 ```
 
 Unused bits, including the sign bit, remain zero. The selector identifies the
-current slot; it is not an epoch identity stored on nodes. It alternates on
+current slot; it is not an epoch identity stored on memberships. It alternates on
 every successful cut without exhausting a lifetime snapshot counter.
 
 A writer first registers through the admission word and only then reads the
 selected epoch reference. Its active-writer participation prevents a cut and
 keeps that selected slot unchanged until it leaves. The writer borrows the
-slot's epoch reference for its operation; any node it publishes acquires its
+slot's epoch reference for its operation; any membership it publishes acquires its
 own reference before the linking CAS.
 
 ```text
@@ -195,28 +202,29 @@ snapshot completion.
 
 The current slot owns its epoch. The inactive slot can hold a previous epoch
 until the leader replaces it; replacement releases that slot's old reference.
-Nodes retain their publication epoch through removal and through all retained
-snapshot/item references. Node destruction releases the epoch after its last
+Memberships retain their publication epoch through removal and through all retained
+traversal/journal references. Membership destruction releases the epoch after its last
 use. Journal payloads own their target epoch until detached cleanup finishes.
 These references use checked reference-count arithmetic.
 
 An epoch record is freed when its final reference is released. A newly allocated
-record may reuse its address only then: no node or active operation can still
+record may reuse its address only then: no membership or active operation can still
 compare against the old identity. Epoch release frees only internal metadata,
 not application items, and invokes no application callback.
 
 There is no scan to retag long-lived nodes and no eventual "snapshots disabled"
-state. An old node keeps its old epoch alive and differs from every fresh N.
+state. An old membership keeps its old epoch alive and differs from every fresh N.
 Records are retained only by the two slots, an active or detached snapshot
-payload, and live or externally retained nodes, not by the total number of cuts.
+payload, and live or retained memberships, not by the total number of cuts.
 Repeated snapshots without publications do not accumulate epoch history.
 
 If epoch allocation fails, the snapshot returns ERROR without changing the
 selected slot; a later snapshot can retry. Cancellation before the cut clears
 the prepared inactive slot and releases its N references after journal closure.
 After a successful cut, N remains the current epoch even if the snapshot fails.
-Table destruction releases both slot references; retained result nodes continue
-to own any epochs they need.
+Table destruction releases both slot references. Completed results own
+application items, not membership records or epochs, and remain usable under
+the existing item-reference contract.
 
 Active-writer count exhaustion is a checked simultaneous-participant limit.
 Unlike a cumulative generation count, it becomes available again when writers
@@ -240,48 +248,90 @@ insertion. A snapshot containing X but not Y cannot be linearized in that
 history. Registering writers in phases cannot substitute for a publication
 boundary at the cut.
 
-### Publication metadata and node lifetime
+### Membership records and application-item lifetime
 
-Node creation initializes `publication_epoch` to `NULL`. Before an actual
-insertion or replacement linking CAS, the unpublished node acquires an owning
-reference to its writer's epoch, releasing any previous unpublished epoch
-reference. Failed publication transfers no item ownership: that epoch reference
-stays with the caller-owned node until another attempt replaces it or node
-destruction releases it. CAS retries within one operation retain the same epoch.
-An unchanged same-item set must not retag its epoch as N: doing so would hide a
-cut-visible node.
+Each bucket contains internal sorted-list nodes with this payload:
 
-Epoch/key preparation distinguishes a fresh publication from same-item set.
-It does not overwrite a linked node's internal metadata in the hash-table
-wrapper before the sorted-list call. The special-case reference behavior for
-same-item set is unchanged.
+| Field | Ownership and mutability |
+|---|---|
+| `application_item` | Owning reference to the public `CLDS_HASH_TABLE_ITEM`; fixed for this membership |
+| `key` | The publication key pointer used by ordinary hash/list operations; fixed for this membership, not cloned |
+| `publication_epoch` | Owning epoch reference; fixed for this membership |
 
-The proof requires a membership incarnation to retain a stable key and
-epoch while any traversal or snapshot can observe it. Holding a reference
-does not make arbitrary reinsertion of the same intrusive node safe:
+The record also has the sorted list's own reference count, cleanup callback,
+and intrusive link. Only the list algorithm changes that link; a record is
+never reinserted after removal. Identity, payload fields, and epoch do not
+change after publication. HP reclamation drops the table's membership reference;
+the final membership release drops its application-item and epoch references.
+Snapshot traversal and journal ownership can therefore keep an old incarnation
+alive independently of subsequent publications.
 
-- A fresh node may be inserted for the same logical key after deletion.
-- The old snapshot then returns the old node; current find returns the new one.
-- Same-item set of unchanged membership remains supported.
-- A removed physical node may be republished only after previous traversals,
-  HP retirement ownership, and all other references to its old incarnation
-  have ended, with the republishing caller retaining exclusive ownership.
-  Otherwise rewriting `next`, key, or epoch can cause ABA, stale-link
-  validation, or loss of historical identity.
-- Raw key storage must remain valid and comparison-stable while its retained
-  item is used by the snapshot. Copying a `void*` into a journal does not clone
-  the key or preserve externally freed memory.
+Public node creation and reference APIs still operate on application items.
+Their legacy link/key fields are not used for bucket traversal or snapshot
+metadata. In particular, the hash table does not overwrite an application
+item's link or key metadata when publishing a membership.
 
-The current public requirements do not fully specify reuse/lifetime rules.
-Compatibility with supported callers requires that the rules above hold; this
-representation does not make premature reuse safe. Supporting republication
-while the old incarnation is retained requires separate immutable membership
-records. Capturing a raw key pointer cannot provide that separation.
+For an actual insertion or replacement, membership preparation allocates a
+fresh record and takes an additional application-item reference and an epoch
+reference before its linking CAS. Preparation is distinct from snapshot
+bookkeeping: failure returns the mutation's existing ERROR before publication.
+On successful publication the table consumes the caller's original item
+reference, leaving the membership's reference as table ownership. On failure,
+the candidate is released and the caller's original reference is retained.
+A losing CAS may reuse the unpublished candidate within that operation; a
+successfully published record is never reused.
+
+Find, remove, and replacement receive a protected/retained membership from the
+list. Before releasing that membership they obtain the application-item
+reference returned to the caller. `delete_key_value` tests the supplied item
+against `membership.application_item`, not against the internal list-node
+address. Unchanged same-item set retains the current membership and preserves
+the existing special-case reference behavior; it performs no fresh publication.
+
+Republishing a removed or replaced application item uses a fresh membership,
+including when rollback restores that exact item pointer. No wait for old
+membership references or HP retirement is required:
+
+```text
+before cut:       key K -> membership M0 -> application item A
+after replacement: key K -> membership M1 -> application item B
+after rollback:    key K -> membership M2 -> application item A
+```
+
+M0 retains its original epoch and links; M1 and M2 carry the post-cut epoch.
+The snapshot returns A from M0 even if A is currently published through M2.
+Keeping A alive does not freeze its payload bytes; that limitation is unchanged.
+
+### Published keys and query keys
+
+A publication key is the pointer saved in a membership. A query key supplied
+to find/delete/remove may instead be temporary storage and need only cover
+that call. Equal keys need not have identical addresses.
+
+Ordinary hash/list operations require published comparison data to remain valid
+and comparison-stable while those operations can access it, including a reader
+already protected before removal. Embedding the key in the application item, or
+retaining its allocation/owner in the item until final cleanup, is the usual
+way to satisfy this requirement. Pointer-encoded identifiers have no separately
+allocated key storage to retain. Independently owned keys require an equivalent
+lifetime arrangement; copying a `void*` establishes no ownership.
+
+A membership owns the application item, not arbitrary allocations referenced
+by its key. Publishing an item before attaching its key owner can violate the
+ordinary-operation lifetime requirement on a failure path. Retaining that item
+alone does not repair the missing ownership edge.
+
+The snapshot adds no post-removal comparison-key requirement. Enumeration
+reads only membership identity, epoch, and application-item references; the
+journal stores owning membership references; the collector uses membership
+identity. None of these steps invokes the table's key hash/comparison callbacks
+or reads bytes through a removed membership's key. Existing ordinary-operation
+key-lifetime defects remain separate from snapshot correctness.
 
 ### Journal registration and payload
 
 The journal has a table-lifetime registration control word and a separate
-per-snapshot payload. The payload owns the target epoch and appended item
+per-snapshot payload. The payload owns the target epoch and appended membership
 references. Writers register through the control word before accessing that
 payload; closure prevents new registrations and waits for existing users.
 
@@ -317,7 +367,7 @@ Writer participation keeps the selected slot fixed. During that participation,
 the matching journal can close, but the next snapshot can only arm the opposite
 slot; it cannot cut. Thus a stale matching registration CAS cannot join a
 different snapshot. The single target bit is sufficient for registration,
-whereas node visibility uses retained epoch identities, not this bit.
+whereas membership visibility uses retained epoch identities, not this bit.
 Before-cut cancellations may reuse the inactive selector but cannot have
 matching registered writers.
 
@@ -333,23 +383,23 @@ unprotected payload storage on that path.
 
 ### Copy before destructive change
 
-For a writer in N and an old node whose publication epoch differs from N:
+For a writer in N and an old membership whose publication epoch differs from N:
 
-1. Obtain and validate normal HP protection for the old node.
+1. Obtain and validate normal HP protection for the old membership.
 2. Join the matching OPEN journal.
-3. Take an extra reference and capture `{item, key, publication_epoch}`.
+3. Take an extra membership reference.
 4. Publish a fully initialized journal entry.
 5. Leave journal registration.
-6. Only then attempt the node mark and incoming-link unlink/replacement CAS.
+6. Only then attempt the membership mark and incoming-link unlink/replacement CAS.
 
 The sorted-list mutation invokes the journal hook while it has validated HP
-protection for the old node, before marking or changing its incoming link.
+protection for the old membership, before marking or changing its incoming link.
 That placement keeps the old item available throughout the transition from
 linked membership to journal ownership.
 
-If the node is post-cut, no cut-visible membership needs retaining. If the
+If the membership is post-cut, no cut-visible incarnation needs retaining. If the
 mutation loses a later CAS, the conservative entry is harmless: it still
-describes a node that existed at the cut. Multiple attempts may log it.
+describes a membership that existed at the cut. Multiple attempts may log it.
 Never claim "already journaled" before an owning entry is published; another
 writer must not unlink while the first logger is paused with an unpublished
 reservation.
@@ -380,15 +430,15 @@ or silent entry loss is allowed.
 
 ### Concurrent enumeration
 
-The enumerator walks mutable bucket lists with validated hazard-pointer
-protection:
+The enumerator walks mutable bucket lists of internal membership records with
+validated hazard-pointer protection. It does not inspect comparison keys:
 
 1. Start at the bucket head.
 2. Load the incoming pointer, retaining the predecessor's HP when applicable.
 3. Treat a marked incoming link as invalid, including a marked null tail.
 4. Acquire an HP for a non-null candidate.
 5. Re-read the full incoming link and require the same unmarked value.
-6. Only then access candidate metadata and acquire an eligible item reference.
+6. Only then read its epoch and acquire an eligible membership reference.
 7. To advance, keep the current node protected, load its unmarked `next`,
    protect the successor, and revalidate that incoming link before use.
 8. On a mark or validation failure, release traversal HPs and restart at head.
@@ -397,8 +447,8 @@ protection:
 Do not just mask off the deletion bit and follow a dead node's successor.
 Keeping the dead node alive with a refcount does not keep the successor alive.
 The predecessor remains HP-protected until successor protection/validation is
-complete. Unlinked nodes must not have their links rewritten through premature
-reuse, as specified above.
+complete. Unlinked membership records are never republished; reusing an
+application item creates a different record and cannot rewrite the old link.
 
 A finite completed pass is sufficient for a bucket. Nodes missed because of
 post-cut unlink/replacement are covered by the journal. Repeated observations
@@ -438,25 +488,31 @@ the intervening interval contain only post-cut publications and are harmless.
 Arrays prepended afterward cannot hide old nodes. Do not skip buckets or levels
 based on changing `item_count`.
 
-The collector excludes nodes whose publication epoch is N and merges by
-the table's logical key comparison, not raw key-pointer equality. Different key
-objects may compare equal. Snapshot deduplication must hold the owning item
-reference that keeps each comparison key valid.
+The collector excludes memberships whose publication epoch is N and
+deduplicates retained membership addresses. The table has exactly one live
+membership for each logical key at the cut. Since every later publication has
+epoch N, every eligible observation of that cut-key identifies the same
+membership record, regardless of repeated traversal or conservative journal
+entries. The collector does not compare keys to establish that property; it
+relies on the table's existing uniqueness invariant and the atomic cut.
 
-Under the lifetime rules and quiescent cut, all eligible observations for a
-logical key identify the same cut-visible item. A journal copy takes precedence
-over a duplicate direct observation; release the duplicate reference later.
-If two distinct eligible item identities compare equal, report an invariant
-failure and fail the snapshot rather than selecting an arbitrary winner.
+Deduplication uses neither the application-item pointer nor the comparison-key
+pointer. Application items can be republished, and equal keys can occupy
+different allocations. A retained membership cannot be freed and have its
+address recycled while it remains in the seen set. Direct and journal entries
+for the same record are interchangeable ownership references, not competing
+versions with a precedence rule.
 
-Do not assume `clds_st_hash_set` is usable without examining its equality
-contract. A pointer-identity set could deduplicate retained item pointers only
-after proving the one-item-per-cut-key invariant; it is not a substitute for
-arbitrary caller key equality.
+The seen set hashes membership addresses, not publication keys. Each stored
+address remains backed by an owning membership reference until the set is no
+longer used. Its equality contract is exact pointer identity.
 
 Use checked dynamic growth. Live counts may be sizing hints, never correctness
-conditions. On success detach exactly one reference per unique result and the
-allocated pointer array into the existing caller contract. On error do not
+conditions. Retain memberships until merging and result acquisition finish.
+Obtain exactly one application-item reference for each unique cut membership,
+then detach those references and the allocated array into the caller contract.
+Membership and duplicate-reference cleanup occurs after releasing leadership.
+On error do not
 write successful output values; retain the existing rule that outputs are
 consumed only on OK.
 
@@ -504,7 +560,7 @@ ordering. The required visibility edges are:
 | Payload initialization before OPEN publication | Successfully registered journal writer |
 | Inactive epoch-slot initialization before the cut CAS | Writer registering in the newly selected slot |
 | Successful writer admission before loading its epoch reference | Slot remains pinned for that writer |
-| Node key/epoch initialization before linking CAS | Validated enumerator or subsequent mutation |
+| Membership key/item/epoch initialization before linking CAS | Validated enumerator or subsequent mutation |
 | Journal entry initialization/ref ownership before append publication | Snapshot after user drain |
 | Append or failed flag before destructive mutation | Snapshot decision and retained old-item lifetime |
 | Final mutation bookkeeping before writer count decrement | Successful zero-writer cut |
@@ -512,7 +568,8 @@ ordering. The required visibility edges are:
 
 Only registered writers dereference an OPEN slot's payload. The stable control
 word outlives all operations. HPs protect list dereferences; ordinary references
-protect retained result/journal items. These are different lifetime mechanisms.
+protect retained memberships and their application items. Results retain
+application items without requiring membership or epoch ownership.
 Destruction still requires external exclusion of all table operations.
 
 ## Correctness argument
@@ -525,7 +582,7 @@ word read was delayed across multiple selector cycles. No delayed old-epoch
 insert or resize can publish after T. Existing mutation/find ordering is not
 replaced by registration order.
 
-**Soundness:** every accepted node has a publication epoch other than N. No node
+**Soundness:** every accepted membership has a publication epoch other than N. No record
 could have owned the newly allocated N before T, and every publication after T
 uses N until snapshot leadership is released. Retained epoch references prevent
 address reuse from confusing these identities. A validated
@@ -534,26 +591,29 @@ post-T removal, therefore refers to membership present at T. Pre-T removals
 are no longer reachable through validated live links and were not journaled
 for this cut. Post-T publications are filtered out.
 
-**Completeness:** take an item present at T. If it remains linked through the
+**Completeness:** take a membership present at T. If it remains linked through the
 completed pass over its bucket, validated traversal observes it. If it becomes
 unreachable before it is observed, the destructive operation published an
 owning journal entry first, or set failed. Thus a successful result cannot lose
-it between table and journal. Resize neither migrates nor destroys its level.
+its item between table and journal. Resize neither migrates nor destroys its level.
 
 **Uniqueness:** a logical key has one membership at T. Repeated traversal,
 conservative logging, and lost mutation CAS attempts produce extra references
-to that membership, not additional cut-visible values. Key deduplication leaves
-one caller-owned reference.
+to that same immutable membership identity, not additional cut-visible values.
+Identity deduplication leaves one application-item result reference per cut-key
+without dereferencing any key. A rollback publication of the same application
+item uses a different, post-cut membership and cannot change this identity.
 
 **Closure:** every writer that could remove an unobserved cut-visible node
 before traversal ended either registered and is drained, or lost to closure
 after the completed pass. Later removals cannot invalidate already retained
 direct observations. Abort closure never claims success.
 
-This proof depends on the existing map's uniqueness guarantees, the specified
-node/key lifetime contract, validated finite passes, and the ordering edges
-above. It is not a proof that unsafe node reuse or arbitrary payload mutation
-becomes safe.
+This proof depends on the existing map's uniqueness guarantees, retained
+membership identities, validated finite passes, and the ordering edges above.
+It requires no post-removal comparison-key access and permits republication of
+application items. It does not repair an invalid key passed to an ordinary
+table operation or make arbitrary payload mutation a historical-value snapshot.
 
 ## Progress and cost
 
@@ -571,13 +631,18 @@ No finite snapshot latency or successful completion under perpetual writes is
 promised. Measure cut wait separately from materialization.
 
 Steady-state additions are a packed participant word, two epoch-reference slots,
-a journal control word and leadership state, and one owning epoch reference
-per node. Publication and node destruction acquire/release epoch references.
+a journal control word and leadership state, and a separately allocated
+membership per actual publication. Each membership adds a link/reference count,
+key pointer, application-item reference, and epoch reference. Publication and
+membership destruction acquire/release those references; find adds a membership
+indirection and transfers protection to an application-item reference.
 A snapshot attempt allocates one fresh epoch; epochs are reclaimed when no slot,
-payload, or node retains them. There are no per-key MVCC chains or history scans.
+payload, or membership retains them. There are no per-key MVCC chains or history scans.
 Snapshot memory is output storage plus
 deduplication and journal entries; repeated failed mutation attempts can increase
 journal volume. Capacity limits must fail the snapshot, not block writers.
+Membership allocation/indirection is a steady-state cost even without snapshots
+and must be measured separately from transient journal overhead.
 
 ## Compatibility
 
@@ -613,18 +678,22 @@ being tested.
 | Lost mark/unlink CAS after append | No duplicate output or lost reference |
 | Same-item set after cut | Existing membership remains visible; epoch is not retagged |
 | Same key deleted and reinserted using a new item | Snapshot sees old item, find sees current item |
-| Physical-node reuse and externally owned keys | Lifetime contract is validated; supported consumers are not silently broken |
+| Replaced item republished by rollback while old HP/journal refs remain | Fresh post-cut membership; old epoch/link/identity unchanged |
+| Removed key made inaccessible after ordinary key readers finish | Enumeration and merge use no key hash, comparison, or dereference |
+| Two equal keys at different addresses in successive incarnations | Only cut membership survives filtering; equality uses membership identity |
+| Candidate membership allocation failure or lost publication CAS | Original caller item reference retained; candidate item/epoch refs balanced |
 | Current node or successor removed; marked null tail | Restart safely; no stale-successor dereference or false completed pass |
-| Collector observes a node repeatedly | One result reference; all duplicates accounted for |
+| Collector observes a membership repeatedly | One application-item result reference; all duplicates accounted for |
 | New bucket levels before/after T | All cut-visible memberships included exactly once |
 | Writer paused after registration or append | Close/drain remains safe; append-before-unlink invariant holds |
 | Journal allocation/capacity failure | Mutation proceeds, snapshot fails, all acquired refs eventually released |
 | Collector/HP failure and cancellation at each stage | No partial success, no leaked refs/users/leadership |
 | Back-to-back snapshots and delayed registration CAS | No stale descriptor access or epoch ABA |
-| Repeated selector cycles with a long-lived node | Old node stays visible; epoch identity remains pinned without counter exhaustion |
-| Epoch address reuse after final release | No node, writer, or snapshot still compares the retired identity |
+| Repeated selector cycles with a long-lived membership | Old membership stays visible; epoch identity remains pinned without counter exhaustion |
+| Epoch address reuse after final release | No membership, writer, or snapshot still compares the retired identity |
 | Epoch allocation failure or before-cut cancellation | Selected epoch unchanged; later snapshot attempts can succeed |
 | Writer/user/reference count boundary values | No carry into another field or silent overflow |
+| Find/remove/replace/delete-key-value with internal records | Public application-item identity and reference transfer remain unchanged |
 | Final reference invokes reentrant cleanup | Leadership released and payload detached before callback |
 | Threshold-1 reclamation and thread unregister | No UAF, double release, or retained orphan journal segments |
 
