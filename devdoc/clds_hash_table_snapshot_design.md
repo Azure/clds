@@ -302,6 +302,70 @@ M0 retains its original epoch and links; M1 and M2 carry the post-cut epoch.
 The snapshot returns A from M0 even if A is currently published through M2.
 Keeping A alive does not freeze its payload bytes; that limitation is unchanged.
 
+### Publication-preparation handoff
+
+The hash table owns membership construction and interpretation. The sorted list
+owns key-position lookup, conditional-set evaluation, link validation, and the
+publication CAS. They communicate through a synchronous, operation-scoped
+mutation context rather than fields written into the requested application item.
+
+The hash-table wrapper enters the epoch domain and builds the context with:
+
+- The explicit request/publication key and requested application-item pointer.
+- The writer's registered slot and borrowed epoch reference.
+- The existing condition callback and its caller context, where applicable.
+- Hash-table callbacks to test whether a found membership already refers to the
+  requested item, prepare a candidate membership, and journal an old membership.
+- Ownership of any prepared-but-unpublished candidate until it is consumed or
+  released.
+
+The hash-table-specific sorted-list entry point accepts the explicit request
+key for traversal. It does not obtain that key by calling `get_item_key` on a
+not-yet-prepared public item. For an existing list node, the bucket's configured
+key callback reads `membership.key`. Conditional-set callbacks receive the
+explicit request key and the found membership's key, preserving their existing
+meaning.
+
+After locating and protecting the relevant position, the sorted list selects
+the operation case:
+
+| Case | Preparation and publication |
+|---|---|
+| Duplicate insert, `only_if_exists` miss, or rejected condition | No new membership is published; any speculative candidate is released by the wrapper |
+| Same logical key and same application item | The hash callback identifies unchanged membership; preserve its identity/key/epoch and the existing same-item result semantics |
+| Absent-key insert or replacement with a different application item | Invoke the hash-owned preparation callback before the link/mark mutation |
+| Delete, remove, or delete-key-value | No new membership preparation; journal the matched old membership before destructive change |
+
+Preparation allocates the internal sorted-list node, initializes its immutable
+key/item/epoch fields, and obtains the ownership references described above.
+It runs before acquiring the old node's deletion mark, so failure can return
+the existing mutation ERROR without a partially marked or published node.
+It does not modify the requested application's link, key metadata, or payload.
+The sorted list initializes the candidate's structural `next` and performs
+the publication CAS.
+
+If a CAS loses, the sorted list restores any mark it acquired and retries with
+normal link validation. The context can retain the unpublished candidate for
+another actual-publication attempt. If a retry instead finds the requested
+application item already current, the result is unchanged membership and the
+unused candidate is released. A condition callback may be reevaluated on retry
+as in the existing algorithm.
+
+The list reports the result and whether a candidate was actually published,
+plus any retained old membership. The wrapper consumes the caller's item
+reference only for actual publication, converts returned membership ownership
+to application-item ownership, releases unused candidates, and then leaves the
+epoch domain. Context callbacks finish before that exit and retain no borrowed
+context or epoch pointers afterward.
+
+The preparation and journal callbacks have different roles: preparation creates
+the incoming membership; journaling retains a cut-visible outgoing membership
+before its mark/unlink. Both are used for replacement, neither is needed for an
+unchanged same-item set. Exact C declarations belong to the module interfaces;
+these responsibility and ownership boundaries apply to every insertion and set
+path, including older resize levels. Existing generic sorted-list entry points
+retain their current contracts.
+
 ### Published keys and query keys
 
 A publication key is the pointer saved in a membership. A query key supplied
@@ -682,6 +746,9 @@ being tested.
 | Removed key made inaccessible after ordinary key readers finish | Enumeration and merge use no key hash, comparison, or dereference |
 | Two equal keys at different addresses in successive incarnations | Only cut membership survives filtering; equality uses membership identity |
 | Candidate membership allocation failure or lost publication CAS | Original caller item reference retained; candidate item/epoch refs balanced |
+| Same-item set reached initially or after a lost CAS | No linked metadata rewrite or fresh publication; unused candidate released |
+| Conditional rejection or older-level `only_if_exists` miss | No premature public-item key access or ownership transfer |
+| Preparation versus journal hook ordering | Incoming membership complete before CAS; outgoing membership retained before mark/unlink |
 | Current node or successor removed; marked null tail | Restart safely; no stale-successor dereference or false completed pass |
 | Collector observes a membership repeatedly | One application-item result reference; all duplicates accounted for |
 | New bucket levels before/after T | All cut-visible memberships included exactly once |
