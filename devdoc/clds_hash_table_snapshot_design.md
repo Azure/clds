@@ -571,6 +571,17 @@ The seen set hashes membership addresses, not publication keys. Each stored
 address remains backed by an owning membership reference until the set is no
 longer used. Its equality contract is exact pointer identity.
 
+`clds_st_hash_set_find` implements pointer-identity equality: it compares stored
+and requested pointers with `==` rather than invoking the comparison callback
+accepted by `clds_st_hash_set_create`. That behavior matches membership-identity
+deduplication, but would not implement arbitrary logical-key comparison.
+`clds_st_hash_set_insert` does not reject duplicates, so the collector performs
+find-before-insert and distinguishes NOT_FOUND from lookup/allocation ERROR.
+It supplies an address hash independent of the table's key callbacks and keeps
+membership ownership outside the set; destroying the set does not release its
+pointed-to memberships. Bucket sizing and growth policy belong to the collector
+module specification without changing this equality/ownership contract.
+
 Use checked dynamic growth. Live counts may be sizing hints, never correctness
 conditions. Retain memberships until merging and result acquisition finish.
 Obtain exactly one application-item reference for each unique cut membership,
