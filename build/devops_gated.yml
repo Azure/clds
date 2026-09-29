@@ -44,7 +44,7 @@ jobs:
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64, custom script)'
   pool:
-    name: Azure-MessagingStore-Win-x64-Dadsv6-v04
+    name: ${{ parameters.pool_name_windows_x64 }}
     demands:
     - Build
     - Cmd
