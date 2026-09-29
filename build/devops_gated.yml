@@ -4,11 +4,11 @@ parameters:
   - name: pool_name_windows_x64
     displayName: 'Windows x64 Pool'
     type: string
-    default: 'Azure-MessagingStore-WinBuildPoolVS2022_1'
+    default: 'Azure-MessagingStore-Win-x64-Dadsv6-v04'
   - name: pool_name_windows_arm64
     displayName: 'Windows ARM64 Pool'
     type: string
-    default: 'Azure-MessagingStore-Win-ARM64-Dpldsv6-v30'
+    default: 'Azure-MessagingStore-Win-ARM64-Dpldsv6-v32'
   - name: pool_name_linux
     displayName: 'Linux Pool'
     type: string
@@ -44,7 +44,7 @@ jobs:
 - job: windowsperf
   displayName: 'Build Windows Perf tests (RelWithDebInfo x64, custom script)'
   pool:
-    name: Azure-MessagingStore-WinBuildPoolVS2022_0
+    name: Azure-MessagingStore-Win-x64-Dadsv6-v04
     demands:
     - Build
     - Cmd
@@ -70,26 +70,22 @@ jobs:
       filename: 'C:\Program Files\Git\bin\git.exe'
       arguments: 'clean -xdf'
 
-  - task: BatchScript@1
-    displayName: 'Setup VS Vars'
-    inputs:
-      filename: '"c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"'
-      modifyEnvironment: true
+  - template: /pipeline_templates/discover_native_tools.yml@c_build_tools
+    parameters:
+      architecture: 'x64'
 
-  - task: CMake@1
-    displayName: CMake
-    inputs:
-      workingDirectory: 'build_x64'
-      cmakeArgs: '.. -Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=RelWithDebInfo -Ax64'
+  - template: /pipeline_templates/tasks/cmake.yml@c_build_tools
+    parameters:
+      architecture: 'x64'
+      buildDirectory: '$(Build.SourcesDirectory)/build_x64'
+      cmakeArgs: '-Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo'
 
-  - task: VSBuild@1
-    displayName: 'Build solution build_x64\*.sln'
-    inputs:
-      solution: 'build_x64\*.sln'
-      platform: x64
-      msbuildArgs: '/t:restore /t:build'
+  - template: /pipeline_templates/tasks/vsbuild.yml@c_build_tools
+    parameters:
+      architecture: 'x64'
+      solution: '$(Build.SourcesDirectory)/build_x64/*.sln'
       configuration: RelWithDebInfo
-      maximumCpuCount: true
+      msbuildArgs: '/t:restore /t:build'
 
   - script: |
      echo Running Hash table perf test
@@ -122,7 +118,7 @@ jobs:
   - task: CmdLine@2
     displayName: 'Run ctest tests - Perf'
     inputs:
-      script: 'ctest -C "RelWithDebInfo" -V --output-on-failure -R perf'
+      script: '"$(ctestPath)" -C "RelWithDebInfo" -V --output-on-failure -R perf'
       workingDirectory: 'build_x64'
 
   - template : /pipeline_templates/clean_ado_folders.yml@c_build_tools
