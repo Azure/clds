@@ -70,6 +70,10 @@ jobs:
       filename: 'C:\Program Files\Git\bin\git.exe'
       arguments: 'clean -xdf'
 
+  - template: /pipeline_templates/discover_native_tools.yml@c_build_tools
+    parameters:
+      architecture: 'x64'
+
   - task: CMake@1
     displayName: CMake
     inputs:
@@ -116,7 +120,7 @@ jobs:
   - task: CmdLine@2
     displayName: 'Run ctest tests - Perf'
     inputs:
-      script: 'ctest -C "RelWithDebInfo" -V --output-on-failure -R perf'
+      script: '"$(ctestPath)" -C "RelWithDebInfo" -V --output-on-failure -R perf'
       workingDirectory: 'build_x64'
 
   - template : /pipeline_templates/clean_ado_folders.yml@c_build_tools
