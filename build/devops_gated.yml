@@ -74,20 +74,18 @@ jobs:
     parameters:
       architecture: 'x64'
 
-  - task: CMake@1
-    displayName: CMake
-    inputs:
-      workingDirectory: 'build_x64'
-      cmakeArgs: '.. -Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -G "Visual Studio 18 2026"  -DCMAKE_BUILD_TYPE=RelWithDebInfo -A x64'
+  - template: /pipeline_templates/tasks/cmake.yml@c_build_tools
+    parameters:
+      architecture: 'x64'
+      buildDirectory: '$(Build.SourcesDirectory)/build_x64'
+      cmakeArgs: '-Drun_perf_tests:bool=ON -Drun_traceability:bool=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo'
 
-  - task: VSBuild@1
-    displayName: 'Build solution build_x64\*.sln'
-    inputs:
-      solution: 'build_x64\*.sln'
-      platform: x64
-      msbuildArgs: '/t:restore /t:build'
+  - template: /pipeline_templates/tasks/vsbuild.yml@c_build_tools
+    parameters:
+      architecture: 'x64'
+      solution: '$(Build.SourcesDirectory)/build_x64/*.sln'
       configuration: RelWithDebInfo
-      maximumCpuCount: true
+      msbuildArgs: '/t:restore /t:build'
 
   - script: |
      echo Running Hash table perf test
