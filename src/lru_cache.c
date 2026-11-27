@@ -12,8 +12,7 @@
 #include "c_pal/sync.h"
 #include "c_pal/interlocked.h"
 #include "c_pal/srw_lock_ll.h"
-
-#include "c_util/doublylinkedlist.h"
+#include "c_pal/doublylinkedlist.h"
 
 #include "clds/clds_hazard_pointers.h"
 #include "clds/clds_hazard_pointers_thread_helper.h"

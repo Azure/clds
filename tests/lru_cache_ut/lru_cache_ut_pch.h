@@ -27,8 +27,7 @@
 #include "c_pal/gballoc_hl.h"
 #include "c_pal/gballoc_hl_redirect.h"
 #include "c_pal/srw_lock_ll.h"
-
-#include "c_util/doublylinkedlist.h"
+#include "c_pal/doublylinkedlist.h"
 
 #include "clds/clds_hash_table.h"
 #include "clds/clds_hazard_pointers.h"
