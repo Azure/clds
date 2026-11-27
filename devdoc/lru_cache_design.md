@@ -1,7 +1,7 @@
 
 # LRU Cache Design
 
-`lru_cache` is a module that implements a Least Recently Used (LRU) cache using `clds_hash_table` and `doubly_linked_list` from `c_util`.
+`lru_cache` is a module that implements a Least Recently Used (LRU) cache using `clds_hash_table` and `doubly_linked_list` from `c_pal`.
 
 The module provides the following functionality:
 
